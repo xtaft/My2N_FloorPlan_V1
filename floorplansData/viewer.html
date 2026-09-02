@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Native SVG floor plan viewer (no raster)</title>
+<style>
+  body { font-family: sans-serif; background: #f0f0f0; margin: 0; padding: 16px; }
+  select { font-size: 14px; padding: 4px 8px; margin-bottom: 12px; }
+  svg { background: white; border: 1px solid #ccc; display: block; }
+  path.zone { cursor: pointer; transition: fill-opacity 0.1s, stroke-width 0.1s; }
+  path.door { fill: none; cursor: pointer; transition: stroke 0.1s, stroke-width 0.1s; }
+</style>
+</head>
+<body>
+  <select id="floorSelect">
+    <option value="floor_-1">Floor -1 (garage)</option>
+    <option value="floor_00">Floor 00 (ground)</option>
+    <option value="floor_01" selected>Floor 01</option>
+    <option value="floor_02">Floor 02</option>
+    <option value="floor_03">Floor 03</option>
+    <option value="floor_04">Floor 04</option>
+  </select>
+  <div id="hint" style="margin-bottom:8px;color:#555;font-size:13px;">Click two zones to "merge" them (client-side polygon union placeholder — wire up turf.js here).</div>
+  <svg id="floorSvg" width="1000" height="700" viewBox="0 0 2000 1400" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<script type="module">
+import { getZoneStyle, getDoorStyle } from './zoneStyles.js';
+
+const svgEl = document.getElementById('floorSvg');
+const select = document.getElementById('floorSelect');
+let selectedZones = [];
+
+function ringToPathD(ring) {
+  return 'M' + ring.map((p) => p.join(',')).join(' L') + ' Z';
+}
+function zoneToPathD(zone) {
+  return zone.rings.map(ringToPathD).join(' ');
+}
+
+function applyZoneStyle(path, kind, state) {
+  const s = getZoneStyle(kind, state);
+  path.setAttribute('fill', s.fill);
+  path.setAttribute('fill-opacity', s.fillOpacity);
+  path.setAttribute('stroke', s.stroke);
+  path.setAttribute('stroke-width', s.strokeWidth);
+  path.setAttribute('stroke-dasharray', s.strokeDasharray);
+}
+
+function applyDoorStyle(path, state) {
+  const s = getDoorStyle(state);
+  path.setAttribute('stroke', s.stroke);
+  path.setAttribute('stroke-width', s.strokeWidth);
+}
+
+function zoneState(path) {
+  if (path.dataset.selected === 'true') return 'selected';
+  if (path.dataset.hovered === 'true') return 'hover';
+  return 'default';
+}
+
+async function loadFloor(floorId) {
+  const res = await fetch(`${floorId}.json`);
+  const data = await res.json();
+  render(data);
+}
+
+function render(data) {
+  svgEl.innerHTML = '';
+  svgEl.setAttribute('viewBox', `0 0 ${data.width} ${data.height}`);
+  selectedZones = [];
+
+  for (const zone of data.zones) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', zoneToPathD(zone));
+    path.setAttribute('fill-rule', 'evenodd');
+    path.setAttribute('class', 'zone');
+    path.dataset.id = zone.id;
+    path.dataset.kind = zone.kind;
+    applyZoneStyle(path, zone.kind, 'default');
+
+    path.addEventListener('mouseenter', () => {
+      path.dataset.hovered = 'true';
+      applyZoneStyle(path, zone.kind, zoneState(path));
+    });
+    path.addEventListener('mouseleave', () => {
+      path.dataset.hovered = 'false';
+      applyZoneStyle(path, zone.kind, zoneState(path));
+    });
+    path.addEventListener('click', () => onZoneClick(zone, path));
+
+    svgEl.appendChild(path);
+  }
+
+  for (const door of data.doors) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', door.d);
+    path.setAttribute('class', 'door');
+    path.dataset.id = door.id;
+    applyDoorStyle(path, 'default');
+
+    path.addEventListener('mouseenter', () => applyDoorStyle(path, 'hover'));
+    path.addEventListener('mouseleave', () => applyDoorStyle(path, 'default'));
+
+    svgEl.appendChild(path);
+  }
+}
+
+function onZoneClick(zone, path) {
+  const nowSelected = path.dataset.selected !== 'true';
+  path.dataset.selected = String(nowSelected);
+  applyZoneStyle(path, zone.kind, zoneState(path));
+
+  selectedZones = nowSelected
+    ? [...selectedZones, zone.id]
+    : selectedZones.filter((id) => id !== zone.id);
+
+  if (selectedZones.length === 2) {
+    console.log('Ready to union (wire up turf.js/polygon-clipping here):', selectedZones);
+    alert(`Selected "${selectedZones[0]}" + "${selectedZones[1]}" — this is where turf.js union() would replace both with one merged polygon.`);
+  }
+}
+
+select.addEventListener('change', () => loadFloor(select.value));
+loadFloor(select.value);
+</script>
+</body>
+</html>

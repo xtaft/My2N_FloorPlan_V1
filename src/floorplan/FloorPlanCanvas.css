@@ -1,0 +1,12 @@
+/* Kept as a plain stylesheet rather than MUI's sx prop: an sx value with a
+   nested pseudo-selector (e.g. "&:focus-visible") on the element wrapping
+   react-zoom-pan-pinch's TransformWrapper/TransformComponent tree triggers a
+   spurious React "ref is not a prop" warning from deep inside that library
+   (isolated by testing sx with and without a nested selector on this exact
+   tree — the plain sx values were clean, only the nested selector broke it).
+   A real CSS class sidesteps that code path entirely while still giving
+   keyboard users a visible focus indicator (WCAG 2.4.7). */
+.floorplan-canvas:focus-visible {
+  outline: 2px solid #2196f3;
+  outline-offset: -2px;
+}
