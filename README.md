@@ -17,8 +17,15 @@ Then open the printed URL (default <http://localhost:5173>).
 The prototype starts on an empty **Structure** screen — the intended entry point.
 From there:
 
-1. **Floor Plan** tab → **New** → upload floor-plan images and a room-table CSV →
-   **Create Floor Plan**.
+1. **Floor Plan** tab → **New** → upload floor plans in the first step and a
+   room-table CSV in the second → **Create Floor Plan**.
+
+   **Any PDF works in the first step and any CSV in the second.** The prototype
+   does not implement PDF segmentation, so nothing is read out of the uploaded
+   files — only their names are shown back in the dialog. The floor plan that
+   opens afterwards is always the same built-in demo building, whichever files
+   you pick.
+
 2. That opens the **editor**, where zones can be merged and divided, doors added,
    zone categories renamed and recoloured, and devices dragged onto zones or doors.
 3. **Save** returns to the read-only **view mode**, which shows the same plan with
