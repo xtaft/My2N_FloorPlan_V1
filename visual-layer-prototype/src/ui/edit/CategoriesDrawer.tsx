@@ -20,6 +20,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
+import ListItemIcon from "@mui/material/ListItemIcon";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
@@ -29,9 +30,15 @@ import AddIcon from "@mui/icons-material/Add";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import Delete from "@mui/icons-material/Delete";
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
+import MoveDownOutlined from "@mui/icons-material/MoveDownOutlined";
+import PaletteOutlined from "@mui/icons-material/PaletteOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
+import type { RowTarget } from "./StructureRowMenu";
 import {
   isRoomListed,
   passThroughRoom,
@@ -42,19 +49,24 @@ import {
   type VisualLayer,
 } from "../../model";
 
+const menuItemSx = { minHeight: 36, py: 0.25 } as const;
+const menuIconSx = { minWidth: 0, mr: 2, color: "action.active" } as const;
+
 export interface CategoriesDrawerProps {
   layer: VisualLayer;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string) => void;
   onRename: (typeId: string, name: string) => void;
   onRecolor: (typeId: string, color: string) => void;
+  /** Move every space of one category into another, or out of all of them. */
+  onReassign: (fromId: string, toId: string | null) => void;
+  onDeleteCategory: (typeId: string) => void;
   onNewCategory: () => void;
   /**
-   * Put a room in a category. The screen above owns this rather than the
-   * drawer, because moving a stairwell out of its category breaks the floors
-   * apart and has to be asked about first.
+   * Opens the space menu — the same one the tree and the plan open, since a
+   * space offers the same things wherever it is reached from.
    */
-  onAssignCategory: (roomId: string, typeId: string | null) => void;
+  onRowMenu: (el: HTMLElement, target: RowTarget) => void;
 }
 
 export function CategoriesDrawer({
@@ -63,8 +75,10 @@ export function CategoriesDrawer({
   onSelectRoom,
   onRename,
   onRecolor,
+  onReassign,
+  onDeleteCategory,
   onNewCategory,
-  onAssignCategory,
+  onRowMenu,
 }: CategoriesDrawerProps) {
   const [query, setQuery] = useState("");
   // Absent means closed; every row opens and closes on its own.
@@ -72,12 +86,8 @@ export function CategoriesDrawer({
   const [menu, setMenu] = useState<{ el: HTMLElement; typeId: string } | null>(
     null,
   );
-  /** The room whose category is being picked. */
-  const [assigning, setAssigning] = useState<{
-    el: HTMLElement;
-    room: Room;
-  } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [reassigning, setReassigning] = useState(false);
   const [draft, setDraft] = useState("");
 
   const isExpanded = (id: string) => expanded[id] === true;
@@ -148,7 +158,7 @@ export function CategoriesDrawer({
         edge="end"
         onClick={(e) => {
           e.stopPropagation();
-          setAssigning({ el: e.currentTarget, room });
+          onRowMenu(e.currentTarget, { kind: "room", room });
         }}
       >
         <MoreVert sx={{ fontSize: 20 }} />
@@ -203,7 +213,10 @@ export function CategoriesDrawer({
           <IconButton
             size="small"
             edge="end"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRowMenu(e.currentTarget, { kind: "group", group });
+            }}
           >
             <MoreVert sx={{ fontSize: 20 }} />
           </IconButton>
@@ -376,76 +389,152 @@ export function CategoriesDrawer({
         </Tooltip>
       </Box>
 
-      {/* Which category this one room is in. The categories' own menu,
-          below, renames and recolours the category for every space in it. */}
-      <Menu
-        anchorEl={assigning?.el ?? null}
-        open={Boolean(assigning)}
-        onClose={() => setAssigning(null)}
-      >
-        <MenuItem disabled>
-          <Typography variant="overline">Category</Typography>
-        </MenuItem>
-        {layer.file.space_types.map((type) => (
-          <MenuItem
-            key={type.id}
-            selected={assigning?.room.space_type === type.id}
-            onClick={() => {
-              if (assigning) onAssignCategory(assigning.room.id, type.id);
-              setAssigning(null);
-            }}
-          >
-            <Box
-              sx={{
-                width: 14,
-                height: 14,
-                mr: 1.5,
-                borderRadius: "2px",
-                bgcolor: type.color,
-                border: 1,
-                borderColor: "divider",
-              }}
-            />
-            {type.name}
-          </MenuItem>
-        ))}
-        <MenuItem
-          selected={assigning?.room.space_type === null}
-          onClick={() => {
-            if (assigning) onAssignCategory(assigning.room.id, null);
-            setAssigning(null);
-          }}
-        >
-          <Box sx={{ width: 14, mr: 1.5 }} />
-          Inherit from envelope
-        </MenuItem>
-      </Menu>
 
+      {/* Figma 2:53271 — what a category itself offers, as against what one
+          space offers. Reassign all is here because a category with thirty
+          rooms in it would otherwise be emptied one trip through the tree
+          at a time. */}
       <Menu
         anchorEl={menu?.el ?? null}
-        open={menu !== null}
-        onClose={() => setMenu(null)}
+        open={Boolean(menu)}
+        onClose={() => {
+          setMenu(null);
+          setReassigning(false);
+        }}
+        slotProps={{ paper: { sx: { width: 256 } } }}
       >
-        <MenuItem
-          onClick={() => {
-            const c = categories.find((x) => x.id === menu?.typeId);
-            setDraft(c?.name ?? "");
-            setRenaming(menu?.typeId ?? null);
-            setMenu(null);
-          }}
-        >
-          Rename
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            // Recolour is the point of the panel: every space of the type
-            // follows, because none of them holds a colour of its own.
-            if (menu) onRecolor(menu.typeId, nextColor());
-            setMenu(null);
-          }}
-        >
-          Recolour
-        </MenuItem>
+        {reassigning
+          ? [
+              <MenuItem
+                key="back"
+                sx={menuItemSx}
+                onClick={() => setReassigning(false)}
+              >
+                <ListItemIcon sx={menuIconSx}>
+                  <ArrowBack sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Reassign all to"
+                  primaryTypographyProps={{ variant: "body1" }}
+                />
+              </MenuItem>,
+              <Divider key="d" />,
+              ...layer.file.space_types
+                .filter((t) => t.id !== menu?.typeId)
+                .map((t) => (
+                  <MenuItem
+                    key={t.id}
+                    sx={menuItemSx}
+                    onClick={() => {
+                      if (menu) onReassign(menu.typeId, t.id);
+                      setReassigning(false);
+                      setMenu(null);
+                    }}
+                  >
+                    <ListItemIcon sx={menuIconSx}>
+                      <Box
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: "2px",
+                          bgcolor: t.color,
+                          border: 1,
+                          borderColor: "divider",
+                        }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={t.name}
+                      primaryTypographyProps={{ variant: "body1" }}
+                    />
+                  </MenuItem>
+                )),
+              <MenuItem
+                key="none"
+                sx={menuItemSx}
+                onClick={() => {
+                  if (menu) onReassign(menu.typeId, null);
+                  setReassigning(false);
+                  setMenu(null);
+                }}
+              >
+                <ListItemIcon sx={menuIconSx} />
+                <ListItemText
+                  primary="No category"
+                  primaryTypographyProps={{ variant: "body1" }}
+                />
+              </MenuItem>,
+            ]
+          : [
+              <MenuItem
+                key="rename"
+                sx={menuItemSx}
+                onClick={() => {
+                  if (!menu) return;
+                  const type = layer.spaceTypes.get(menu.typeId);
+                  setRenaming(menu.typeId);
+                  setDraft(type?.name ?? "");
+                  setMenu(null);
+                }}
+              >
+                <ListItemIcon sx={menuIconSx}>
+                  <EditOutlined sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Rename"
+                  primaryTypographyProps={{ variant: "body1" }}
+                />
+              </MenuItem>,
+              <MenuItem
+                key="color"
+                sx={menuItemSx}
+                onClick={() => {
+                  if (menu) onRecolor(menu.typeId, nextColor());
+                  setMenu(null);
+                }}
+              >
+                <ListItemIcon sx={menuIconSx}>
+                  <PaletteOutlined sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Change color"
+                  primaryTypographyProps={{ variant: "body1" }}
+                />
+              </MenuItem>,
+              <MenuItem
+                key="reassign"
+                sx={menuItemSx}
+                onClick={() => setReassigning(true)}
+              >
+                <ListItemIcon sx={menuIconSx}>
+                  <MoveDownOutlined sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Reassign all"
+                  primaryTypographyProps={{ variant: "body1" }}
+                />
+              </MenuItem>,
+              <Divider key="divider" sx={{ my: 1 }} />,
+              <MenuItem
+                key="delete"
+                sx={menuItemSx}
+                onClick={() => {
+                  if (menu) onDeleteCategory(menu.typeId);
+                  setMenu(null);
+                }}
+              >
+                <ListItemIcon sx={{ ...menuIconSx, color: "error.main" }}>
+                  <Delete sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Delete"
+                  primaryTypographyProps={{
+                    variant: "body1",
+                    color: "error.main",
+                  }}
+                />
+              </MenuItem>,
+            ]}
       </Menu>
     </Box>
   );

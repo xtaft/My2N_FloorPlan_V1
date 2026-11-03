@@ -35,6 +35,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { RowTarget } from "./StructureRowMenu";
+import { InlineRename } from "./InlineRename";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -66,6 +67,11 @@ export interface StructureTreeProps {
   onSelectRoom: (roomId: string | null) => void;
   /** Opens the row menu. Rows with nothing to offer get no button. */
   onRowMenu: (el: HTMLElement, target: RowTarget) => void;
+  /** The row being renamed in place, if any, and the text so far. */
+  renaming: { id: string; draft: string } | null;
+  onRenameChange: (draft: string) => void;
+  onRenameCommit: () => void;
+  onRenameCancel: () => void;
 }
 
 export function StructureTree({
@@ -76,6 +82,10 @@ export function StructureTree({
   selectedRoomId,
   onSelectRoom,
   onRowMenu,
+  renaming,
+  onRenameChange,
+  onRenameCommit,
+  onRenameCancel,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
   // Absent means closed. The floor on screen when the tree first mounts
@@ -185,15 +195,24 @@ export function StructureTree({
       >
         {icon}
       </Box>
-      <ListItemText
-        primary={label}
-        primaryTypographyProps={{
-          variant: "body1",
-          fontWeight: opts.bold ? 700 : 400,
-          noWrap: true,
-        }}
-      />
-      {opts.onMenu && (
+      {renaming?.id === key ? (
+        <InlineRename
+          value={renaming.draft}
+          onChange={onRenameChange}
+          onCommit={onRenameCommit}
+          onCancel={onRenameCancel}
+        />
+      ) : (
+        <ListItemText
+          primary={label}
+          primaryTypographyProps={{
+            variant: "body1",
+            fontWeight: opts.bold ? 700 : 400,
+            noWrap: true,
+          }}
+        />
+      )}
+      {opts.onMenu && renaming?.id !== key && (
         <IconButton
           size="small"
           edge="end"

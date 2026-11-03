@@ -6,7 +6,7 @@
  * None of them touch geometry — that is what the wall tools are for — which
  * is why they live apart from divide and merge.
  */
-import { commit, OperationRejected, setRoomSurfaced, type EditState } from "./edit";
+import { commit, OperationRejected, type EditState } from "./edit";
 import { must, type VisualLayer } from "./load";
 import { roomsInGroup } from "./access";
 import { doorsOfRoom } from "./derive";
@@ -296,4 +296,70 @@ export function envelopesOnFloor(layer: VisualLayer, floorId: string): Group[] {
   return layer.file.groups.filter((g) => g.floor_id === floorId);
 }
 
-export { setRoomSurfaced };
+
+/**
+ * Move every space of one category into another, or out of all of them.
+ *
+ * The types panel owns the category, so emptying one is its business rather
+ * than something to do space by space — a category with thirty rooms in it
+ * would otherwise take thirty trips through the tree.
+ */
+export function reassignSpaceType(
+  state: EditState,
+  fromId: string,
+  toId: string | null,
+): EditState {
+  const { layer, file } = state;
+  if (!layer.spaceTypes.has(fromId)) {
+    throw new OperationRejected(`There is no "${fromId}" category.`);
+  }
+  if (toId !== null && !layer.spaceTypes.has(toId)) {
+    throw new OperationRejected(`There is no "${toId}" category.`);
+  }
+  if (toId === fromId) return state;
+
+  return commit(state, "set_space_type", "Reassign all", {
+    ...file,
+    rooms: file.rooms.map((r) =>
+      r.space_type === fromId ? { ...r, space_type: toId } : r,
+    ),
+    groups: file.groups.map((g) =>
+      g.space_type === fromId ? { ...g, space_type: toId } : g,
+    ),
+  });
+}
+
+/**
+ * Delete a category. Whatever was in it falls back to inheriting, and where
+ * there is nothing to inherit from it reads as Unknown — the bucket the
+ * panel keeps open for exactly that.
+ */
+export function deleteSpaceType(
+  state: EditState,
+  typeId: string,
+): EditState {
+  const { layer, file } = state;
+  const type = must(layer.spaceTypes, typeId, "space type");
+
+  return commit(state, "delete_space_type", `Delete ${type.name}`, {
+    ...file,
+    space_types: file.space_types.filter((t) => t.id !== typeId),
+    rooms: file.rooms.map((r) =>
+      r.space_type === typeId ? { ...r, space_type: null } : r,
+    ),
+    groups: file.groups.map((g) =>
+      g.space_type === typeId ? { ...g, space_type: null } : g,
+    ),
+  });
+}
+
+/** How many spaces a category holds, for "this will affect N spaces". */
+export function spacesInCategory(
+  layer: VisualLayer,
+  typeId: string,
+): { rooms: number; groups: number } {
+  return {
+    rooms: layer.file.rooms.filter((r) => r.space_type === typeId).length,
+    groups: layer.file.groups.filter((g) => g.space_type === typeId).length,
+  };
+}

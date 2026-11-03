@@ -13,10 +13,10 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
-import TextField from "@mui/material/TextField";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AlignFloorView } from "./AlignFloorView";
 import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
+import { DoorMenu } from "./DoorMenu";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { EditAppBar } from "./EditAppBar";
@@ -33,16 +33,23 @@ import {
   landingsFor,
   referenceFloor,
   type Transform,
+  deleteDoor,
   deleteRoom,
   detachRoom,
+  flipDoorHinge,
+  flipDoorSwing,
   dissolveGroup,
   renameGroup,
   renameRoom,
+  reassignSpaceType,
+  deleteSpaceType,
   setGroupRoomsSurfaced,
   setGroupSpaceType,
   setRoomSpaceType,
   shaftImpact,
   unassignRoom,
+  type Group,
+  type Room,
   previewDeleteWall,
   previewDivide,
   type DivideRoomRequest,
@@ -236,22 +243,29 @@ export function EditModeScreen({
 
   /** Which row's menu is open, and on what. */
   const [rowMenu, setRowMenu] = useState<{
-    el: HTMLElement;
+    el: HTMLElement | null;
+    at?: { top: number; left: number };
     target: RowTarget;
   } | null>(null);
-  /** The row being renamed, with the text so far. */
+  /** The door whose menu is open, and where on screen it was clicked. */
+  const [doorMenu, setDoorMenu] = useState<{
+    doorId: string;
+    at: { top: number; left: number };
+  } | null>(null);
+  /** The row being renamed in place, and the text so far. */
   const [renaming, setRenaming] = useState<{
-    target: RowTarget;
+    id: string;
+    kind: "room" | "group";
     draft: string;
   } | null>(null);
 
   const commitRename = useCallback(() => {
     if (!renaming) return;
-    const { target, draft } = renaming;
+    const { id, kind, draft } = renaming;
     run(() =>
-      target.kind === "room"
-        ? renameRoom(state, target.room.id, draft)
-        : renameGroup(state, target.group.id, draft),
+      kind === "room"
+        ? renameRoom(state, id, draft)
+        : renameGroup(state, id, draft),
     );
     setRenaming(null);
   }, [renaming, run, state]);
@@ -369,6 +383,12 @@ export function EditModeScreen({
           selectedRoomId={selectedRoomId}
           onSelectRoom={selectRoom}
           onRowMenu={(el, target) => setRowMenu({ el, target })}
+          renaming={renaming}
+          onRenameChange={(draft) =>
+            setRenaming((cur) => (cur ? { ...cur, draft } : cur))
+          }
+          onRenameCommit={commitRename}
+          onRenameCancel={() => setRenaming(null)}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
@@ -413,6 +433,22 @@ export function EditModeScreen({
             divideError={divideError}
             onDeleteWall={handleDeleteWall}
             deleteWallError={deleteWallError}
+            onSpaceMenu={(target, at) => {
+              const found =
+                target.kind === "room"
+                  ? layer.rooms.get(target.id)
+                  : layer.groups.get(target.id);
+              if (!found) return;
+              setRowMenu({
+                el: null,
+                at,
+                target:
+                  target.kind === "room"
+                    ? { kind: "room", room: found as Room }
+                    : { kind: "group", group: found as Group },
+              });
+            }}
+            onDoorMenu={(doorId, at) => setDoorMenu({ doorId, at })}
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
             placementError={placementError}
@@ -431,7 +467,13 @@ export function EditModeScreen({
           }}
           onRename={(id, name) => run(() => renameSpaceType(state, id, name))}
           onRecolor={(id, color) => run(() => recolorSpaceType(state, id, color))}
-          onAssignCategory={assignCategory}
+          onReassign={(fromId, toId) =>
+            run(() => reassignSpaceType(state, fromId, toId))
+          }
+          onDeleteCategory={(typeId) =>
+            run(() => deleteSpaceType(state, typeId))
+          }
+          onRowMenu={(el, target) => setRowMenu({ el, target })}
           onNewCategory={() =>
             run(() =>
               addSpaceType(state, {
@@ -444,19 +486,35 @@ export function EditModeScreen({
         />
       </Box>
 
+      <DoorMenu
+        door={doorMenu ? (layer.doors.get(doorMenu.doorId) ?? null) : null}
+        at={doorMenu?.at ?? null}
+        onClose={() => setDoorMenu(null)}
+        onFlipSwing={() =>
+          doorMenu && run(() => flipDoorSwing(state, doorMenu.doorId))
+        }
+        onFlipHinge={() =>
+          doorMenu && run(() => flipDoorHinge(state, doorMenu.doorId))
+        }
+        onDelete={() =>
+          doorMenu && run(() => deleteDoor(state, doorMenu.doorId))
+        }
+      />
+
       <StructureRowMenu
         layer={layer}
         anchorEl={rowMenu?.el ?? null}
+        at={rowMenu?.at ?? null}
         target={rowMenu?.target ?? null}
         onClose={() => setRowMenu(null)}
         onRename={() => {
           if (!rowMenu) return;
           const { target } = rowMenu;
-          setRenaming({
-            target,
-            draft:
-              target.kind === "room" ? target.room.name : target.group.name,
-          });
+          setRenaming(
+            target.kind === "room"
+              ? { id: target.room.id, kind: "room", draft: target.room.name }
+              : { id: target.group.id, kind: "group", draft: target.group.name },
+          );
         }}
         onToggleHidden={(hide) => rowMenu && toggleHidden(rowMenu.target, hide)}
         onAssignCategory={(typeId) => {
@@ -486,43 +544,6 @@ export function EditModeScreen({
         }}
       />
 
-      <Dialog
-        open={Boolean(renaming)}
-        onClose={() => setRenaming(null)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Rename</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            size="small"
-            margin="dense"
-            value={renaming?.draft ?? ""}
-            onChange={(e) =>
-              setRenaming((cur) =>
-                cur ? { ...cur, draft: e.target.value } : cur,
-              )
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename();
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setRenaming(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            disabled={!renaming?.draft.trim()}
-            onClick={commitRename}
-          >
-            Rename
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog
         open={Boolean(confirming)}

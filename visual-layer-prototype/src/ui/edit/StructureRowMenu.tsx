@@ -35,7 +35,10 @@ export type RowTarget =
 
 export interface StructureRowMenuProps {
   layer: VisualLayer;
+  /** A tree row's button, or null when the menu came from the plan. */
   anchorEl: HTMLElement | null;
+  /** Where on the plan it was opened, for a click on a space. */
+  at?: { top: number; left: number } | null;
   target: RowTarget | null;
   onClose: () => void;
   onRename: () => void;
@@ -54,6 +57,7 @@ const iconSx = { minWidth: 0, mr: 2, color: "action.active" } as const;
 export function StructureRowMenu({
   layer,
   anchorEl,
+  at = null,
   target,
   onClose,
   onRename,
@@ -68,10 +72,10 @@ export function StructureRowMenu({
   // A menu that reopens on the next row should not still be showing the
   // category list it was left on.
   useEffect(() => {
-    if (!anchorEl) setPage("main");
-  }, [anchorEl]);
+    if (!anchorEl && !at) setPage("main");
+  }, [anchorEl, at]);
 
-  const open = Boolean(anchorEl) && target !== null;
+  const open = Boolean(anchorEl || at) && target !== null;
   const isRoom = target?.kind === "room";
   // An envelope counts as folded when nothing inside it is on the map, so
   // the item offers the move that is actually available.
@@ -126,7 +130,9 @@ export function StructureRowMenu({
 
   return (
     <Menu
-      anchorEl={anchorEl}
+      anchorEl={at ? undefined : anchorEl}
+      anchorReference={at ? "anchorPosition" : "anchorEl"}
+      anchorPosition={at ?? undefined}
       open={open}
       onClose={onClose}
       slotProps={{ paper: { sx: { width: 256 } } }}
@@ -217,33 +223,34 @@ export function StructureRowMenu({
               />
             </MenuItem>,
             <Divider key="divider" sx={{ my: 1 }} />,
+            // Detach and Unassign appear only where they mean something,
+            // which is what the variants in the design differ by: there is
+            // no group to leave if it is in none, and nothing to unassign
+            // from the map if it is not on it.
             ...(isRoom
               ? [
-                  item(
-                    "detach",
-                    <PlaylistRemove sx={ICON} />,
-                    "Detach from group",
-                    onDetach,
-                    {
-                      disabled: target.room.group_id === null,
-                      why:
-                        target.room.group_id === null
-                          ? "This space is not in an envelope."
-                          : undefined,
-                    },
-                  ),
-                  item(
-                    "unassign",
-                    <LocationOff sx={ICON} />,
-                    "Unassign from map",
-                    onUnassign,
-                    {
-                      why: "Keeps the space on its floor, unnamed and uncategorised, ready to be identified again.",
-                    },
-                  ),
+                  ...(target.room.group_id !== null
+                    ? [
+                        item(
+                          "detach",
+                          <PlaylistRemove sx={ICON} />,
+                          "Detach from group",
+                          onDetach,
+                        ),
+                      ]
+                    : []),
+                  ...(target.room.surfaced
+                    ? [
+                        item(
+                          "unassign",
+                          <LocationOff sx={ICON} />,
+                          "Unassign from map",
+                          onUnassign,
+                        ),
+                      ]
+                    : []),
                   item("delete", <Delete sx={ICON} />, "Delete", onDelete, {
                     danger: true,
-                    why: "Takes the space out of the structure and off the map. Its area stays — the floor is tiled — but belongs to nothing in particular.",
                   }),
                 ]
               : [

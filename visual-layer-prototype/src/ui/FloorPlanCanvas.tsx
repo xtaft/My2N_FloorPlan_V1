@@ -86,6 +86,17 @@ export interface FloorPlanCanvasProps {
   /** Why removing the wall under the pointer would be refused. */
   deleteWallError?: (wallId: string) => string | null;
   /**
+   * Clicking a space or a door opens its menu where the pointer is. The
+   * plan is the other place these things are reached from, and reaching
+   * them only through the tree would hide half of them — circulation is
+   * not listed there at all.
+   */
+  onSpaceMenu?: (
+    target: { kind: "room" | "group"; id: string },
+    at: { top: number; left: number },
+  ) => void;
+  onDoorMenu?: (doorId: string, at: { top: number; left: number }) => void;
+  /**
    * Device status badges. Off while editing: the editor is for changing the
    * plan, and whether a reader is reachable today is not part of that.
    */
@@ -150,6 +161,8 @@ export function FloorPlanCanvas({
   divideError,
   onDeleteWall,
   deleteWallError,
+  onSpaceMenu,
+  onDoorMenu,
   showDeviceStatus = true,
   onShowRoom,
   onHideRoom,
@@ -351,6 +364,30 @@ export function FloorPlanCanvas({
     [scene.rooms, rings],
   );
 
+  /** Distance from a point to a segment, for finding the door clicked. */
+  const doorAt = useCallback(
+    (pt: Point) => {
+      let best: { door: Door; d: number } | null = null;
+      for (const door of scene.doors) {
+        const g = doorGeometry(layer, door);
+        if (!g) continue;
+        const dx = g.p2.x - g.p1.x;
+        const dy = g.p2.y - g.p1.y;
+        const lenSq = dx * dx || dy * dy ? dx * dx + dy * dy : 0;
+        if (lenSq === 0) continue;
+        let t = ((pt.x - g.p1.x) * dx + (pt.y - g.p1.y) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const d = Math.hypot(
+          pt.x - (g.p1.x + dx * t),
+          pt.y - (g.p1.y + dy * t),
+        );
+        if (d <= 20 && (!best || d < best.d)) best = { door, d };
+      }
+      return best?.door ?? null;
+    },
+    [scene.doors, layer],
+  );
+
   const snapTo = useCallback(
     (roomId: string, pt: Point) => {
       const room = layer.rooms.get(roomId);
@@ -368,9 +405,25 @@ export function FloorPlanCanvas({
 
   const handleMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!aiming) return;
       const pt = toSvgPoint(e.clientX, e.clientY);
       if (!pt) return;
+
+      // Which marker the pointer is over, worked out here because the
+      // markers themselves take no pointer events — see DeviceMarker.
+      if (!aiming) {
+        const reach = (DEVICE_PX / 2) * unitScale;
+        let near: string | null = null;
+        let best = reach;
+        for (const glyph of scene.glyphs) {
+          const d = Math.hypot(pt.x - glyph.x, pt.y - glyph.y);
+          if (d <= best) {
+            best = d;
+            near = glyph.device.id;
+          }
+        }
+        setHoverDevice((cur) => (cur === near ? cur : near));
+        return;
+      }
       if (drawing) {
         // Once a cut has started it stays in its own room: the second end
         // has to be a wall of the room being divided.
@@ -380,7 +433,18 @@ export function FloorPlanCanvas({
       }
       setHover(nearestWall(layer, floorId, pt, 45));
     },
-    [aiming, drawing, cutFrom, roomAt, snapTo, toSvgPoint, layer, floorId],
+    [
+      aiming,
+      drawing,
+      cutFrom,
+      roomAt,
+      snapTo,
+      toSvgPoint,
+      layer,
+      floorId,
+      scene.glyphs,
+      unitScale,
+    ],
   );
 
   /**
@@ -541,13 +605,36 @@ export function FloorPlanCanvas({
                       return;
                     }
 
+                    // A door sits on a room's edge, so the click lands on
+                    // the room's shape; it has to be asked about first or a
+                    // door could never be clicked at all.
+                    const pt = toSvgPoint(e.clientX, e.clientY);
+                    const door = pt && doorAt(pt);
+                    if (door) {
+                      onDoorMenu?.(door.id, {
+                        top: e.clientY,
+                        left: e.clientX,
+                      });
+                      return;
+                    }
+
                     // Otherwise a hidden room cannot be clicked: while its
                     // flat is folded the envelope is what the map offers.
                     if (!isRoomListed(layer, room)) {
                       onSelectGroup?.(room.group_id);
+                      if (room.group_id) {
+                        onSpaceMenu?.(
+                          { kind: "group", id: room.group_id },
+                          { top: e.clientY, left: e.clientX },
+                        );
+                      }
                       return;
                     }
                     onSelectRoom(room.id);
+                    onSpaceMenu?.(
+                      { kind: "room", id: room.id },
+                      { top: e.clientY, left: e.clientX },
+                    );
                   }}
                 />
                 {revealing && !isRoomListed(layer, room) && (
@@ -678,7 +765,6 @@ export function FloorPlanCanvas({
             .map((glyph) => (
               <DeviceMarker
                 key={glyph.device.id}
-                id={glyph.device.id}
                 name={glyph.device.name}
                 deviceType={glyph.device.device_type}
                 status={glyph.device.status}
@@ -687,7 +773,6 @@ export function FloorPlanCanvas({
                 unitScale={unitScale}
                 showStatus={showDeviceStatus}
                 hovered={glyph.device.id === hoverDevice}
-                onHover={setHoverDevice}
               />
             ))}
 

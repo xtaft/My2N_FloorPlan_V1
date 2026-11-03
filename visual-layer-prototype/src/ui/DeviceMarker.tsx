@@ -116,7 +116,6 @@ function DeviceIcon({ deviceType }: { deviceType: string }) {
 }
 
 export interface DeviceMarkerProps {
-  id: string;
   name: string;
   deviceType: string;
   status: string;
@@ -128,11 +127,9 @@ export interface DeviceMarkerProps {
   /** Off while editing the plan, where a device's health is not the subject. */
   showStatus?: boolean;
   hovered: boolean;
-  onHover: (id: string | null) => void;
 }
 
 export const DeviceMarker = memo(function DeviceMarker({
-  id,
   name,
   deviceType,
   status,
@@ -141,7 +138,6 @@ export const DeviceMarker = memo(function DeviceMarker({
   unitScale,
   showStatus = true,
   hovered,
-  onHover,
 }: DeviceMarkerProps) {
   const look = STATUS[status] ?? UNKNOWN;
   const text = showStatus ? `${name} — ${look.label}` : name;
@@ -152,16 +148,10 @@ export const DeviceMarker = memo(function DeviceMarker({
 
   return (
     <g transform={`translate(${x} ${y}) scale(${unitScale})`}>
-      {/* The hit target. A marker is small against a room, but it does take
-          the click that lands on it — pointing at a device and selecting the
-          room underneath are different intentions. */}
-      <circle
-        r={AVATAR_R}
-        fill="transparent"
-        style={{ cursor: "pointer" }}
-        onMouseEnter={() => onHover(id)}
-        onMouseLeave={() => onHover(null)}
-      />
+      {/* Nothing here takes pointer events. A reader sits beside its door,
+          and a 40px hit target over a door is a door that cannot be clicked
+          — so the canvas works out which marker the pointer is near rather
+          than the marker claiming the area. */}
       <g pointerEvents="none">
         <circle r={AVATAR_R} fill={CIRCLE} />
         {/* inset 10% of the 40px circle leaves a 32px icon box. */}
