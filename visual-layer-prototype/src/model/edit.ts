@@ -268,13 +268,14 @@ export function setRoomSurfaced(
         `${room.name} holds a device. A room with hardware in it cannot be hidden.`,
       );
     }
+    // Any device on any of the room's doors, not only one guarding this
+    // side. A reader sits on a boundary, and a boundary with one invisible
+    // side is a boundary nobody can see.
     for (const door of doorsOfRoom(layer, room)) {
-      const guarding = (layer.devicesOnDoor.get(door.id) ?? []).filter((d) =>
-        d.guards.includes(roomId),
-      );
-      if (guarding.length > 0) {
+      const onDoor = layer.devicesOnDoor.get(door.id) ?? [];
+      if (onDoor.length > 0) {
         throw new OperationRejected(
-          `${guarding[0].name} guards the way into ${room.name}. Hiding it would put a reader on a boundary nobody can see.`,
+          `${onDoor[0].name} is on ${room.name}'s door. A room whose door carries a device cannot be hidden — the reader would sit on a boundary nobody can see.`,
         );
       }
     }

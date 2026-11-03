@@ -11,7 +11,7 @@
  * of its own, so the types panel owns rename and recolour, and every space of
  * that type follows."
  */
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -33,6 +33,9 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import {
+  accessType,
+  envelopeChain,
+  isRoomListed,
   roomColor,
   spaceCategories,
   type Group,
@@ -71,6 +74,24 @@ export function CategoriesDrawer({
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const categories = useMemo(() => spaceCategories(layer), [layer]);
+
+  /**
+   * Open the way to the selected room, once it is a room the lists name —
+   * category, then the envelopes above it. Surfacing a bedroom is meant to
+   * make it appear here too, and it would otherwise be buried.
+   */
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    const room = layer.rooms.get(selectedRoomId);
+    if (!room || !isRoomListed(layer, room)) return;
+    const path = [accessType(layer, room) ?? "__unknown__", ...envelopeChain(layer, room)];
+    setExpanded((prev) => {
+      if (path.every((id) => prev[id])) return prev;
+      const next = { ...prev };
+      for (const id of path) next[id] = true;
+      return next;
+    });
+  }, [layer, selectedRoomId]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -129,7 +150,11 @@ export function CategoriesDrawer({
 
   const renderEnvelope = (group: Group, depth: number): React.ReactNode => {
     if (!branchMatches(group)) return null;
-    const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
+    // Same rule as the tree: a flat's rooms stay folded inside it until one
+    // is surfaced, every other envelope lists its rooms.
+    const rooms = layer.file.rooms.filter(
+      (r) => r.group_id === group.id && isRoomListed(layer, r),
+    );
     const children = layer.childGroups.get(group.id) ?? [];
     const expandable = rooms.length > 0 || children.length > 0;
     const open = isExpanded(group.id) || Boolean(matches);

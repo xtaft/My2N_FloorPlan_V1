@@ -15,7 +15,9 @@ import {
   canUndo,
   doorsOfRoom,
   fixture,
+  highlightTargets,
   initEditState,
+  isRoomListed,
   nearestWall,
   reachable,
   recolorSpaceType,
@@ -201,12 +203,33 @@ describe("show and hide room", () => {
     );
   });
 
-  it("refuses to hide a room a reader guards the way into", () => {
+  it("refuses to hide a room whose door carries any device", () => {
     // The gym's locker room is surfaced because its door carries a reader.
     expect(state.layer.rooms.get("0:GL1")!.surfaced).toBe(true);
     expect(() => setRoomSurfaced(state, "0:GL1", false)).toThrow(
-      /boundary nobody can see/,
+      /cannot be hidden/,
     );
+  });
+
+  it("refuses even when the device guards the other side of the door", () => {
+    // AC-0-d8 is on the gym's entrance door and guards 0:GM, not the lobby.
+    // The lobby is still on that boundary, so it cannot be hidden either —
+    // a reader with one invisible side is a reader nobody can see.
+    const gymEntrance = state.layer.doors.get("0:d8")!;
+    const devices = state.layer.devicesOnDoor.get(gymEntrance.id)!;
+    expect(devices[0].guards).toEqual(["0:GM"]);
+    expect(() => setRoomSurfaced(state, "0:GM", false)).toThrow(
+      /cannot be hidden/,
+    );
+  });
+
+  it("surfacing an apartment room makes the lists name it", () => {
+    const bedroom = state.layer.rooms.get("1:B1")!;
+    // Folded inside its flat to begin with.
+    expect(isRoomListed(state.layer, bedroom)).toBe(false);
+
+    const next = setRoomSurfaced(state, "1:B1", true);
+    expect(isRoomListed(next.layer, next.layer.rooms.get("1:B1")!)).toBe(true);
   });
 
   it("hides a plain room with no hardware", () => {
@@ -224,6 +247,47 @@ describe("show and hide room", () => {
     expect(next.layer.rooms.get("1:B1")!.group_id).toBe(
       state.layer.rooms.get("1:B1")!.group_id,
     );
+  });
+});
+
+describe("what the lists name, and what a hover lights up", () => {
+  it("folds a flat's rooms inside it", () => {
+    for (const r of state.layer.file.rooms) {
+      if (r.group_id?.includes(":A") && !r.surfaced) {
+        expect(isRoomListed(state.layer, r)).toBe(false);
+      }
+    }
+    // 76 apartment rooms, none of them listed to begin with.
+    const folded = state.layer.file.rooms.filter(
+      (r) => !isRoomListed(state.layer, r),
+    );
+    expect(folded).toHaveLength(76);
+  });
+
+  it("lists every other envelope's rooms", () => {
+    for (const id of ["0:GM", "0:CS1", "0:GB1", "0:L", "0:TECH"]) {
+      expect(isRoomListed(state.layer, state.layer.rooms.get(id)!)).toBe(true);
+    }
+  });
+
+  it("lights the whole flat while its rooms are folded away", () => {
+    const lit = highlightTargets(state.layer, "1:B1");
+    expect(lit.sort()).toEqual(["1:B1", "1:L1", "1:T1"]);
+  });
+
+  it("lights a surfaced room on its own", () => {
+    const next = setRoomSurfaced(state, "1:B1", true);
+    expect(highlightTargets(next.layer, "1:B1")).toEqual(["1:B1"]);
+    // Its neighbours in the same flat still light whole.
+    expect(highlightTargets(next.layer, "1:L1").sort()).toEqual([
+      "1:B1",
+      "1:L1",
+      "1:T1",
+    ]);
+  });
+
+  it("lights a listed room on its own without any surfacing", () => {
+    expect(highlightTargets(state.layer, "0:GM")).toEqual(["0:GM"]);
   });
 });
 

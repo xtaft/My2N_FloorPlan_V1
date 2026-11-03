@@ -3,7 +3,7 @@
  * might reach for that the fixture refuses to store.
  */
 import { must, topGroups, type VisualLayer } from "./load";
-import { accessType, roomsOf } from "./access";
+import { accessType, roomsInGroup, roomsOf } from "./access";
 import { add, doorGeometry, negate, normal, unit } from "./geometry";
 import {
   EXTERIOR,
@@ -66,6 +66,38 @@ export function floorEnvelopes(layer: VisualLayer, floorId: string): Group[] {
  * An envelope's type, by the same inheritance rule rooms use: its own, else
  * the nearest ancestor that defines one.
  */
+/**
+ * Whether a list — the tree, the categories drawer — names this room.
+ *
+ * A flat is the unit a manager works with, so its bedrooms and bathrooms stay
+ * folded inside it and the apartment is what the lists show. Every other
+ * envelope lists its rooms: a gym's locker rooms and a shop's storage are
+ * things you administer, not interior detail.
+ *
+ * Surfacing overrides it. A surfaced apartment room is listed, which is the
+ * whole point of "show separately".
+ */
+export function isRoomListed(layer: VisualLayer, room: Room): boolean {
+  if (room.surfaced) return true;
+  return accessType(layer, room) !== "apartment";
+}
+
+/**
+ * What a hover on this room should light up.
+ *
+ * While a flat's rooms are folded away the flat is the thing on the map, so
+ * pointing anywhere inside it highlights the whole envelope. Surface one room
+ * and it becomes its own target and highlights alone — the map follows the
+ * lists.
+ */
+export function highlightTargets(layer: VisualLayer, roomId: string): string[] {
+  const room = layer.rooms.get(roomId);
+  if (!room) return [];
+  if (isRoomListed(layer, room)) return [room.id];
+  if (!room.group_id) return [room.id];
+  return roomsInGroup(layer, room.group_id).map((r) => r.id);
+}
+
 export function groupAccessType(
   layer: VisualLayer,
   group: Group,

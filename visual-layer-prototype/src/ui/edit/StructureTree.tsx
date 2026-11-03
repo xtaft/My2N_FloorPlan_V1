@@ -13,7 +13,7 @@
  * thing from which floor rows are open — tying them together meant opening a
  * floor collapsed the last one, and an open floor could not be folded at all.
  */
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -35,8 +35,10 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import {
+  envelopeChain,
   floorEnvelopes,
   groupAccessType,
+  isRoomListed,
   roomColor,
   type Group,
   type Room,
@@ -76,6 +78,26 @@ export function StructureTree({
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => ({
     [floorId]: true,
   }));
+
+  /**
+   * Open the way to the selected room, once it is a room the tree names.
+   *
+   * Surfacing a bedroom is meant to make it appear here, but it sits inside a
+   * flat that is probably folded, so the change would be invisible. This also
+   * means clicking a room on the map reveals where it lives.
+   */
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    const room = layer.rooms.get(selectedRoomId);
+    if (!room || !isRoomListed(layer, room)) return;
+    const path = [room.floor_id, ...envelopeChain(layer, room)];
+    setExpanded((prev) => {
+      if (path.every((id) => prev[id])) return prev;
+      const next = { ...prev };
+      for (const id of path) next[id] = true;
+      return next;
+    });
+  }, [layer, selectedRoomId]);
 
   const isExpanded = (id: string) => expanded[id] === true;
   const toggle = (id: string) =>
@@ -199,7 +221,12 @@ export function StructureTree({
   };
 
   const renderGroup = (group: Group, depth: number): React.ReactNode => {
-    const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
+    // A flat's rooms stay folded inside it until one is surfaced; every other
+    // envelope lists its rooms. An apartment with nothing surfaced therefore
+    // has nothing to expand, and gets no chevron.
+    const rooms = layer.file.rooms.filter(
+      (r) => r.group_id === group.id && isRoomListed(layer, r),
+    );
     const children = layer.childGroups.get(group.id) ?? [];
     const expandable = rooms.length > 0 || children.length > 0;
 

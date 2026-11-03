@@ -16,6 +16,8 @@ import {
   add,
   deviceAnchor,
   doorGeometry,
+  groupOuterWalls,
+  highlightTargets,
   isWallVisible,
   labelPoint,
   lerp,
@@ -119,6 +121,26 @@ export function FloorPlanCanvas({
   const rings = useMemo(() => new RingCache(layer), [layer]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hover, setHover] = useState<WallHit | null>(null);
+  const [hoverRoom, setHoverRoom] = useState<string | null>(null);
+
+  /**
+   * What the pointer is lighting up. A flat whose rooms are folded away
+   * highlights whole; a surfaced room highlights alone.
+   */
+  const highlight = useMemo(() => {
+    if (!hoverRoom) return null;
+    const room = layer.rooms.get(hoverRoom);
+    if (!room) return null;
+    const rooms = new Set(highlightTargets(layer, hoverRoom));
+    // Outline the envelope when the whole flat is lit, the room's own ring
+    // when it is not. groupOuterWalls gives the envelope's outline directly:
+    // the walls whose two rooms are in different envelopes.
+    const outline =
+      rooms.size > 1 && room.group_id
+        ? groupOuterWalls(layer, room.group_id)
+        : [];
+    return { rooms, outline, single: rooms.size === 1 };
+  }, [layer, hoverRoom]);
 
   const scene = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
@@ -264,12 +286,27 @@ export function FloorPlanCanvas({
                   stroke={selected ? "#17406B" : "none"}
                   strokeWidth={selected ? 6 : 0}
                   style={{ cursor: placing ? "crosshair" : "pointer" }}
+                  onMouseEnter={() => !placing && setHoverRoom(room.id)}
+                  onMouseLeave={() =>
+                    setHoverRoom((cur) => (cur === room.id ? null : cur))
+                  }
                   onClick={(e) => {
                     if (placing) return; // the svg handler places the door
                     e.stopPropagation();
                     onSelectRoom(room.id);
                   }}
                 />
+                {highlight?.rooms.has(room.id) && (
+                  /* The lit area. Rooms in one flat share undrawn walls, so
+                     filling each of them reads as a single shape. */
+                  <path
+                    d={ringsToPath(interior)}
+                    fill="#2196f3"
+                    fillOpacity={0.18}
+                    fillRule="evenodd"
+                    pointerEvents="none"
+                  />
+                )}
                 {state === "blocked" && (
                   /* Blocked at a named door is actionable; never examined is
                      not. Rendering them the same grey hides which to fix. */
@@ -324,6 +361,44 @@ export function FloorPlanCanvas({
               showAllRooms={showAllRooms}
             />
           ))}
+
+          {/* The lit outline, over the walls so it reads as one shape: the
+              envelope's outer walls for a whole flat, the room's own ring
+              for a surfaced room. */}
+          {highlight && (
+            <g pointerEvents="none">
+              {highlight.single && hoverRoom
+                ? (() => {
+                    const room = layer.rooms.get(hoverRoom);
+                    if (!room) return null;
+                    return (
+                      <path
+                        d={ringsToPath(rings.get(room))}
+                        fill="none"
+                        fillRule="evenodd"
+                        stroke="#2196f3"
+                        strokeWidth={7}
+                        strokeLinejoin="round"
+                      />
+                    );
+                  })()
+                : highlight.outline.map((wall) => {
+                    const [a, b] = wallEnds(layer, wall);
+                    return (
+                      <line
+                        key={wall.id}
+                        x1={a.x}
+                        y1={a.y}
+                        x2={b.x}
+                        y2={b.y}
+                        stroke="#2196f3"
+                        strokeWidth={7}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
+            </g>
+          )}
 
           {/* Devices. A reader sits on the side it guards. */}
           {scene.glyphs.map((glyph) => (
