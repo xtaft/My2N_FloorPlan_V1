@@ -34,6 +34,7 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
+import type { RowTarget } from "./StructureRowMenu";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -63,6 +64,8 @@ export interface StructureTreeProps {
   onFloorChange: (floorId: string) => void;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string | null) => void;
+  /** Opens the row menu. Rows with nothing to offer get no button. */
+  onRowMenu: (el: HTMLElement, target: RowTarget) => void;
 }
 
 export function StructureTree({
@@ -72,6 +75,7 @@ export function StructureTree({
   onFloorChange,
   selectedRoomId,
   onSelectRoom,
+  onRowMenu,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
   // Absent means closed. The floor on screen when the tree first mounts
@@ -189,16 +193,18 @@ export function StructureTree({
           noWrap: true,
         }}
       />
-      <IconButton
-        size="small"
-        edge="end"
-        onClick={(e) => {
-          e.stopPropagation();
-          opts.onMenu?.(e.currentTarget);
-        }}
-      >
-        <MoreVert sx={{ fontSize: 20 }} />
-      </IconButton>
+      {opts.onMenu && (
+        <IconButton
+          size="small"
+          edge="end"
+          onClick={(e) => {
+            e.stopPropagation();
+            opts.onMenu?.(e.currentTarget);
+          }}
+        >
+          <MoreVert sx={{ fontSize: 20 }} />
+        </IconButton>
+      )}
     </ListItemButton>
   );
 
@@ -213,6 +219,7 @@ export function StructureTree({
         selected: room.id === selectedRoomId,
         onClick: () => onSelectRoom(room.id),
         tint: roomColor(layer, room),
+        onMenu: (el) => onRowMenu(el, { kind: "room", room }),
       },
     );
   };
@@ -258,6 +265,7 @@ export function StructureTree({
             expandable: true,
             expanded: true,
             onToggle: () => toggle(group.id),
+            onMenu: (el) => onRowMenu(el, { kind: "group", group }),
           })}
           {kids}
           {hits.map((r) => renderRoom(r, depth + 1))}
@@ -278,6 +286,7 @@ export function StructureTree({
             expanded: isOpen,
             onToggle: () => toggle(group.id),
             onClick: () => expandable && toggle(group.id),
+            onMenu: (el) => onRowMenu(el, { kind: "group", group }),
           },
         )}
         {isOpen && (

@@ -9,3 +9,4 @@ export * from "./divide";
 export * from "./merge";
 export * from "./shaft";
 export * from "./align";
+export * from "./structure";

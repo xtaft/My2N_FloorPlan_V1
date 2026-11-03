@@ -44,6 +44,8 @@ export type OperationKind =
   | "delete_wall"
   | "set_space_type"
   | "align_floor"
+  | "rename"
+  | "regroup"
   | "show_room"
   | "hide_room"
   | "add_space_type"
