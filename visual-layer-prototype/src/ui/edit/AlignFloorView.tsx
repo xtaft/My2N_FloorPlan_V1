@@ -11,6 +11,11 @@
  * judged as a whole, and its shafts dashed at full strength because those are
  * the targets. A stair core can land perfectly while the floor plate is two
  * metres out, and only the faint walls show that.
+ *
+ * The bar sets position and scale. Rotation stays in the transform, is drawn
+ * and committed like the rest of it, and keeps whatever value the floor
+ * already had — there is just no control for it, since plans drawn at an
+ * angle are rare enough not to earn permanent space here.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -23,7 +28,6 @@ import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Slider from "@mui/material/Slider";
 import Stack from "@mui/material/Stack";
-import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import {
   applyTransform,
@@ -31,7 +35,6 @@ import {
   floorTransform,
   interiorRings,
   landingsFor,
-  proposeScale,
   referenceFloor,
   ringsOf,
   ringsToPath,
@@ -156,11 +159,6 @@ export function AlignFloorView({
     () => landingsFor(layer, floorId, transform),
     [layer, floorId, transform],
   );
-  const proposal = useMemo(
-    () => proposeScale(layer, floorId, landings),
-    [layer, floorId, landings],
-  );
-
   /** Pointer position in the building's coordinates. */
   const toPlan = useCallback((clientX: number, clientY: number): Point | null => {
     const svg = svgRef.current;
@@ -235,47 +233,6 @@ export function AlignFloorView({
             {Math.round(transform.scale * 100)}%
           </Typography>
         </Stack>
-
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 200 }}>
-          <Typography variant="caption" color="text.secondary">
-            Rotate
-          </Typography>
-          <Slider
-            size="small"
-            min={-Math.PI}
-            max={Math.PI}
-            step={0.002}
-            value={transform.rotation}
-            onChange={(_e, v) =>
-              onTransformChange({ ...transform, rotation: v as number })
-            }
-            sx={{ width: 110 }}
-          />
-          <Typography variant="caption" sx={{ width: 40 }}>
-            {Math.round((transform.rotation * 180) / Math.PI)}°
-          </Typography>
-        </Stack>
-
-        {proposal && (
-          <Tooltip
-            title={
-              proposal.suspect
-                ? "Measured between two shaft centres. This far from 100% usually means the wrong reference floor."
-                : "Measured between two shaft centres, which is a far longer baseline than one shaft."
-            }
-          >
-            <Button
-              size="small"
-              variant="outlined"
-              color={proposal.suspect ? "warning" : "inherit"}
-              onClick={() =>
-                onTransformChange({ ...transform, scale: proposal.scale })
-              }
-            >
-              Suggested {Math.round(proposal.scale * 100)}%
-            </Button>
-          </Tooltip>
-        )}
 
         <Box sx={{ flex: 1 }} />
 

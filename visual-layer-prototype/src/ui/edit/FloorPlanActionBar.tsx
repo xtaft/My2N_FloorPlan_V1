@@ -127,7 +127,7 @@ export function FloorPlanActionBar({
         )}
         {toolButton(
           "align",
-          "Align",
+          "Align floor",
           <LayersOutlined sx={{ fontSize: 16 }} />,
           canAlign
             ? "Fit this floor onto the one below, and say which shaft is which"
