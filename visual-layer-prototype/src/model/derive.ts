@@ -62,6 +62,83 @@ export function floorEnvelopes(layer: VisualLayer, floorId: string): Group[] {
   return out;
 }
 
+/**
+ * An envelope's type, by the same inheritance rule rooms use: its own, else
+ * the nearest ancestor that defines one.
+ */
+export function groupAccessType(
+  layer: VisualLayer,
+  group: Group,
+): string | null {
+  let g: Group | undefined = group;
+  const guard = new Set<string>();
+  while (g && !guard.has(g.id)) {
+    guard.add(g.id);
+    if (g.space_type) return g.space_type;
+    g = g.parent_group_id ? layer.groups.get(g.parent_group_id) : undefined;
+  }
+  return null;
+}
+
+/** Every top-level envelope in the building, floor by floor. */
+export function allEnvelopes(layer: VisualLayer): Group[] {
+  return layer.floors.flatMap((f) => floorEnvelopes(layer, f.id));
+}
+
+export interface SpaceCategory {
+  /** A space type id, or null for the unbound bucket. */
+  id: string | null;
+  name: string;
+  color: string;
+  /** The envelopes of this type — apartments, not their rooms. */
+  groups: Group[];
+}
+
+const UNBOUND_COLOR = "#DADDE1";
+
+/**
+ * The categories panel, grouped by ENVELOPE rather than by room.
+ *
+ * A category counts the apartments in it, not the bedrooms: "Apartments (28)"
+ * is the number a manager thinks in, and the rooms appear a level further in.
+ * Grouping this way also drops the room-level types out of the top level on
+ * its own — `locker_room` and `room` are overrides set on rooms inside the
+ * gym, so they show under Gym where they belong rather than as categories of
+ * their own.
+ *
+ * A type with no envelopes still lists: an empty category is a real state,
+ * and so is the unbound bucket, which is why it is always present.
+ */
+export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
+  const envelopes = allEnvelopes(layer);
+  const byType = new Map<string | null, Group[]>();
+  for (const g of envelopes) {
+    const key = groupAccessType(layer, g);
+    const list = byType.get(key);
+    if (list) list.push(g);
+    else byType.set(key, [g]);
+  }
+
+  const out: SpaceCategory[] = layer.file.space_types
+    .filter((t) => (byType.get(t.id) ?? []).length > 0)
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+      groups: byType.get(t.id) ?? [],
+    }));
+
+  // Unbound is a valid state a manager must resolve, so the bucket is always
+  // shown — at zero it says there is nothing to resolve.
+  out.push({
+    id: null,
+    name: "Unknown",
+    color: UNBOUND_COLOR,
+    groups: byType.get(null) ?? [],
+  });
+  return out;
+}
+
 /** An envelope's outer walls: walls whose two rooms are in different envelopes. */
 export function groupOuterWalls(layer: VisualLayer, groupId: string): Wall[] {
   const members = new Set(

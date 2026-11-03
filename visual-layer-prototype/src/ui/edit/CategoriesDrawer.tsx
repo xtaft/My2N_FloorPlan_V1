@@ -2,13 +2,14 @@
  * The right-hand space-categories drawer. Figma: ModeDrawer (42:71775) —
  * 320 wide, search, the categories, and an action box at the foot.
  *
+ * Three levels: category → envelope → room. A category counts envelopes, so
+ * "Apartments (28)" is apartments and not bedrooms, and the rooms appear when
+ * an apartment is opened. Envelopes nest, so the gym's changing rooms sit
+ * inside the gym rather than beside it.
+ *
  * This is the types panel the doc describes: "A room or group holds no colour
  * of its own, so the types panel owns rename and recolour, and every space of
- * that type follows." Counts are derived, and a category with no spaces still
- * lists, because an empty category is a real state.
- *
- * The Unknown bucket is the doc's "unbound is a valid state": a segmented,
- * not-yet-assigned space is a real thing a manager must resolve.
+ * that type follows."
  */
 import { Fragment, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
@@ -31,9 +32,13 @@ import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
-import { accessType, type Room, type VisualLayer } from "../../model";
-
-const UNKNOWN = "__unknown__";
+import {
+  roomColor,
+  spaceCategories,
+  type Group,
+  type Room,
+  type VisualLayer,
+} from "../../model";
 
 export interface CategoriesDrawerProps {
   layer: VisualLayer;
@@ -53,43 +58,128 @@ export function CategoriesDrawer({
   onNewCategory,
 }: CategoriesDrawerProps) {
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState<Record<string, boolean>>({});
-  const [menu, setMenu] = useState<{ el: HTMLElement; typeId: string } | null>(null);
+  // Absent means closed; every row opens and closes on its own.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [menu, setMenu] = useState<{ el: HTMLElement; typeId: string } | null>(
+    null,
+  );
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
-  /** Counts are derived — the file stores none, and a stored one could lie. */
-  const buckets = useMemo(() => {
-    const byType = new Map<string, Room[]>();
-    for (const room of layer.file.rooms) {
-      const key = accessType(layer, room) ?? UNKNOWN;
-      const list = byType.get(key);
-      if (list) list.push(room);
-      else byType.set(key, [room]);
-    }
-    const known = layer.file.space_types.map((t) => ({
-      id: t.id,
-      name: t.name,
-      color: t.color,
-      rooms: byType.get(t.id) ?? [],
-    }));
-    const unknown = byType.get(UNKNOWN) ?? [];
-    return unknown.length > 0
-      ? [
-          ...known,
-          { id: UNKNOWN, name: "Unknown", color: "#DADDE1", rooms: unknown },
-        ]
-      : known;
-  }, [layer]);
+  const isExpanded = (id: string) => expanded[id] === true;
+  const toggle = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const q = query.trim().toLowerCase();
-  const visible = q
-    ? buckets.filter(
-        (b) =>
-          b.name.toLowerCase().includes(q) ||
-          b.rooms.some((r) => r.name.toLowerCase().includes(q)),
+  const categories = useMemo(() => spaceCategories(layer), [layer]);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const hit = new Set<string>();
+    for (const r of layer.file.rooms) {
+      if (r.name.toLowerCase().includes(q)) hit.add(r.id);
+    }
+    for (const g of layer.file.groups) {
+      if (g.name.toLowerCase().includes(q)) hit.add(g.id);
+    }
+    return hit;
+  }, [query, layer]);
+
+  const floorName = (floorId: string) =>
+    layer.floors.find((f) => f.id === floorId)?.name ?? floorId;
+
+  /** Does anything under this envelope match the search? */
+  const branchMatches = (group: Group): boolean => {
+    if (!matches) return true;
+    if (matches.has(group.id)) return true;
+    if (layer.file.rooms.some((r) => r.group_id === group.id && matches.has(r.id)))
+      return true;
+    return (layer.childGroups.get(group.id) ?? []).some(branchMatches);
+  };
+
+  const renderRoom = (room: Room, depth: number) => (
+    <ListItemButton
+      key={room.id}
+      selected={room.id === selectedRoomId}
+      sx={{ pl: 2 + depth * 2, pr: 1, minHeight: 48 }}
+      onClick={() => onSelectRoom(room.id)}
+    >
+      <Box sx={{ width: 28, flexShrink: 0 }} />
+      <Box
+        sx={{
+          width: 16,
+          height: 16,
+          mr: 1.5,
+          borderRadius: "2px",
+          flexShrink: 0,
+          bgcolor: roomColor(layer, room),
+          border: 1,
+          borderColor: "divider",
+        }}
+      />
+      <ListItemText
+        primary={room.name}
+        primaryTypographyProps={{ variant: "body2", noWrap: true }}
+      />
+      <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
+        <MoreVert sx={{ fontSize: 20 }} />
+      </IconButton>
+    </ListItemButton>
+  );
+
+  const renderEnvelope = (group: Group, depth: number): React.ReactNode => {
+    if (!branchMatches(group)) return null;
+    const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
+    const children = layer.childGroups.get(group.id) ?? [];
+    const expandable = rooms.length > 0 || children.length > 0;
+    const open = isExpanded(group.id) || Boolean(matches);
+
+    return (
+      <Fragment key={group.id}>
+        <ListItemButton
+          sx={{ pl: 2 + depth * 2, pr: 1, minHeight: 68 }}
+          onClick={() => expandable && toggle(group.id)}
+        >
+          <Box
+            sx={{ width: 28, display: "flex", alignItems: "center", flexShrink: 0 }}
+          >
+            {expandable ? (
+              open ? (
+                <ExpandMore sx={{ fontSize: 20 }} />
+              ) : (
+                <ChevronRight sx={{ fontSize: 20 }} />
+              )
+            ) : null}
+          </Box>
+          <ListItemText
+            primary={group.name}
+            // The floor, because the same envelope name repeats on every
+            // storey: four Hallways, five Stairs.
+            secondary={floorName(group.floor_id)}
+            primaryTypographyProps={{ variant: "body1", noWrap: true }}
+            secondaryTypographyProps={{ variant: "body2" }}
+          />
+          <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
+            <MoreVert sx={{ fontSize: 20 }} />
+          </IconButton>
+        </ListItemButton>
+        {open && (
+          <>
+            {children.map((c) => renderEnvelope(c, depth + 1))}
+            {rooms.map((r) => renderRoom(r, depth + 1))}
+          </>
+        )}
+      </Fragment>
+    );
+  };
+
+  const visible = matches
+    ? categories.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query.trim().toLowerCase()) ||
+          c.groups.some(branchMatches),
       )
-    : buckets;
+    : categories;
 
   return (
     <Box
@@ -119,7 +209,7 @@ export function CategoriesDrawer({
           }}
         />
         <Tooltip title="Collapse all">
-          <IconButton size="small" onClick={() => setOpen({})}>
+          <IconButton size="small" onClick={() => setExpanded({})}>
             <UnfoldLess sx={{ fontSize: 20 }} />
           </IconButton>
         </Tooltip>
@@ -128,19 +218,18 @@ export function CategoriesDrawer({
 
       <Box sx={{ flex: 1, overflowY: "auto" }}>
         <List dense disablePadding>
-          {visible.map((bucket) => {
-            const isOpen = open[bucket.id] ?? false;
+          {visible.map((category) => {
+            const key = category.id ?? "__unknown__";
+            const open = isExpanded(key) || Boolean(matches);
             return (
-              <Fragment key={bucket.id}>
+              <Fragment key={key}>
                 <ListItemButton
                   sx={{ minHeight: 48, pl: 1, pr: 1 }}
-                  onClick={() =>
-                    setOpen((p) => ({ ...p, [bucket.id]: !isOpen }))
-                  }
+                  onClick={() => category.groups.length > 0 && toggle(key)}
                 >
                   <Box sx={{ width: 28, display: "flex", alignItems: "center" }}>
-                    {bucket.rooms.length > 0 ? (
-                      isOpen ? (
+                    {category.groups.length > 0 ? (
+                      open ? (
                         <ExpandMore sx={{ fontSize: 20 }} />
                       ) : (
                         <ChevronRight sx={{ fontSize: 20 }} />
@@ -154,12 +243,12 @@ export function CategoriesDrawer({
                       mr: 1.5,
                       borderRadius: "2px",
                       flexShrink: 0,
-                      bgcolor: bucket.color,
+                      bgcolor: category.color,
                       border: 1,
                       borderColor: "divider",
                     }}
                   />
-                  {renaming === bucket.id ? (
+                  {renaming === key ? (
                     <TextField
                       size="small"
                       autoFocus
@@ -167,12 +256,16 @@ export function CategoriesDrawer({
                       onChange={(e) => setDraft(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       onBlur={() => {
-                        if (draft.trim()) onRename(bucket.id, draft.trim());
+                        if (draft.trim() && category.id) {
+                          onRename(category.id, draft.trim());
+                        }
                         setRenaming(null);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          if (draft.trim()) onRename(bucket.id, draft.trim());
+                          if (draft.trim() && category.id) {
+                            onRename(category.id, draft.trim());
+                          }
                           setRenaming(null);
                         }
                         if (e.key === "Escape") setRenaming(null);
@@ -182,9 +275,9 @@ export function CategoriesDrawer({
                     <ListItemText
                       primary={
                         <Box component="span" sx={{ display: "flex", gap: 1 }}>
-                          <span>{bucket.name}</span>
+                          <span>{category.name}</span>
                           <Typography component="span" color="text.secondary">
-                            ({bucket.rooms.length})
+                            ({category.groups.length})
                           </Typography>
                         </Box>
                       }
@@ -194,37 +287,17 @@ export function CategoriesDrawer({
                   <IconButton
                     size="small"
                     edge="end"
-                    disabled={bucket.id === UNKNOWN}
+                    disabled={category.id === null}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setMenu({ el: e.currentTarget, typeId: bucket.id });
+                      setMenu({ el: e.currentTarget, typeId: category.id! });
                     }}
                   >
                     <MoreVert sx={{ fontSize: 20 }} />
                   </IconButton>
                 </ListItemButton>
 
-                {isOpen &&
-                  bucket.rooms.map((room) => (
-                    <ListItemButton
-                      key={room.id}
-                      selected={room.id === selectedRoomId}
-                      sx={{ pl: 6, pr: 1, minHeight: 68 }}
-                      onClick={() => onSelectRoom(room.id)}
-                    >
-                      <ListItemText
-                        primary={room.name}
-                        secondary={
-                          layer.floors.find((f) => f.id === room.floor_id)?.name
-                        }
-                        primaryTypographyProps={{ variant: "body1", noWrap: true }}
-                        secondaryTypographyProps={{ variant: "body2" }}
-                      />
-                      <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
-                        <MoreVert sx={{ fontSize: 20 }} />
-                      </IconButton>
-                    </ListItemButton>
-                  ))}
+                {open && category.groups.map((g) => renderEnvelope(g, 1))}
               </Fragment>
             );
           })}
@@ -265,8 +338,8 @@ export function CategoriesDrawer({
       >
         <MenuItem
           onClick={() => {
-            const bucket = buckets.find((b) => b.id === menu?.typeId);
-            setDraft(bucket?.name ?? "");
+            const c = categories.find((x) => x.id === menu?.typeId);
+            setDraft(c?.name ?? "");
             setRenaming(menu?.typeId ?? null);
             setMenu(null);
           }}
@@ -277,8 +350,7 @@ export function CategoriesDrawer({
           onClick={() => {
             // Recolour is the point of the panel: every space of the type
             // follows, because none of them holds a colour of its own.
-            const next = randomColor();
-            if (menu) onRecolor(menu.typeId, next);
+            if (menu) onRecolor(menu.typeId, nextColor());
             setMenu(null);
           }}
         >
@@ -294,6 +366,6 @@ const PALETTE = [
   "#7FC4A8", "#5FA88C", "#B0A8A0", "#D48A8A", "#9B8FD4",
 ];
 
-function randomColor(): string {
+function nextColor(): string {
   return PALETTE[Math.floor(Math.random() * PALETTE.length)];
 }

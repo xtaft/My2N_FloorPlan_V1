@@ -36,11 +36,21 @@ import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import {
   floorEnvelopes,
+  groupAccessType,
   roomColor,
   type Group,
   type Room,
   type VisualLayer,
 } from "../../model";
+
+/**
+ * Circulation, stairs and lifts are left out of this tree. They are the
+ * building's connective tissue rather than things a manager administers, and
+ * they repeat on every storey — four hallways, five stairwells, five lift
+ * cars — so listing them buries the units. They are still on the map, still
+ * in the access graph, and still in the categories drawer on the right.
+ */
+const HIDDEN_FROM_TREE = new Set(["circulation", "stairs", "elevator"]);
 
 export interface StructureTreeProps {
   layer: VisualLayer;
@@ -314,7 +324,12 @@ export function StructureTree({
                 {/* floorEnvelopes skips the pass-through group that would
                     otherwise name the floor a second time. */}
                 {isOpen &&
-                  floorEnvelopes(layer, floor.id).map((g) => renderGroup(g, 2))}
+                  floorEnvelopes(layer, floor.id)
+                    .filter(
+                      (g) =>
+                        !HIDDEN_FROM_TREE.has(groupAccessType(layer, g) ?? ""),
+                    )
+                    .map((g) => renderGroup(g, 2))}
               </Fragment>
             );
           })}

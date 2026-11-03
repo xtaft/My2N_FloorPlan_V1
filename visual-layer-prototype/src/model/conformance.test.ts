@@ -12,6 +12,7 @@ import {
   EXTERIOR,
   accessType,
   floorEnvelopes,
+  spaceCategories,
   visualLayer as layer,
 } from "./index";
 
@@ -377,6 +378,66 @@ describe("the tree under a floor", () => {
       const onFloor = (layer.roomsByFloor.get(floor.id) ?? []).map((r) => r.id);
       expect([...reached].sort()).toEqual([...onFloor].sort());
     }
+  });
+});
+
+describe("the categories panel groups by envelope", () => {
+  it("counts apartments, not the rooms inside them", () => {
+    const apartments = spaceCategories(layer).find((c) => c.id === "apartment")!;
+    expect(apartments.groups).toHaveLength(28); // 7 flats on each of 4 floors
+    for (const g of apartments.groups) expect(g.space_type).toBe("apartment");
+
+    // The rooms are a level further in, not in the count.
+    const roomCount = file.rooms.filter(
+      (r) => accessType(layer, r) === "apartment",
+    ).length;
+    expect(roomCount).toBe(76);
+  });
+
+  it("leaves room-level types out of the top level", () => {
+    // `locker_room` and `room` are overrides set on rooms inside the gym, so
+    // they belong under Gym rather than as categories of their own.
+    const ids = spaceCategories(layer).map((c) => c.id);
+    expect(ids).not.toContain("locker_room");
+    expect(ids).not.toContain("room");
+    expect(ids).toEqual([
+      "apartment",
+      "circulation",
+      "elevator",
+      "stairs",
+      "commercial",
+      "gym",
+      "technical",
+      null,
+    ]);
+  });
+
+  it("always offers the unbound bucket, empty here", () => {
+    const unknown = spaceCategories(layer).find((c) => c.id === null)!;
+    expect(unknown.name).toBe("Unknown");
+    expect(unknown.groups).toEqual([]);
+  });
+
+  it("reaches every room through category -> envelope -> rooms", () => {
+    const seen = new Set<string>();
+    const walk = (groupId: string) => {
+      for (const r of file.rooms) if (r.group_id === groupId) seen.add(r.id);
+      for (const c of layer.childGroups.get(groupId) ?? []) walk(c.id);
+    };
+    for (const category of spaceCategories(layer)) {
+      for (const g of category.groups) walk(g.id);
+    }
+    expect(seen.size).toBe(file.rooms.length);
+  });
+
+  it("finds the gym's locker rooms nested inside the gym", () => {
+    const gym = spaceCategories(layer).find((c) => c.id === "gym")!;
+    expect(gym.groups.map((g) => g.id)).toEqual(["0:GYM"]);
+    const children = layer.childGroups.get("0:GYM") ?? [];
+    expect(children.map((g) => g.name).sort()).toEqual([
+      "Locker room M",
+      "Locker room W",
+    ]);
   });
 });
 

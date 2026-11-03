@@ -13,7 +13,7 @@
     },
     {
       "id": "circulation",
-      "name": "Circulation",
+      "name": "Shared spaces",
       "color": "#C9CFD6"
     },
     {
@@ -52,7 +52,7 @@
       "id": "0:floor",
       "name": "ground floor",
       "level": 0,
-      "sort_index": 0.0,
+      "sort_index": 0,
       "transform": [
         0,
         0,
@@ -64,7 +64,7 @@
       "id": "1:floor",
       "name": "floor 1",
       "level": 1,
-      "sort_index": 1.0,
+      "sort_index": 1,
       "transform": [
         0,
         0,
@@ -76,7 +76,7 @@
       "id": "2:floor",
       "name": "floor 2",
       "level": 2,
-      "sort_index": 2.0,
+      "sort_index": 2,
       "transform": [
         0,
         0,
@@ -88,7 +88,7 @@
       "id": "3:floor",
       "name": "floor 3",
       "level": 3,
-      "sort_index": 3.0,
+      "sort_index": 3,
       "transform": [
         0,
         0,
@@ -100,7 +100,7 @@
       "id": "4:floor",
       "name": "floor 4",
       "level": 4,
-      "sort_index": 4.0,
+      "sort_index": 4,
       "transform": [
         0,
         0,
@@ -112,28 +112,28 @@
   "vertices": [
     {
       "id": "0:v1",
-      "x": 338.0,
-      "y": 293.0
+      "x": 338,
+      "y": 293
     },
     {
       "id": "0:v2",
-      "x": 338.0,
+      "x": 338,
       "y": 630.99
     },
     {
       "id": "0:v3",
       "x": 564.5,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "0:v4",
       "x": 564.5,
-      "y": 546.0
+      "y": 546
     },
     {
       "id": "0:v5",
       "x": 1661.33,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "0:v6",
@@ -167,12 +167,12 @@
     },
     {
       "id": "0:v12",
-      "x": 484.0,
-      "y": 546.0
+      "x": 484,
+      "y": 546
     },
     {
       "id": "0:v13",
-      "x": 484.0,
+      "x": 484,
       "y": 630.99
     },
     {
@@ -182,12 +182,12 @@
     },
     {
       "id": "0:v15",
-      "x": 338.0,
-      "y": 895.0
+      "x": 338,
+      "y": 895
     },
     {
       "id": "0:v16",
-      "x": 484.0,
+      "x": 484,
       "y": 717.13
     },
     {
@@ -233,7 +233,7 @@
     {
       "id": "0:v25",
       "x": 564.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "0:v26",
@@ -278,7 +278,7 @@
     {
       "id": "0:v34",
       "x": 858.5,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "0:v35",
@@ -293,11 +293,11 @@
     {
       "id": "0:v37",
       "x": 998.63,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "0:v38",
-      "x": 338.0,
+      "x": 338,
       "y": 1078.1
     },
     {
@@ -307,28 +307,28 @@
     },
     {
       "id": "1:v1",
-      "x": 338.0,
-      "y": 293.0
+      "x": 338,
+      "y": 293
     },
     {
       "id": "1:v2",
-      "x": 338.0,
+      "x": 338,
       "y": 630.99
     },
     {
       "id": "1:v3",
-      "x": 488.0,
-      "y": 293.0
+      "x": 488,
+      "y": 293
     },
     {
       "id": "1:v4",
-      "x": 488.0,
+      "x": 488,
       "y": 630.99
     },
     {
       "id": "1:v5",
       "x": 783.7,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "1:v6",
@@ -338,7 +338,7 @@
     {
       "id": "1:v7",
       "x": 918.5,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "1:v8",
@@ -348,7 +348,7 @@
     {
       "id": "1:v9",
       "x": 1219.07,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "1:v10",
@@ -357,18 +357,18 @@
     },
     {
       "id": "1:v11",
-      "x": 1514.0,
-      "y": 293.0
+      "x": 1514,
+      "y": 293
     },
     {
       "id": "1:v12",
-      "x": 1514.0,
+      "x": 1514,
       "y": 630.99
     },
     {
       "id": "1:v13",
       "x": 1661.33,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "1:v14",
@@ -383,7 +383,7 @@
     {
       "id": "1:v16",
       "x": 665.22,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "1:v17",
@@ -397,23 +397,23 @@
     },
     {
       "id": "1:v19",
-      "x": 1336.0,
+      "x": 1336,
       "y": 420.5
     },
     {
       "id": "1:v20",
-      "x": 1336.0,
-      "y": 544.0
+      "x": 1336,
+      "y": 544
     },
     {
       "id": "1:v21",
       "x": 783.7,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "1:v22",
       "x": 918.5,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "1:v23",
@@ -428,7 +428,7 @@
     {
       "id": "1:v25",
       "x": 1219.07,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "1:v26",
@@ -442,18 +442,18 @@
     },
     {
       "id": "1:v28",
-      "x": 1336.0,
-      "y": 593.0
+      "x": 1336,
+      "y": 593
     },
     {
       "id": "1:v29",
-      "x": 1336.0,
+      "x": 1336,
       "y": 630.99
     },
     {
       "id": "1:v30",
       "x": 665.22,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "1:v31",
@@ -463,7 +463,7 @@
     {
       "id": "1:v32",
       "x": 918.5,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "1:v33",
@@ -472,8 +472,8 @@
     },
     {
       "id": "1:v34",
-      "x": 338.0,
-      "y": 895.0
+      "x": 338,
+      "y": 895
     },
     {
       "id": "1:v35",
@@ -583,12 +583,12 @@
     {
       "id": "1:v56",
       "x": 469.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "1:v57",
       "x": 565.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "1:v58",
@@ -598,7 +598,7 @@
     {
       "id": "1:v59",
       "x": 858.5,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "1:v60",
@@ -612,13 +612,13 @@
     },
     {
       "id": "1:v62",
-      "x": 1143.0,
+      "x": 1143,
       "y": 809.5
     },
     {
       "id": "1:v63",
-      "x": 1143.0,
-      "y": 955.0
+      "x": 1143,
+      "y": 955
     },
     {
       "id": "1:v64",
@@ -628,11 +628,11 @@
     {
       "id": "1:v65",
       "x": 998.63,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "1:v66",
-      "x": 338.0,
+      "x": 338,
       "y": 1078.1
     },
     {
@@ -647,28 +647,28 @@
     },
     {
       "id": "2:v1",
-      "x": 338.0,
-      "y": 293.0
+      "x": 338,
+      "y": 293
     },
     {
       "id": "2:v2",
-      "x": 338.0,
+      "x": 338,
       "y": 630.99
     },
     {
       "id": "2:v3",
-      "x": 488.0,
-      "y": 293.0
+      "x": 488,
+      "y": 293
     },
     {
       "id": "2:v4",
-      "x": 488.0,
+      "x": 488,
       "y": 630.99
     },
     {
       "id": "2:v5",
       "x": 783.7,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "2:v6",
@@ -678,7 +678,7 @@
     {
       "id": "2:v7",
       "x": 918.5,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "2:v8",
@@ -688,7 +688,7 @@
     {
       "id": "2:v9",
       "x": 1219.07,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "2:v10",
@@ -697,18 +697,18 @@
     },
     {
       "id": "2:v11",
-      "x": 1514.0,
-      "y": 293.0
+      "x": 1514,
+      "y": 293
     },
     {
       "id": "2:v12",
-      "x": 1514.0,
+      "x": 1514,
       "y": 630.99
     },
     {
       "id": "2:v13",
       "x": 1661.33,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "2:v14",
@@ -723,7 +723,7 @@
     {
       "id": "2:v16",
       "x": 665.22,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "2:v17",
@@ -737,23 +737,23 @@
     },
     {
       "id": "2:v19",
-      "x": 1336.0,
+      "x": 1336,
       "y": 420.5
     },
     {
       "id": "2:v20",
-      "x": 1336.0,
-      "y": 544.0
+      "x": 1336,
+      "y": 544
     },
     {
       "id": "2:v21",
       "x": 783.7,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "2:v22",
       "x": 918.5,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "2:v23",
@@ -768,7 +768,7 @@
     {
       "id": "2:v25",
       "x": 1219.07,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "2:v26",
@@ -782,18 +782,18 @@
     },
     {
       "id": "2:v28",
-      "x": 1336.0,
-      "y": 593.0
+      "x": 1336,
+      "y": 593
     },
     {
       "id": "2:v29",
-      "x": 1336.0,
+      "x": 1336,
       "y": 630.99
     },
     {
       "id": "2:v30",
       "x": 665.22,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "2:v31",
@@ -803,7 +803,7 @@
     {
       "id": "2:v32",
       "x": 918.5,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "2:v33",
@@ -812,8 +812,8 @@
     },
     {
       "id": "2:v34",
-      "x": 338.0,
-      "y": 895.0
+      "x": 338,
+      "y": 895
     },
     {
       "id": "2:v35",
@@ -923,12 +923,12 @@
     {
       "id": "2:v56",
       "x": 469.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "2:v57",
       "x": 565.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "2:v58",
@@ -938,7 +938,7 @@
     {
       "id": "2:v59",
       "x": 858.5,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "2:v60",
@@ -952,13 +952,13 @@
     },
     {
       "id": "2:v62",
-      "x": 1143.0,
+      "x": 1143,
       "y": 809.5
     },
     {
       "id": "2:v63",
-      "x": 1143.0,
-      "y": 955.0
+      "x": 1143,
+      "y": 955
     },
     {
       "id": "2:v64",
@@ -968,11 +968,11 @@
     {
       "id": "2:v65",
       "x": 998.63,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "2:v66",
-      "x": 338.0,
+      "x": 338,
       "y": 1078.1
     },
     {
@@ -987,28 +987,28 @@
     },
     {
       "id": "3:v1",
-      "x": 338.0,
-      "y": 293.0
+      "x": 338,
+      "y": 293
     },
     {
       "id": "3:v2",
-      "x": 338.0,
+      "x": 338,
       "y": 630.99
     },
     {
       "id": "3:v3",
-      "x": 488.0,
-      "y": 293.0
+      "x": 488,
+      "y": 293
     },
     {
       "id": "3:v4",
-      "x": 488.0,
+      "x": 488,
       "y": 630.99
     },
     {
       "id": "3:v5",
       "x": 783.7,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "3:v6",
@@ -1018,7 +1018,7 @@
     {
       "id": "3:v7",
       "x": 918.5,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "3:v8",
@@ -1028,7 +1028,7 @@
     {
       "id": "3:v9",
       "x": 1219.07,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "3:v10",
@@ -1037,18 +1037,18 @@
     },
     {
       "id": "3:v11",
-      "x": 1514.0,
-      "y": 293.0
+      "x": 1514,
+      "y": 293
     },
     {
       "id": "3:v12",
-      "x": 1514.0,
+      "x": 1514,
       "y": 630.99
     },
     {
       "id": "3:v13",
       "x": 1661.33,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "3:v14",
@@ -1063,7 +1063,7 @@
     {
       "id": "3:v16",
       "x": 665.22,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "3:v17",
@@ -1077,23 +1077,23 @@
     },
     {
       "id": "3:v19",
-      "x": 1336.0,
+      "x": 1336,
       "y": 420.5
     },
     {
       "id": "3:v20",
-      "x": 1336.0,
-      "y": 544.0
+      "x": 1336,
+      "y": 544
     },
     {
       "id": "3:v21",
       "x": 783.7,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "3:v22",
       "x": 918.5,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "3:v23",
@@ -1108,7 +1108,7 @@
     {
       "id": "3:v25",
       "x": 1219.07,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "3:v26",
@@ -1122,18 +1122,18 @@
     },
     {
       "id": "3:v28",
-      "x": 1336.0,
-      "y": 593.0
+      "x": 1336,
+      "y": 593
     },
     {
       "id": "3:v29",
-      "x": 1336.0,
+      "x": 1336,
       "y": 630.99
     },
     {
       "id": "3:v30",
       "x": 665.22,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "3:v31",
@@ -1143,7 +1143,7 @@
     {
       "id": "3:v32",
       "x": 918.5,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "3:v33",
@@ -1152,8 +1152,8 @@
     },
     {
       "id": "3:v34",
-      "x": 338.0,
-      "y": 895.0
+      "x": 338,
+      "y": 895
     },
     {
       "id": "3:v35",
@@ -1263,12 +1263,12 @@
     {
       "id": "3:v56",
       "x": 469.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "3:v57",
       "x": 565.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "3:v58",
@@ -1278,7 +1278,7 @@
     {
       "id": "3:v59",
       "x": 858.5,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "3:v60",
@@ -1292,13 +1292,13 @@
     },
     {
       "id": "3:v62",
-      "x": 1143.0,
+      "x": 1143,
       "y": 809.5
     },
     {
       "id": "3:v63",
-      "x": 1143.0,
-      "y": 955.0
+      "x": 1143,
+      "y": 955
     },
     {
       "id": "3:v64",
@@ -1308,11 +1308,11 @@
     {
       "id": "3:v65",
       "x": 998.63,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "3:v66",
-      "x": 338.0,
+      "x": 338,
       "y": 1078.1
     },
     {
@@ -1327,28 +1327,28 @@
     },
     {
       "id": "4:v1",
-      "x": 338.0,
-      "y": 293.0
+      "x": 338,
+      "y": 293
     },
     {
       "id": "4:v2",
-      "x": 338.0,
+      "x": 338,
       "y": 630.99
     },
     {
       "id": "4:v3",
-      "x": 488.0,
-      "y": 293.0
+      "x": 488,
+      "y": 293
     },
     {
       "id": "4:v4",
-      "x": 488.0,
+      "x": 488,
       "y": 630.99
     },
     {
       "id": "4:v5",
       "x": 783.7,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "4:v6",
@@ -1358,7 +1358,7 @@
     {
       "id": "4:v7",
       "x": 918.5,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "4:v8",
@@ -1368,7 +1368,7 @@
     {
       "id": "4:v9",
       "x": 1219.07,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "4:v10",
@@ -1377,18 +1377,18 @@
     },
     {
       "id": "4:v11",
-      "x": 1514.0,
-      "y": 293.0
+      "x": 1514,
+      "y": 293
     },
     {
       "id": "4:v12",
-      "x": 1514.0,
+      "x": 1514,
       "y": 630.99
     },
     {
       "id": "4:v13",
       "x": 1661.33,
-      "y": 293.0
+      "y": 293
     },
     {
       "id": "4:v14",
@@ -1403,7 +1403,7 @@
     {
       "id": "4:v16",
       "x": 665.22,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "4:v17",
@@ -1417,23 +1417,23 @@
     },
     {
       "id": "4:v19",
-      "x": 1336.0,
+      "x": 1336,
       "y": 420.5
     },
     {
       "id": "4:v20",
-      "x": 1336.0,
-      "y": 544.0
+      "x": 1336,
+      "y": 544
     },
     {
       "id": "4:v21",
       "x": 783.7,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "4:v22",
       "x": 918.5,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "4:v23",
@@ -1448,7 +1448,7 @@
     {
       "id": "4:v25",
       "x": 1219.07,
-      "y": 544.0
+      "y": 544
     },
     {
       "id": "4:v26",
@@ -1462,18 +1462,18 @@
     },
     {
       "id": "4:v28",
-      "x": 1336.0,
-      "y": 593.0
+      "x": 1336,
+      "y": 593
     },
     {
       "id": "4:v29",
-      "x": 1336.0,
+      "x": 1336,
       "y": 630.99
     },
     {
       "id": "4:v30",
       "x": 665.22,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "4:v31",
@@ -1483,7 +1483,7 @@
     {
       "id": "4:v32",
       "x": 918.5,
-      "y": 602.0
+      "y": 602
     },
     {
       "id": "4:v33",
@@ -1492,8 +1492,8 @@
     },
     {
       "id": "4:v34",
-      "x": 338.0,
-      "y": 895.0
+      "x": 338,
+      "y": 895
     },
     {
       "id": "4:v35",
@@ -1603,12 +1603,12 @@
     {
       "id": "4:v56",
       "x": 469.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "4:v57",
       "x": 565.5,
-      "y": 895.0
+      "y": 895
     },
     {
       "id": "4:v58",
@@ -1618,7 +1618,7 @@
     {
       "id": "4:v59",
       "x": 858.5,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "4:v60",
@@ -1632,13 +1632,13 @@
     },
     {
       "id": "4:v62",
-      "x": 1143.0,
+      "x": 1143,
       "y": 809.5
     },
     {
       "id": "4:v63",
-      "x": 1143.0,
-      "y": 955.0
+      "x": 1143,
+      "y": 955
     },
     {
       "id": "4:v64",
@@ -1648,11 +1648,11 @@
     {
       "id": "4:v65",
       "x": 998.63,
-      "y": 955.0
+      "y": 955
     },
     {
       "id": "4:v66",
-      "x": 338.0,
+      "x": 338,
       "y": 1078.1
     },
     {
@@ -6668,7 +6668,7 @@
       "space_type": null,
       "parent_group_id": null,
       "floor_id": "0:floor",
-      "sort_index": 0.0,
+      "sort_index": 0,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6678,7 +6678,7 @@
       "space_type": "commercial",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 50.0,
+      "sort_index": 50,
       "domain_ref": "unit:C1",
       "shaft_id": null
     },
@@ -6688,7 +6688,7 @@
       "space_type": "commercial",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 51.0,
+      "sort_index": 51,
       "domain_ref": "unit:C2",
       "shaft_id": null
     },
@@ -6698,7 +6698,7 @@
       "space_type": "gym",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 52.0,
+      "sort_index": 52,
       "domain_ref": "unit:GYM",
       "shaft_id": null
     },
@@ -6708,7 +6708,7 @@
       "space_type": null,
       "parent_group_id": "0:GYM",
       "floor_id": "0:floor",
-      "sort_index": 62.0,
+      "sort_index": 62,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6718,7 +6718,7 @@
       "space_type": null,
       "parent_group_id": "0:GYM",
       "floor_id": "0:floor",
-      "sort_index": 62.0,
+      "sort_index": 62,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6728,7 +6728,7 @@
       "space_type": "circulation",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 100.0,
+      "sort_index": 100,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6738,7 +6738,7 @@
       "space_type": "stairs",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 101.0,
+      "sort_index": 101,
       "domain_ref": null,
       "shaft_id": "shaft_stairs"
     },
@@ -6748,7 +6748,7 @@
       "space_type": "elevator",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 102.0,
+      "sort_index": 102,
       "domain_ref": null,
       "shaft_id": "shaft_lift"
     },
@@ -6758,7 +6758,7 @@
       "space_type": "technical",
       "parent_group_id": "0:floorgroup",
       "floor_id": "0:floor",
-      "sort_index": 103.0,
+      "sort_index": 103,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6768,7 +6768,7 @@
       "space_type": null,
       "parent_group_id": null,
       "floor_id": "1:floor",
-      "sort_index": 1.0,
+      "sort_index": 1,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6778,7 +6778,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 10.0,
+      "sort_index": 10,
       "domain_ref": "unit:A1",
       "shaft_id": null
     },
@@ -6788,7 +6788,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 11.0,
+      "sort_index": 11,
       "domain_ref": "unit:A2",
       "shaft_id": null
     },
@@ -6798,7 +6798,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 12.0,
+      "sort_index": 12,
       "domain_ref": "unit:A3",
       "shaft_id": null
     },
@@ -6808,7 +6808,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 13.0,
+      "sort_index": 13,
       "domain_ref": "unit:A4",
       "shaft_id": null
     },
@@ -6818,7 +6818,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 14.0,
+      "sort_index": 14,
       "domain_ref": "unit:A5",
       "shaft_id": null
     },
@@ -6828,7 +6828,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 15.0,
+      "sort_index": 15,
       "domain_ref": "unit:A6",
       "shaft_id": null
     },
@@ -6838,7 +6838,7 @@
       "space_type": "apartment",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 16.0,
+      "sort_index": 16,
       "domain_ref": "unit:A7",
       "shaft_id": null
     },
@@ -6848,7 +6848,7 @@
       "space_type": "circulation",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 100.0,
+      "sort_index": 100,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6858,7 +6858,7 @@
       "space_type": "stairs",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 101.0,
+      "sort_index": 101,
       "domain_ref": null,
       "shaft_id": "shaft_stairs"
     },
@@ -6868,7 +6868,7 @@
       "space_type": "elevator",
       "parent_group_id": "1:floorgroup",
       "floor_id": "1:floor",
-      "sort_index": 102.0,
+      "sort_index": 102,
       "domain_ref": null,
       "shaft_id": "shaft_lift"
     },
@@ -6878,7 +6878,7 @@
       "space_type": null,
       "parent_group_id": null,
       "floor_id": "2:floor",
-      "sort_index": 2.0,
+      "sort_index": 2,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6888,7 +6888,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 10.0,
+      "sort_index": 10,
       "domain_ref": "unit:A21",
       "shaft_id": null
     },
@@ -6898,7 +6898,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 11.0,
+      "sort_index": 11,
       "domain_ref": "unit:A22",
       "shaft_id": null
     },
@@ -6908,7 +6908,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 12.0,
+      "sort_index": 12,
       "domain_ref": "unit:A23",
       "shaft_id": null
     },
@@ -6918,7 +6918,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 13.0,
+      "sort_index": 13,
       "domain_ref": "unit:A24",
       "shaft_id": null
     },
@@ -6928,7 +6928,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 14.0,
+      "sort_index": 14,
       "domain_ref": "unit:A25",
       "shaft_id": null
     },
@@ -6938,7 +6938,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 15.0,
+      "sort_index": 15,
       "domain_ref": "unit:A26",
       "shaft_id": null
     },
@@ -6948,7 +6948,7 @@
       "space_type": "apartment",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 16.0,
+      "sort_index": 16,
       "domain_ref": "unit:A27",
       "shaft_id": null
     },
@@ -6958,7 +6958,7 @@
       "space_type": "circulation",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 100.0,
+      "sort_index": 100,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6968,7 +6968,7 @@
       "space_type": "stairs",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 101.0,
+      "sort_index": 101,
       "domain_ref": null,
       "shaft_id": "shaft_stairs"
     },
@@ -6978,7 +6978,7 @@
       "space_type": "elevator",
       "parent_group_id": "2:floorgroup",
       "floor_id": "2:floor",
-      "sort_index": 102.0,
+      "sort_index": 102,
       "domain_ref": null,
       "shaft_id": "shaft_lift"
     },
@@ -6988,7 +6988,7 @@
       "space_type": null,
       "parent_group_id": null,
       "floor_id": "3:floor",
-      "sort_index": 3.0,
+      "sort_index": 3,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -6998,7 +6998,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 10.0,
+      "sort_index": 10,
       "domain_ref": "unit:A31",
       "shaft_id": null
     },
@@ -7008,7 +7008,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 11.0,
+      "sort_index": 11,
       "domain_ref": "unit:A32",
       "shaft_id": null
     },
@@ -7018,7 +7018,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 12.0,
+      "sort_index": 12,
       "domain_ref": "unit:A33",
       "shaft_id": null
     },
@@ -7028,7 +7028,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 13.0,
+      "sort_index": 13,
       "domain_ref": "unit:A34",
       "shaft_id": null
     },
@@ -7038,7 +7038,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 14.0,
+      "sort_index": 14,
       "domain_ref": "unit:A35",
       "shaft_id": null
     },
@@ -7048,7 +7048,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 15.0,
+      "sort_index": 15,
       "domain_ref": "unit:A36",
       "shaft_id": null
     },
@@ -7058,7 +7058,7 @@
       "space_type": "apartment",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 16.0,
+      "sort_index": 16,
       "domain_ref": "unit:A37",
       "shaft_id": null
     },
@@ -7068,7 +7068,7 @@
       "space_type": "circulation",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 100.0,
+      "sort_index": 100,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -7078,7 +7078,7 @@
       "space_type": "stairs",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 101.0,
+      "sort_index": 101,
       "domain_ref": null,
       "shaft_id": "shaft_stairs"
     },
@@ -7088,7 +7088,7 @@
       "space_type": "elevator",
       "parent_group_id": "3:floorgroup",
       "floor_id": "3:floor",
-      "sort_index": 102.0,
+      "sort_index": 102,
       "domain_ref": null,
       "shaft_id": "shaft_lift"
     },
@@ -7098,7 +7098,7 @@
       "space_type": null,
       "parent_group_id": null,
       "floor_id": "4:floor",
-      "sort_index": 4.0,
+      "sort_index": 4,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -7108,7 +7108,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 10.0,
+      "sort_index": 10,
       "domain_ref": "unit:A41",
       "shaft_id": null
     },
@@ -7118,7 +7118,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 11.0,
+      "sort_index": 11,
       "domain_ref": "unit:A42",
       "shaft_id": null
     },
@@ -7128,7 +7128,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 12.0,
+      "sort_index": 12,
       "domain_ref": "unit:A43",
       "shaft_id": null
     },
@@ -7138,7 +7138,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 13.0,
+      "sort_index": 13,
       "domain_ref": "unit:A44",
       "shaft_id": null
     },
@@ -7148,7 +7148,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 14.0,
+      "sort_index": 14,
       "domain_ref": "unit:A45",
       "shaft_id": null
     },
@@ -7158,7 +7158,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 15.0,
+      "sort_index": 15,
       "domain_ref": "unit:A46",
       "shaft_id": null
     },
@@ -7168,7 +7168,7 @@
       "space_type": "apartment",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 16.0,
+      "sort_index": 16,
       "domain_ref": "unit:A47",
       "shaft_id": null
     },
@@ -7178,7 +7178,7 @@
       "space_type": "circulation",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 100.0,
+      "sort_index": 100,
       "domain_ref": null,
       "shaft_id": null
     },
@@ -7188,7 +7188,7 @@
       "space_type": "stairs",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 101.0,
+      "sort_index": 101,
       "domain_ref": null,
       "shaft_id": "shaft_stairs"
     },
@@ -7198,7 +7198,7 @@
       "space_type": "elevator",
       "parent_group_id": "4:floorgroup",
       "floor_id": "4:floor",
-      "sort_index": 102.0,
+      "sort_index": 102,
       "domain_ref": null,
       "shaft_id": "shaft_lift"
     }
@@ -7210,7 +7210,7 @@
       "kind": "physical",
       "wall_id": "0:w3",
       "t": 0.31225,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v2",
       "swing": "a",
       "rooms": null
@@ -7221,7 +7221,7 @@
       "kind": "physical",
       "wall_id": "0:w12",
       "t": 0.52174,
-      "width": 51.0,
+      "width": 51,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7232,7 +7232,7 @@
       "kind": "physical",
       "wall_id": "0:w22",
       "t": 0.46954,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7243,7 +7243,7 @@
       "kind": "physical",
       "wall_id": "0:w25",
       "t": 0.40314,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7254,7 +7254,7 @@
       "kind": "physical",
       "wall_id": "0:w28",
       "t": 0.50311,
-      "width": 51.0,
+      "width": 51,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7265,7 +7265,7 @@
       "kind": "physical",
       "wall_id": "0:w29",
       "t": 0.70484,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v2",
       "swing": "a",
       "rooms": null
@@ -7276,7 +7276,7 @@
       "kind": "physical",
       "wall_id": "0:w38",
       "t": 0.69203,
-      "width": 51.0,
+      "width": 51,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7287,7 +7287,7 @@
       "kind": "physical",
       "wall_id": "0:w48",
       "t": 0.75332,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7298,7 +7298,7 @@
       "kind": "physical",
       "wall_id": "0:w49",
       "t": 0.37275,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7309,7 +7309,7 @@
       "kind": "physical",
       "wall_id": "0:w50",
       "t": 0.69242,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7320,7 +7320,7 @@
       "kind": "physical",
       "wall_id": "0:w51",
       "t": 0.5171,
-      "width": 46.0,
+      "width": 46,
       "hinge": "v1",
       "swing": "b",
       "rooms": null
@@ -7331,7 +7331,7 @@
       "kind": "opening",
       "wall_id": "0:w21",
       "t": 0.49995,
-      "width": 46.0,
+      "width": 46,
       "hinge": null,
       "swing": null,
       "rooms": null
@@ -7342,7 +7342,7 @@
       "kind": "opening",
       "wall_id": "0:w35",
       "t": 0.5,
-      "width": 46.0,
+      "width": 46,
       "hinge": null,
       "swing": null,
       "rooms": null
@@ -7364,7 +7364,7 @@
       "kind": "physical",
       "wall_id": "1:w26",
       "t": 0.71134,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7408,7 +7408,7 @@
       "kind": "physical",
       "wall_id": "1:w11",
       "t": 0.76334,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7419,7 +7419,7 @@
       "kind": "physical",
       "wall_id": "1:w41",
       "t": 0.66093,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7452,7 +7452,7 @@
       "kind": "physical",
       "wall_id": "1:w49",
       "t": 0.30187,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7485,7 +7485,7 @@
       "kind": "physical",
       "wall_id": "1:w59",
       "t": 0.14525,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7518,7 +7518,7 @@
       "kind": "physical",
       "wall_id": "1:w72",
       "t": 0.44196,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7529,7 +7529,7 @@
       "kind": "physical",
       "wall_id": "1:w62",
       "t": 0.26953,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7584,7 +7584,7 @@
       "kind": "physical",
       "wall_id": "2:w26",
       "t": 0.71134,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7628,7 +7628,7 @@
       "kind": "physical",
       "wall_id": "2:w11",
       "t": 0.76334,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7639,7 +7639,7 @@
       "kind": "physical",
       "wall_id": "2:w41",
       "t": 0.66093,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7672,7 +7672,7 @@
       "kind": "physical",
       "wall_id": "2:w49",
       "t": 0.30187,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7705,7 +7705,7 @@
       "kind": "physical",
       "wall_id": "2:w59",
       "t": 0.14525,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7738,7 +7738,7 @@
       "kind": "physical",
       "wall_id": "2:w72",
       "t": 0.44196,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7749,7 +7749,7 @@
       "kind": "physical",
       "wall_id": "2:w62",
       "t": 0.26953,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7804,7 +7804,7 @@
       "kind": "physical",
       "wall_id": "3:w26",
       "t": 0.71134,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7848,7 +7848,7 @@
       "kind": "physical",
       "wall_id": "3:w11",
       "t": 0.76334,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7859,7 +7859,7 @@
       "kind": "physical",
       "wall_id": "3:w41",
       "t": 0.66093,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7892,7 +7892,7 @@
       "kind": "physical",
       "wall_id": "3:w49",
       "t": 0.30187,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -7925,7 +7925,7 @@
       "kind": "physical",
       "wall_id": "3:w59",
       "t": 0.14525,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7958,7 +7958,7 @@
       "kind": "physical",
       "wall_id": "3:w72",
       "t": 0.44196,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -7969,7 +7969,7 @@
       "kind": "physical",
       "wall_id": "3:w62",
       "t": 0.26953,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8024,7 +8024,7 @@
       "kind": "physical",
       "wall_id": "4:w26",
       "t": 0.71134,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8068,7 +8068,7 @@
       "kind": "physical",
       "wall_id": "4:w11",
       "t": 0.76334,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8079,7 +8079,7 @@
       "kind": "physical",
       "wall_id": "4:w41",
       "t": 0.66093,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8112,7 +8112,7 @@
       "kind": "physical",
       "wall_id": "4:w49",
       "t": 0.30187,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8145,7 +8145,7 @@
       "kind": "physical",
       "wall_id": "4:w59",
       "t": 0.14525,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -8178,7 +8178,7 @@
       "kind": "physical",
       "wall_id": "4:w72",
       "t": 0.44196,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v1",
       "swing": "a",
       "rooms": null
@@ -8189,7 +8189,7 @@
       "kind": "physical",
       "wall_id": "4:w62",
       "t": 0.26953,
-      "width": 41.0,
+      "width": 41,
       "hinge": "v2",
       "swing": "b",
       "rooms": null
@@ -8485,7 +8485,7 @@
       "host_id": "1:L2",
       "position": [
         700.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "1:floor",
@@ -8539,7 +8539,7 @@
       "host_id": "1:L4",
       "position": [
         868.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "1:floor",
@@ -8565,7 +8565,7 @@
       "host_kind": "room",
       "host_id": "1:L5",
       "position": [
-        1146.0,
+        1146,
         728.1
       ],
       "guards": [],
@@ -8593,7 +8593,7 @@
       "host_id": "1:L6",
       "position": [
         1312.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "1:floor",
@@ -8620,7 +8620,7 @@
       "host_id": "1:L7",
       "position": [
         1464.1,
-        914.0
+        914
       ],
       "guards": [],
       "floor_id": "1:floor",
@@ -8661,7 +8661,7 @@
       "host_id": "2:L22",
       "position": [
         700.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "2:floor",
@@ -8715,7 +8715,7 @@
       "host_id": "2:L24",
       "position": [
         868.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "2:floor",
@@ -8741,7 +8741,7 @@
       "host_kind": "room",
       "host_id": "2:L25",
       "position": [
-        1146.0,
+        1146,
         728.1
       ],
       "guards": [],
@@ -8769,7 +8769,7 @@
       "host_id": "2:L26",
       "position": [
         1312.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "2:floor",
@@ -8796,7 +8796,7 @@
       "host_id": "2:L27",
       "position": [
         1464.1,
-        914.0
+        914
       ],
       "guards": [],
       "floor_id": "2:floor",
@@ -8837,7 +8837,7 @@
       "host_id": "3:L32",
       "position": [
         700.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "3:floor",
@@ -8891,7 +8891,7 @@
       "host_id": "3:L34",
       "position": [
         868.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "3:floor",
@@ -8917,7 +8917,7 @@
       "host_kind": "room",
       "host_id": "3:L35",
       "position": [
-        1146.0,
+        1146,
         728.1
       ],
       "guards": [],
@@ -8945,7 +8945,7 @@
       "host_id": "3:L36",
       "position": [
         1312.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "3:floor",
@@ -8972,7 +8972,7 @@
       "host_id": "3:L37",
       "position": [
         1464.1,
-        914.0
+        914
       ],
       "guards": [],
       "floor_id": "3:floor",
@@ -9013,7 +9013,7 @@
       "host_id": "4:L42",
       "position": [
         700.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "4:floor",
@@ -9067,7 +9067,7 @@
       "host_id": "4:L44",
       "position": [
         868.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "4:floor",
@@ -9093,7 +9093,7 @@
       "host_kind": "room",
       "host_id": "4:L45",
       "position": [
-        1146.0,
+        1146,
         728.1
       ],
       "guards": [],
@@ -9121,7 +9121,7 @@
       "host_id": "4:L46",
       "position": [
         1312.5,
-        620.0
+        620
       ],
       "guards": [],
       "floor_id": "4:floor",
@@ -9148,7 +9148,7 @@
       "host_id": "4:L47",
       "position": [
         1464.1,
-        914.0
+        914
       ],
       "guards": [],
       "floor_id": "4:floor",
