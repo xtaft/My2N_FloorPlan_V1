@@ -289,6 +289,7 @@ export function BuildingScreen({
               <FloorPlanTab
                 layer={layer}
                 floorId={floorId}
+                onFloorChange={setFloorId}
                 selectedGroupId={spaceId}
                 onClearSelection={() => setSpaceId(null)}
                 hasPlan={hasPlan}

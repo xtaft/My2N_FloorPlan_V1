@@ -1,18 +1,26 @@
 /**
  * The Floor Plan tab once a plan exists.
  *
- * Figma 96:163318, 106:180640, 106:182544 — the same screen in its
- * three right-hand states, which the mode dropdown switches between.
+ * Figma 96:163318, 106:180640, 106:182544.
  *
  * This is the plan at rest: you look at it, you ask it who gets in
- * where, and you go to the editor to change it. So the structure and
- * device panels here are lists rather than the editor's drawers — no
- * row menus, no drag, nothing that writes. Access mode is the
- * exception and needs no exception made for it: asking what a
- * credential opens never changes anything, so the editor's own panel
- * is already a read-only thing and is reused whole.
+ * where, and you go to the editor to change it. So the structure
+ * panel here is a list rather than the editor's drawer — no row
+ * menus, no drag, nothing that writes. Access mode is the exception
+ * and needs no exception made for it: asking what a credential opens
+ * never changes anything, so the editor's own panel is already a
+ * read-only thing and is reused whole.
+ *
+ * Two modes, not three. A devices mode earned its place in the editor,
+ * where it is the mode you place and unplace things in; here it had
+ * nothing of its own to do. The devices are drawn in both modes and
+ * each one opens its card, so the mode was a switch between two
+ * screens that showed the same devices — and the panel behind it was
+ * a list of what you were already looking at. What it was actually
+ * good for was finding a device, and that is the search box.
  */
 import { useMemo, useState } from "react";
+import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -47,11 +55,13 @@ import {
   type VisualLayer,
 } from "../../model";
 
-export type PlanMode = "structure" | "devices" | "access";
+export type PlanMode = "structure" | "access";
 
 export interface FloorPlanViewProps {
   layer: VisualLayer;
   floorId: string;
+  /** Finding a device on another storey has to turn to it first. */
+  onFloorChange: (floorId: string) => void;
   /**
    * The space the tree is pointing at. There is no floor strip here:
    * the tree on the left is the plan's navigation, so turning to a
@@ -65,11 +75,24 @@ export interface FloorPlanViewProps {
 export function FloorPlanView({
   layer,
   floorId,
+  onFloorChange,
   selectedGroupId,
   onClearSelection,
 }: FloorPlanViewProps) {
   const [mode, setMode] = useState<PlanMode>("access");
-  const [query, setQuery] = useState("");
+  /** The device the search found, drawn lit with its name out. */
+  const [found, setFound] = useState<string | null>(null);
+
+  /**
+   * What the search looks through: the devices that are on the plan.
+   * An unplaced one has no pin to light and no storey to turn to, so
+   * offering it would be offering a result that goes nowhere — the
+   * Devices tab is where those are dealt with.
+   */
+  const placed = useMemo(
+    () => deviceRows(layer).filter((r) => r.floorName && r.placeName),
+    [layer],
+  );
 
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [personId, setPersonId] = useState<string | null>(null);
@@ -143,19 +166,68 @@ export function FloorPlanView({
             "& > *": { flexShrink: 0, whiteSpace: "nowrap" },
           }}
         >
-          <TextField
+          {/*
+            The search is for devices on the map. Picking a result
+            turns to the storey it is on and lights it, which is the
+            whole of what the devices mode was good for.
+          */}
+          <Autocomplete
             size="small"
-            placeholder="Search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            sx={{ width: 240, minWidth: 120, flexShrink: 1 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 20 }} />
-                </InputAdornment>
-              ),
+            options={placed}
+            value={placed.find((r) => r.device.id === found) ?? null}
+            onChange={(_e, row) => {
+              setFound(row?.device.id ?? null);
+              if (row?.device.floor_id && row.device.floor_id !== floorId) {
+                onFloorChange(row.device.floor_id);
+              }
             }}
+            getOptionLabel={(r) => r.device.name}
+            isOptionEqualToValue={(a, b) => a.device.id === b.device.id}
+            filterOptions={(rows, { inputValue }) => {
+              const q = inputValue.trim().toLowerCase();
+              if (!q) return rows;
+              // Where a device is counts as part of its name here: a
+              // manager looking for "the reader on A32" knows the flat
+              // sooner than they know what the reader is called.
+              return rows.filter((r) =>
+                `${r.device.name} ${r.floorName} ${r.placeName}`
+                  .toLowerCase()
+                  .includes(q),
+              );
+            }}
+            renderOption={(props, r) => {
+              const { key, ...rest } = props as typeof props & { key: string };
+              return (
+                <li key={key} {...rest}>
+                  <Box sx={{ mr: 1.5, color: "text.secondary", display: "flex" }}>
+                    <DeviceGlyph type={r.device.device_type} size={20} />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" noWrap>
+                      {r.device.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {r.floorName}, {r.placeName}
+                    </Typography>
+                  </Box>
+                </li>
+              );
+            }}
+            sx={{ width: 240, minWidth: 120, flexShrink: 1 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="Search devices"
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
           />
           <Button variant="outlined" color="inherit" size="small" disabled>
             Device type
@@ -169,8 +241,8 @@ export function FloorPlanView({
           <Button
             size="small"
             startIcon={<Close sx={{ fontSize: 16 }} />}
-            disabled={query === ""}
-            onClick={() => setQuery("")}
+            disabled={found === null}
+            onClick={() => setFound(null)}
             sx={{ color: "text.secondary" }}
           >
             Clear filters
@@ -191,7 +263,6 @@ export function FloorPlanView({
             sx={{ width: 180 }}
           >
             <MenuItem value="structure">Structure</MenuItem>
-            <MenuItem value="devices">Devices</MenuItem>
             <MenuItem value="access">Access</MenuItem>
           </TextField>
         </Stack>
@@ -211,7 +282,11 @@ export function FloorPlanView({
             // the highlight answers "where is A32", and once you have
             // looked somewhere else the question has been answered.
             onSelectRoom={() => onClearSelection()}
-            showDeviceStatus={mode === "devices"}
+            // Not in access mode: there the rooms are already red and
+            // green for who gets in, and a red badge on a reader would
+            // read as part of that answer rather than as its health.
+            showDeviceStatus={mode === "structure"}
+            selectedDeviceId={found}
             // The devices are on the plan whichever question is being
             // asked of it. This screen is for looking, and a reader
             // that vanishes when you switch to Structure is a reader
@@ -243,7 +318,7 @@ export function FloorPlanView({
             onWidthChange={() => {}}
           />
         ) : (
-          <SidePanel layer={layer} mode={mode} query={query} />
+          <SpacePanel layer={layer} />
         )}
       </Box>
 
@@ -282,22 +357,10 @@ export function FloorPlanView({
   );
 }
 
-/** The structure and device lists, which here only list. */
-function SidePanel({
-  layer,
-  mode,
-  query,
-}: {
-  layer: VisualLayer;
-  mode: PlanMode;
-  query: string;
-}) {
+/** The categories, which here only list. */
+function SpacePanel({ layer }: { layer: VisualLayer }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const q = query.trim().toLowerCase();
-  const hit = (text: string) => !q || text.toLowerCase().includes(q);
-
   const categories = useMemo(() => spaceCategories(layer), [layer]);
-  const devices = useMemo(() => deviceRows(layer), [layer]);
 
   const toggle = (id: string) =>
     setOpen((was) => {
@@ -319,29 +382,7 @@ function SidePanel({
       }}
     >
       <List dense disablePadding>
-        {mode === "devices" &&
-          devices
-            .filter((r) => hit(`${r.device.name} ${r.placeName ?? ""}`))
-            .map((r) => (
-              <ListItemButton key={r.device.id} sx={{ minHeight: 52, pl: 2 }}>
-                <Box sx={{ mr: 1.5, color: "text.secondary", display: "flex" }}>
-                  <DeviceGlyph type={r.device.device_type} size={20} />
-                </Box>
-                <ListItemText
-                  primary={r.device.name}
-                  secondary={
-                    r.floorName && r.placeName
-                      ? `${r.floorName}, ${r.placeName}`
-                      : "Unassigned"
-                  }
-                  primaryTypographyProps={{ variant: "body2", noWrap: true }}
-                  secondaryTypographyProps={{ variant: "caption", noWrap: true }}
-                />
-              </ListItemButton>
-            ))}
-
-        {mode === "structure" &&
-          categories.map((category) => {
+        {categories.map((category) => {
             const inside = [
               ...category.groups.map((g) => ({
                 id: g.id,
@@ -356,10 +397,7 @@ function SidePanel({
                 rooms: 0,
               })),
             ];
-            if (!hit(category.name) && !inside.some((x) => hit(x.name))) {
-              return null;
-            }
-            const isOpen = open.has(category.id ?? "unknown") || Boolean(q);
+            const isOpen = open.has(category.id ?? "unknown");
             return (
               <Fragment key={category.id ?? "unknown"}>
                 <ListItemButton
@@ -411,12 +449,6 @@ function SidePanel({
               </Fragment>
             );
           })}
-
-        {mode === "devices" && devices.length === 0 && (
-          <Typography variant="body2" sx={{ p: 3, color: "text.secondary" }}>
-            No devices.
-          </Typography>
-        )}
       </List>
     </Box>
   );

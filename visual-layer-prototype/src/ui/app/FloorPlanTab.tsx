@@ -16,6 +16,7 @@ import type { VisualLayer } from "../../model";
 export interface FloorPlanTabProps {
   layer: VisualLayer;
   floorId: string;
+  onFloorChange: (floorId: string) => void;
   /** The space the tree is pointing at, drawn lit. */
   selectedGroupId: string | null;
   onClearSelection: () => void;
@@ -31,6 +32,7 @@ export interface FloorPlanTabProps {
 export function FloorPlanTab({
   layer,
   floorId,
+  onFloorChange,
   selectedGroupId,
   onClearSelection,
   hasPlan,
@@ -43,6 +45,7 @@ export function FloorPlanTab({
       <FloorPlanView
         layer={layer}
         floorId={floorId}
+        onFloorChange={onFloorChange}
         selectedGroupId={selectedGroupId}
         onClearSelection={onClearSelection}
       />
