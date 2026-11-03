@@ -333,6 +333,11 @@ export function unassignRoom(state: EditState, roomId: string): EditState {
     group_id: null,
     space_type: null,
     floor_id: room.floor_id,
+    // A thing of its own on the plan: it carries its Unnamed label, it can
+    // be clicked, and a space can be dropped onto it. What keeps it out of
+    // the tree and the drawer is that nobody has identified it, which is
+    // read off those two nulls above rather than flagged here — `surfaced`
+    // already means "someone hid this one" and must not mean two things.
     surfaced: true,
     note: null,
   };

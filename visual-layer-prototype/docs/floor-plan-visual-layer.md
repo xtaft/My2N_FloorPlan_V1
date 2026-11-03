@@ -592,20 +592,60 @@ everything that says what the space *is*.
 | the plan is right that something is here, wrong about what | unassign from map | splits in two |
 
 **Delete** strips the name to `Unnamed N`, clears `space_type` and
-`group_id`, and unsurfaces it. With nothing of its own and no envelope to
-inherit from it reads as Unknown, which is the bucket the types panel keeps
-open at zero for exactly this.
+`group_id`, and unsurfaces it. What is left is an *unidentified* region,
+below.
 
 **Unassign separates what a space is from where it is**, because the two
 claims fail independently: the drawing was right that there is a space
 there and wrong about which one, so neither half should be thrown away.
 
-- the **shape** stays on the plan as a new space nobody has identified —
-  `Unnamed N`, Unknown, the same walls, in no envelope. It is in the tree,
-  because it is a space on a floor.
+- the **shape** stays on the plan as an unidentified region — `Unnamed N`,
+  the same walls, in no envelope.
 - the **identity** leaves the plan and waits in the types panel under the
   category it read as, still named, now labelled unplaced. It is *not* in
   the tree: a space with no shape is not part of the floor's structure.
+
+### An unidentified region is an area, not a space
+
+Both operations end at the same state, so the model names it once and
+derives it rather than flagging it:
+
+```python
+def is_unidentified(room):
+    return room.space_type is None and room.group_id is None
+```
+
+No category of its own and no envelope to inherit one from: nobody has said
+anything about what is there. It is a consequence of tiling. The walls have
+to belong to something, so when a space stops being a space the area it
+covered does not go anywhere.
+
+It is a node of its floor and it is drawn there — labelled, clickable, and
+able to take a space dropped onto it. It is in neither list: not the tree,
+because the tree is the building's structure and an unclaimed region is the
+absence of structure; not the types panel, because that panel is for spaces
+somebody manages, and an area the plan has left over is not one, not even
+an unknown one.
+
+**The access search does not walk it.** Doors onto it are dropped from the
+adjacency, so no route passes through one and nothing reports it as
+somewhere a profile cannot reach. Both halves matter: a route through an
+unclaimed area would be access no door was ever shown to grant, and
+counting the area as unreached would be a failure against a question nobody
+asked. It is also why the "reaches N of M rooms" denominator counts
+identified rooms only.
+
+This is the second meaning that `surfaced` deliberately does *not* carry.
+`surfaced = false` means "this one is folded away or someone hid it" and is
+about a room that is still a space; unidentified is about there being no
+space at all. Keeping them apart is what lets a hidden bedroom stay in the
+tree and in the access check while an unclaimed region leaves both.
+
+A category is still listed while it holds nothing but unplaced spaces —
+unassigning the last Technical room must not take the Technical category
+away with it, or the space would have nowhere to be found. Each category
+row says what it holds as `N spaces | M unplaced`, M of the N, with the
+second half dropped when it is zero.
 
 Devices divide the same way. An answering unit is the flat's rather than
 the walls', so it comes away with the identity and returns when that is
@@ -616,7 +656,10 @@ where it is, now verifying entry into whatever is there now.
 Placing the space back onto a room joins them: that room takes the name,
 the category and the note, and the units come home. What it does not
 restore is envelope membership — the room left its flat when it stopped
-agreeing with it, and rejoining a name is not rejoining a flat.
+agreeing with it, and rejoining a name is not rejoining a flat. Dropping it
+onto the shape it came from is the ordinary case of that rule rather than
+an exception to it: the shape is in no envelope, so there is none to
+rejoin.
 
 An envelope emptied by either goes with it. The device inside a space stays
 exactly where it is — a space losing its name is not a reason to lose

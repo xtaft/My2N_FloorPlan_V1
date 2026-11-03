@@ -3,7 +3,7 @@
  * might reach for that the fixture refuses to store.
  */
 import { must, topGroups, type VisualLayer } from "./load";
-import { accessType, roomsInGroup, roomsOf } from "./access";
+import { accessType, isUnidentified, roomsInGroup, roomsOf } from "./access";
 import { add, doorGeometry, negate, normal, unit } from "./geometry";
 import { labelPoint, roomRings, signedArea } from "./rings";
 import {
@@ -193,17 +193,30 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
   const looseByType = new Map<string | null, Room[]>();
   for (const room of layer.file.rooms) {
     if (room.group_id !== null) continue;
+    // An area nobody has claimed is not a space to list: it is what the
+    // plan has left over, and the panel is for spaces somebody manages.
+    if (isUnidentified(room)) continue;
     const key = accessType(layer, room);
     const list = looseByType.get(key);
     if (list) list.push(room);
     else looseByType.set(key, [room]);
   }
 
+  // A category is shown when it holds something — including a space that
+  // is only waiting for a place. Unassigning the last Technical room must
+  // not take the Technical category away with it: the space is still
+  // somebody's to deal with, and a category nobody can open is where it
+  // would go to be forgotten.
+  const waiting = new Set(
+    (layer.file.unplaced_spaces ?? []).map((s) => s.space_type ?? null),
+  );
+
   const out: SpaceCategory[] = layer.file.space_types
     .filter(
       (t) =>
         (byType.get(t.id) ?? []).length > 0 ||
-        (looseByType.get(t.id) ?? []).length > 0,
+        (looseByType.get(t.id) ?? []).length > 0 ||
+        waiting.has(t.id),
     )
     .map((t) => ({
       id: t.id,

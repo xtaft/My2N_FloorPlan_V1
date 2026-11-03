@@ -63,6 +63,24 @@ export type Adjacency = Map<string, AccessEdge[]>;
  *
  * Vertical travel is not special: virtual doors sit in the same index.
  */
+/**
+ * A region of the floor nobody has said anything about: no category of its
+ * own and no envelope to inherit one from.
+ *
+ * It is what is left when a space is unassigned or deleted — the walls have
+ * to belong to something, because the floor is tiled, but there is no space
+ * there as far as the building is concerned. So it is in neither panel, and
+ * the access search does not walk it: checking whether somebody can reach
+ * an area nobody has claimed answers a question nobody asked, and letting
+ * a route pass through one would report access that no door grants.
+ *
+ * Derived rather than flagged. A hidden bedroom is not this — it still sits
+ * in a flat — and a loose room given a category of its own is not either.
+ */
+export function isUnidentified(room: Room): boolean {
+  return room.space_type === null && room.group_id === null;
+}
+
 export function buildAdjacency(layer: VisualLayer): Adjacency {
   const adj: Adjacency = new Map();
   const link = (from: string, door: Door, other: string) => {
@@ -71,10 +89,16 @@ export function buildAdjacency(layer: VisualLayer): Adjacency {
     else adj.set(from, [{ door, other }]);
   };
 
+  const blank = new Set(
+    layer.file.rooms.filter(isUnidentified).map((r) => r.id),
+  );
+
   for (const door of layer.file.doors) {
     const [a, b] = roomsOf(layer, door);
     // A slit wall is a degenerate self-loop, not an access edge.
     if (a === b) continue;
+    // A door onto an unclaimed area is not a way anywhere.
+    if (blank.has(a) || blank.has(b)) continue;
     link(a, door, b);
     link(b, door, a);
   }

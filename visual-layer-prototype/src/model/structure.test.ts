@@ -12,7 +12,9 @@ import {
   dissolveGroup,
   hideRoomRefusal,
   initEditState,
+  isUnidentified,
   placeSpace,
+  reachable,
   renameGroup,
   setRoomSpaceType,
   spaceCategories,
@@ -284,11 +286,16 @@ describe("unassignRoom", () => {
 
     expect(shape.walls).toEqual(was.walls);
     expect(shape.name).toMatch(/^Unnamed \d+$/);
-    expect(shape.surfaced).toBe(true);
-    // Unknown: nothing of its own and no envelope to inherit from.
+    // Nothing of its own and no envelope to inherit from, which is what
+    // makes it an area nobody has claimed rather than a space.
     expect(shape.space_type).toBeNull();
     expect(shape.group_id).toBeNull();
     expect(accessType(after.layer, shape)).toBeNull();
+    expect(isUnidentified(shape)).toBe(true);
+    // On the map in its own right — named there, clickable, droppable —
+    // while being in neither list, which is what unidentified buys.
+    expect(shape.surfaced).toBe(true);
+    expect(shape.floor_id).toBe(was.floor_id);
   });
 
   it("keeps the floor tiled: the walls now bound the new space", () => {
@@ -367,6 +374,12 @@ describe("unassignRoom", () => {
     const back = placeSpace(after, space.id, shape.id);
     const room = back.layer.rooms.get(shape.id)!;
     expect(room.name).toBe("Living room");
+    // Back on the plan under its own category, and standing alone: the
+    // flat it used to be part of is not rebuilt around it. Unassigning
+    // said the drawing was wrong about what is there, and placing the
+    // space back answers only where it is, not what it belongs to.
+    expect(accessType(back.layer, room)).toBe("apartment");
+    expect(room.group_id).toBeNull();
     expect(back.file.unplaced_spaces).toEqual([]);
     expect(back.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe(
       shape.id,
@@ -450,17 +463,69 @@ describe("the categories panel shows loose spaces", () => {
     expect(find(cats, "technical").rooms.map((r) => r.id)).toContain("1:B1");
   });
 
-  it("puts the shape left behind in the Unknown bucket", () => {
+  it("leaves the shape out of every category", () => {
+    // The panel is for spaces somebody manages. An area the plan has left
+    // over is not one, not even an unknown one.
     const before = state();
     const after = unassignRoom(before, "1:B1");
     const shape = after.file.rooms.find((r) => !before.layer.rooms.has(r.id))!;
-    const unknown = spaceCategories(after.layer).find((c) => c.id === null)!;
-    expect(unknown.rooms.map((r) => r.id)).toContain(shape.id);
+    for (const category of spaceCategories(after.layer)) {
+      expect(category.rooms.map((r) => r.id)).not.toContain(shape.id);
+    }
   });
 
   it("leaves rooms inside an envelope out of it — the envelope stands for them", () => {
     const cats = spaceCategories(state().layer);
     const all = cats.flatMap((c) => c.rooms);
     for (const room of all) expect(room.group_id).toBeNull();
+  });
+});
+
+describe("an unclaimed area is not on the access graph", () => {
+  const reach = (st: EditState, from: string) =>
+    reachable(st.layer, from, {
+      allowedDevices: new Set(st.file.devices.map((d) => d.id)),
+    }).seen;
+
+  it("cannot be reached, even through its own doors", () => {
+    const before = state();
+    const after = unassignRoom(before, "1:B1");
+    const shape = after.file.rooms.find((r) => !before.layer.rooms.has(r.id))!;
+
+    expect(reach(before, "1:L1").has("1:B1")).toBe(true);
+    expect(reach(after, "1:L1").has(shape.id)).toBe(false);
+  });
+
+  it("is not a way through to anywhere else", () => {
+    // Everything on floor 1 is reached through the hallway. Unassign it and
+    // the flats are not reachable that way, because nobody has said there
+    // is a space there to walk through.
+    const before = state();
+    expect(reach(before, "0:L").has("1:L1")).toBe(true);
+
+    const after = unassignRoom(before, "1:H");
+    expect(reach(after, "0:L").has("1:L1")).toBe(false);
+    // The storeys above are still linked by the shaft, so this is the
+    // hallway's doors going quiet rather than the whole floor vanishing.
+    expect(reach(after, "0:L").has("1:S")).toBe(true);
+  });
+
+  it("leaves every other room reachable as before", () => {
+    const before = state();
+    const was = reach(before, "0:L");
+    const after = unassignRoom(before, "4:B41");
+    const now = reach(after, "0:L");
+    for (const id of was) {
+      if (id === "4:B41") continue;
+      expect(now.has(id)).toBe(true);
+    }
+  });
+
+  it("knows a hidden room in a flat is not one of these", () => {
+    // Bedrooms are hidden by default and must still be checked.
+    const { layer } = state();
+    const bedroom = layer.rooms.get("1:B1")!;
+    expect(bedroom.surfaced).toBe(false);
+    expect(isUnidentified(bedroom)).toBe(false);
   });
 });

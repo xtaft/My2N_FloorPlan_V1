@@ -65,13 +65,21 @@ import {
  * envelope disagreed with it, so counting envelopes alone would say a
  * category was empty while listing something inside it.
  */
-const size = (category: SpaceCategory) =>
+/** Spaces of this category that are drawn on a plan. */
+const placed = (category: SpaceCategory) =>
   category.groups.length + category.rooms.length;
 
 /**
- * What a row holds, said rather than counted in brackets. Spaces still to
- * place are named only when there are some: a trailing "0 unplaced" on
- * every category is noise on a building nobody has imported a list into.
+ * What a row holds, said rather than counted in brackets.
+ *
+ * The first number is every space the category holds, placed or not, so
+ * the second reads as a part of it: "4 spaces | 1 unplaced" is four
+ * spaces, one of which has nowhere to be yet. Counting only the placed
+ * ones would make unassigning a space look like losing it.
+ *
+ * Spaces still to place are named only when there are some: a trailing
+ * "0 unplaced" on every category is noise on a building nobody has
+ * imported a list into.
  */
 function tally(spaces: number, unplaced: number): string {
   const first = `${spaces} space${spaces === 1 ? "" : "s"}`;
@@ -306,9 +314,8 @@ export function CategoriesDrawer({
           <ListItemText
             primary={group.name}
             // The floor, because the same envelope name repeats on every
-            // storey: four Hallways, five Stairs.
-            // The floor, because the same envelope name repeats on
-            // every storey, and then what is inside it.
+            // storey — four Hallways, five Stairs — and then what is in it.
+            // Rooms are always drawn, so an envelope has nothing unplaced.
             secondary={`${floorName(group.floor_id)} · ${tally(
               roomsInGroup(layer, group.id).length,
               0,
@@ -393,14 +400,18 @@ export function CategoriesDrawer({
           {visible.map((category) => {
             const key = category.id ?? "__unknown__";
             const open = isExpanded(key) || Boolean(matches);
+            const waiting = categoryTally(layer, category.id).unplaced;
+            // What the row opens onto. A category whose spaces are all
+            // unplaced still has rows inside it to reach.
+            const held = placed(category) + waiting;
             return (
               <Fragment key={key}>
                 <ListItemButton
                   sx={{ minHeight: 68, pl: 1, pr: 1 }}
-                  onClick={() => size(category) > 0 && toggle(key)}
+                  onClick={() => held > 0 && toggle(key)}
                 >
                   <Box sx={{ width: 28, display: "flex", alignItems: "center" }}>
-                    {size(category) > 0 ? (
+                    {held > 0 ? (
                       open ? (
                         <ExpandMore sx={{ fontSize: 20 }} />
                       ) : (
@@ -450,10 +461,7 @@ export function CategoriesDrawer({
                           <span>{category.name}</span>
                         </Box>
                       }
-                      secondary={tally(
-                        size(category),
-                        categoryTally(layer, category.id).unplaced,
-                      )}
+                      secondary={tally(held, waiting)}
                       primaryTypographyProps={{ variant: "body1" }}
                       secondaryTypographyProps={{ variant: "body2" }}
                     />
