@@ -90,39 +90,44 @@ exterior walk never touches it (11), and it is the 13 that comes out negative.
 the doc states in prose — vertex hygiene, collinear-dissolve debt, the shape of
 each door kind, the shaft rules, the surfacing rule, and the one rule itself.
 
-The fixture passes all of them. Four places where the data and the doc do not
-line up, none of which is a structural break:
+The fixture passes all of them. The audit turned up four places where the data
+and the doc did not line up — none a structural break, and in each case the
+data was right and the prose was wrong. **The doc has been amended**; what
+follows is the record of what changed and why.
 
-**1. Surfacing — the data is right, the sentence is too strong.** The doc says
-"Both of the door's rooms surface, so the reader never sits on a boundary to
-nowhere." The fixture surfaces only the non-apartment side: 28 apartment living
-rooms carry an entrance reader on their hallway door and stay hidden. That
-satisfies the rule's stated reason — no reader sits on a boundary to nowhere,
-because the hallway side always surfaces — while keeping flats collapsed, which
-is what the rest of the section asks for ("Rooms default to hidden; the group is
-what the map shows"). Taken literally the sentence would explode every flat on
-the map. Suggest amending it to *at least one side surfaces*, with the apartment
-exception named.
+**1. Surfacing.** The doc said "Both of the door's rooms surface, so the reader
+never sits on a boundary to nowhere." The fixture surfaces only the
+non-apartment side: 28 apartment living rooms carry an entrance reader on their
+hallway door and stay hidden. That satisfies the rule's stated reason — no
+reader sits on a boundary to nowhere, because the hallway side always surfaces
+— while keeping flats collapsed, which is what the rest of the section asks for
+("Rooms default to hidden; the group is what the map shows"). Taken literally
+the sentence would explode every flat on the map. Now reads *at least one of
+the door's rooms surfaces*, with the apartment exception spelled out.
 
-**2. The access model differs between the doc and the data.** The doc's
-`reachable()` calls `profile.can_enter(access_type(rooms[there], groups))` —
-permission by space *type*. The fixture's profiles are sets of *device ids*, and
+**2. The access model.** The doc's `reachable()` called
+`profile.can_enter(access_type(rooms[there], groups))` — permission by space
+*type*. The fixture's profiles are sets of *device ids*, and
 `verify_visual_layer.py` checks device membership. These are not equivalent:
-under the type rule, any resident who can enter one apartment room could enter
-all 76 of them. The data is right and the pseudocode is wrong. `reachable()`
-here takes device ids, with an optional `canEnter` predicate for the doc's
-variant.
+every flat is `space_type = "apartment"`, so under the type rule one apartment
+key would open all 76 apartment rooms. The pseudocode now checks
+`d.id in profile.devices`, a `Profile` object has been added to Part 2, and the
+claim that "a resident's permissions are a set of types" is replaced by what
+`space_type` actually drives — colour, default visibility and reporting.
+`reachable()` here takes device ids, with `canEnter` left as an escape hatch
+for a blanket rule over a kind of space, not as the model.
 
 **3. Three derivable fields are stored anyway.** `unplaced_devices`, `counts`
 and `profile.rooms` can all be recomputed, so by the one rule they should not be
 in the file. They are build-report metadata rather than model state, and all
 three are currently consistent — tests pin that — but they are exactly the kind
-of field that goes stale. The model layer derives rather than trusting them.
+of field that goes stale. Part 2 now says so: recompute them on load, never read
+them back. The model layer derives rather than trusting them.
 
-**4. `width` is in canvas units, not metres.** The `Door` dataclass comment says
-"absolute metres"; the values are 41–51 against a coordinate extent of about
-1323 × 785, i.e. SVG pixels. Nothing reads it as metres, but the comment will
-mislead. A scale factor per floor, or a corrected comment, would settle it.
+**4. `width` was documented as "absolute metres"** and is in canvas units —
+41–51 against a coordinate extent of about 1323 × 785, i.e. SVG pixels. The
+`Door` comment is corrected and Part 2 notes that a floor's `transform` carries
+the scale relating canvas units to the world.
 
 One implementation gap, in the viewer rather than the data: **`Floor.transform`
 is not applied when rendering.** Every floor in this fixture is identity, so

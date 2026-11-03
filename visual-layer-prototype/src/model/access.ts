@@ -91,9 +91,17 @@ export interface Reachability {
 }
 
 export interface ReachOptions {
-  /** Device ids the profile holds. A guarding device not in here refuses. */
+  /**
+   * Device ids the profile holds. A guarding device not in here refuses.
+   * This is the model: access is per unit, and the only thing separating A1's
+   * entrance from A2's is which reader it is.
+   */
   allowedDevices?: ReadonlySet<string>;
-  /** Alternative to a device set: decide by the room's access type. */
+  /**
+   * An escape hatch for a blanket rule over a kind of space — "any technical
+   * room", say. Not the access model: every flat is `space_type = "apartment"`,
+   * so deciding by type alone would open all of them at once.
+   */
   canEnter?: (accessType: string | null, room: Room) => boolean;
 }
 

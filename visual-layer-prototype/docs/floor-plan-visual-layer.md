@@ -264,7 +264,7 @@ class Door:
     kind: str = "physical"   # "physical" | "opening" | "virtual"
     wall_id: str = None      # physical and opening
     t: float = None          # 0..1 along the wall — centre of the opening
-    width: float = None      # absolute metres
+    width: float = None      # canvas units, the same ones the vertices use
     hinge: str = None        # physical only — which end the arc centres on
     swing: str = None        # physical only — which room it opens into
     rooms: tuple = None      # virtual only — no wall, so the pair is stored
@@ -288,7 +288,26 @@ class Floor:
     level: int               # the real storey — never changed by dragging
     sort_index: float        # drawer position only
     transform: tuple         # dx, dy, rotation, scale
+
+@dataclass
+class Profile:
+    id: str                  # a permission SET, not a person
+    devices: list            # the device ids this profile opens
+    people: list             # who holds it — a count for the UI, nothing more
 ```
+
+Lengths — `width`, and every coordinate — are in **canvas units**, the ones the
+vertices are in. A floor's `transform` carries the scale that relates them to
+the world, which is exactly why it is stored per floor and never baked in.
+Nothing in the model converts to metres; a dimension readout would be the first
+thing that has to.
+
+A **serialized** plan may also carry fields that are reports rather than model
+state — a `counts` block, an `unplaced_devices` list, the rooms a profile's
+devices happen to guard. Every one of those is derivable, so by the rule above
+none of them is model state: recompute them on load and never read them back.
+They are written for the person reading the file, and they are the first things
+to go stale when the file is edited by hand.
 
 ## What is deliberately absent
 
@@ -318,11 +337,16 @@ def access_type(room, groups):
     return room.space_type or groups[room.group_id].space_type
 ```
 
-`access_type` is what makes room-level access workable. A room normally has no
-type of its own, so all four bedrooms in flat 3B inherit `apartment` from their
-envelope. A locker room with its own reader gets `space_type` set explicitly and
-overrides. Typing a room is the exception, not the rule — without inheritance
-every room in the building would need one.
+A room normally has no type of its own, so all four bedrooms in flat 3B inherit
+`apartment` from their envelope. A locker room with its own reader gets
+`space_type` set explicitly and overrides. Typing a room is the exception, not
+the rule — without inheritance every room in the building would need one.
+
+`access_type` answers *what kind of space is this*, which drives colour,
+default visibility and how a result is reported. It does **not** decide who may
+enter: that is the profile's device set, checked against the devices on the
+door. The name is older than the rule and is kept only because it is what the
+field is called.
 
 ## Which side is which
 
@@ -666,12 +690,21 @@ A room or group holds no colour of its own, so the types panel owns rename and
 recolour, and every space of that type follows. Renaming one space changes its
 `name` only.
 
-The access model reads `space_type` directly — a resident's permissions are a
-set of types, not a set of spaces — so there are no category strings anywhere
-in traversal.
+**`space_type` does not drive access.** A profile is a set of **device ids**,
+so no category string appears in traversal at all — the search asks whether the
+profile holds the device guarding the door, and nothing else.
 
-Deleting a type must force reassignment. An untyped space has undefined access
-semantics.
+It has to work that way. Every flat in the building is `space_type =
+"apartment"`, so a permission expressed as a set of types would open all of
+them to anyone who can open one. Access is per unit, and the only thing that
+distinguishes A1's entrance from A2's is which reader it is.
+
+What `space_type` does drive is colour, default room visibility, and how a
+result is reported. That is still worth inheriting — see `access_type` below —
+it is simply not what the search consumes.
+
+Deleting a type must force reassignment. An untyped space has undefined
+rendering and reporting.
 
 ## Viewing what someone can reach
 
@@ -708,7 +741,7 @@ handle.
 Then breadth-first search:
 
 ```python
-def reachable(start_room, profile, adj, rooms, groups):
+def reachable(start_room, profile, adj):
     seen    = {start_room}
     via     = {start_room: None}        # which door got us here
     blocked = {}                        # where we were turned away
@@ -721,8 +754,7 @@ def reachable(start_room, profile, adj, rooms, groups):
                 continue                            # loops handled
 
             guards = [d for d in devices_on(door) if there in d.guards]
-            if guards and not profile.can_enter(
-                    access_type(rooms[there], groups)):
+            if guards and not any(d.id in profile.devices for d in guards):
                 blocked[there] = door
                 continue                            # and everything past it
 
@@ -733,13 +765,16 @@ def reachable(start_room, profile, adj, rooms, groups):
     return seen, via, blocked
 ```
 
-Four things carry the weight:
+Five things carry the weight:
 
 - **`there in seen`** — buildings have loops. A square block around a courtyard,
   or a ring hallway cut in two places. Not a tree
 - **no checks → free passage** — the stated model: a door with no reader is open
 - **`there in d.guards`** — only devices guarding the side being *entered*.
   Walking the other way, they do not apply. Free egress, as in a real building
+- **`d.id in profile.devices`** — the test is which reader, not which kind of
+  space. Access is per unit: every flat is `space_type = "apartment"`, so a
+  check against the type would open all of them at once
 - **`blocked`** — remembers which door refused. This is what answers
   "why can't they get in", which is the question managers actually ask
 
@@ -800,8 +835,17 @@ reveals the rooms that device sits between.
 
 Placement targets the **door**, not the room: a reader guards a passage, not a
 space. That is physically accurate, and it answers `guards` immediately — a
-room-targeted drop would not say which boundary is controlled. Both of the
-door's rooms surface, so the reader never sits on a boundary to nowhere.
+room-targeted drop would not say which boundary is controlled. **At least one
+of the door's rooms surfaces**, so the reader never sits on a boundary to
+nowhere.
+
+At least one, not both, because of the apartment entrances. Every flat has a
+reader on its door from the hallway, and surfacing both sides would surface
+every flat's entrance room — seven per floor — which is precisely the clutter
+this section exists to avoid. So the hallway side surfaces and the apartment
+side does not: a room whose envelope is an apartment stays hidden, and the flat
+remains the thing the map shows. Everywhere else both sides surface, which is
+why a gym's locker room and the gym floor outside it both appear.
 
 While a group is collapsed, interior **doors** reveal on demand — faint glyphs,
 no walls, no room fills. Far less clutter than revealing full geometry, and it
