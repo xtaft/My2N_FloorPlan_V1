@@ -116,7 +116,7 @@ export function FloorPlanActionBar({
           "remove_wall",
           "Remove wall",
           <LayersClearOutlined sx={{ fontSize: 16 }} />,
-          "Click a wall to take it out. The rooms on either side become one.",
+          "Click a wall to take it out. The rooms on either side become one; any other wall they share stays standing.",
         )}
         {toolButton(
           "door",

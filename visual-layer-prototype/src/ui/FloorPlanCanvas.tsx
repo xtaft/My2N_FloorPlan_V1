@@ -25,7 +25,6 @@ import {
   lerp,
   nearestWall,
   nearestWallInRoom,
-  sharedWalls,
   ringsToPath,
   roomColor,
   roomsOf,
@@ -397,18 +396,6 @@ export function FloorPlanCanvas({
   const hoverError =
     placing && liveHover && placementError ? placementError(liveHover) : null;
 
-  /**
-   * What a click with the remove tool would take. A slit belongs to one
-   * room and goes on its own; anything else takes its whole shared run.
-   */
-  const wallsUnderErase = useMemo(() => {
-    if (!erasing || !liveHover) return [];
-    const wall = layer.walls.get(liveHover.wallId);
-    if (!wall) return [];
-    if (wall.room_a === wall.room_b) return [wall];
-    return sharedWalls(layer, wall.room_a, wall.room_b);
-  }, [erasing, liveHover, layer]);
-
   const eraseError =
     erasing && liveHover && deleteWallError
       ? deleteWallError(liveHover.wallId)
@@ -716,28 +703,15 @@ export function FloorPlanCanvas({
             <DoorGhost layer={layer} hit={liveHover} error={hoverError} />
           )}
 
-          {/* Every wall that would go, not just the one under the pointer:
-              two rooms often share a wall split at T-junctions, and leaving
-              the rest behind would strand them inside the merged room. */}
+          {/* Just this wall. Where the two rooms share others, those stay
+              standing inside the merged room, so highlighting them would
+              promise a removal that does not happen. */}
           {erasing && liveHover && (
-            <g pointerEvents="none">
-              {wallsUnderErase.map((w) => {
-                const [a, b] = wallEnds(layer, w);
-                return (
-                  <line
-                    key={w.id}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke={eraseError ? GHOST_BAD : GHOST_OK}
-                    strokeWidth={12}
-                    strokeLinecap="round"
-                    strokeOpacity={0.75}
-                  />
-                );
-              })}
-            </g>
+            <EraseGhost
+              layer={layer}
+              wallId={liveHover.wallId}
+              error={eraseError}
+            />
           )}
 
           {/* The wall being drawn. Both ends sit on the boundary already, so
@@ -888,6 +862,34 @@ function DoorSymbol({
         strokeWidth={3}
       />
     </g>
+  );
+}
+
+/** The wall a click would take out, and whether it would be let. */
+function EraseGhost({
+  layer,
+  wallId,
+  error,
+}: {
+  layer: VisualLayer;
+  wallId: string;
+  error: string | null;
+}) {
+  const wall = layer.walls.get(wallId);
+  if (!wall) return null;
+  const [a, b] = wallEnds(layer, wall);
+  return (
+    <line
+      x1={a.x}
+      y1={a.y}
+      x2={b.x}
+      y2={b.y}
+      stroke={error ? GHOST_BAD : GHOST_OK}
+      strokeWidth={12}
+      strokeLinecap="round"
+      strokeOpacity={0.75}
+      pointerEvents="none"
+    />
   );
 }
 

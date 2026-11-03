@@ -538,13 +538,18 @@ def delete_wall(w, rooms, doors, devices, groups):
         reject("These rooms touch in two places — merging would leave a gap "
                "between them.")
 
-    for wall in shared:                        # every shared wall goes, not just w
-        for door in doors_on(wall):
+    for door in doors_on(w):                   # only the clicked wall goes
+        for dev in devices_on(door):
+            dev.host_id, dev.guards = None, ()         # orphaned, not deleted
+        delete(door)
+    a.walls.discard(w.id); b.walls.discard(w.id)
+    delete(w)
+
+    for wall in shared - {w}:                  # the rest stay, as slits
+        for door in doors_on(wall):            # which have no side to open between
             for dev in devices_on(door):
-                dev.host_id, dev.guards = None, ()     # orphaned, not deleted
+                dev.host_id, dev.guards = None, ()
             delete(door)
-        a.walls.discard(wall.id); b.walls.discard(wall.id)
-        delete(wall)
 
     a.walls |= b.walls                         # survivor takes the rest
     for wall in b.walls:                       # remap the room pair
@@ -559,23 +564,29 @@ def delete_wall(w, rooms, doors, devices, groups):
 
 Five things that operation has to get right:
 
-**Every shared wall goes, not just the clicked one.** Two rooms often share a
-wall split into fragments at T-junctions. Leaving the others behind would put a
-wall in the middle of the merged room.
+**Only the clicked wall goes.** Two rooms often share a wall split into
+fragments at T-junctions, and taking the whole run on one click demolishes
+masonry nobody pointed at. The fragments left behind have the merged room on
+both sides, which is a slit — a shape the model already renders and traverses
+— and on the plan it is simply the stub of wall still standing. Removing those
+too is another click each.
 
-**Doors on shared walls are deleted; doors on retained walls survive.** A door
-from either room into the corridor must still be there afterwards. Only the ones
-in the wall that no longer exists go.
+**Doors on retained walls survive; doors with one room on both sides cannot.**
+A door from either room into the corridor must still be there afterwards. The
+one in the deleted wall goes with it, and so does any door left on a fragment
+that has become a slit: a slit has no two sides for a door to open between.
 
 **Devices on those doors orphan, never delete.** `host_id = None`, `guards = ()`,
 and the device appears in the unplaced list. A reader is a provisioned physical
 asset — deleting it because a wall was removed would lose a real device and make
 undo impossible.
 
-**One name survives, and the user picks.** The merged room keeps a single name,
-and which one is not inferable — a kitchen merged with a dining room could
-reasonably be either. Ask, defaulting to the larger room's name. Same for
-`space_type` where the two differ.
+**One name survives, and the wall says which.** The merged room keeps a single
+name, and which one is not inferable from the shapes — a kitchen merged with a
+dining room could reasonably be either. The wall itself settles it: `room_b`,
+the side on the right walking v1 → v2. Same for `space_type`. Asking is worse
+than a rule here, because the question comes up on every merge and the answer
+is almost never interesting; a caller that does care can still say.
 
 **Envelope membership resolves by type precedence.** Three cases:
 
@@ -583,7 +594,7 @@ reasonably be either. Ask, defaulting to the larger room's name. Same for
 |---|---|
 | one envelope, one unassigned | joins the envelope |
 | an apartment and a plain group | **the apartment wins** |
-| two of the same kind | the user picks |
+| two of the same kind | the right-hand room's, as with the name |
 
 ```python
 PRECEDENCE = {"apartment": 2}            # everything else: 1, unassigned: 0
@@ -593,28 +604,34 @@ def surviving_envelope(a, b, groups):
     pa, pb = rank(ga), rank(gb)
     if pa != pb:
         return (ga if pa > pb else gb).id          # decided
-    if ga is gb:
-        return ga.id if ga else None              # same, or both unassigned
-    return ASK                                    # two apartments, or two groups
+    return rooms[w.room_b].group_id                # the surviving room's
 ```
 
 An apartment outranks a plain group because it is the stronger claim: it has a
 `domain_ref`, residents, and billing attached, where a generic group may be only
 visual organisation. A space that now opens into a flat is part of the flat.
 
-Two apartments, or two plain groups, cannot be decided from the data — merging
-two flats changes what the apartments *are*. Ask, and re-bind `domain_ref`
-afterwards. Mark the losing envelope's `domain_ref` orphaned rather than
-hard-deleting it, so undo stays possible.
+Two apartments, or two plain groups, are decided the same way the name is: the
+room on the right of the wall keeps its envelope. Merging two flats does change
+what the apartments *are*, so `domain_ref` still wants re-binding afterwards.
+Mark the losing envelope's `domain_ref` orphaned rather than hard-deleting it,
+so undo stays possible.
 
 An envelope left with no rooms after the merge is deleted, and its own
 `domain_ref` orphaned the same way.
 
-**Void rejection.** `runs(shared)` is the number of connected components of the
-shared-wall subgraph. One run merges cleanly. Zero means the rooms are not
-adjacent. Two or more, with neither room enclosing the other, leaves an
-unclaimed region between the runs — reject, and say so plainly rather than
-reporting a generic failure.
+**Void rejection.** Two rooms that meet on either side of a third wrap around
+it, and once they are one room their walls close a loop around that third. An
+even-odd fill then paints it as part of the merged room while it carries on
+being its own space. Reject, and name the room that would be swallowed rather
+than reporting a generic failure.
+
+`runs(shared) > 1` is the cheap signal for this, but it is only a proxy: it
+asks how the rooms touch rather than what the merge produced. Build the merge
+and test the outcome — does any neighbour's label point now fall inside the
+merged room's rings — and the answer is exact, and names the room. Only a
+neighbour can be caught this way, since whatever closes around it is made of
+the merged room's own walls.
 
 Where one room fully encloses the other — a lift core inside a car park — the
 merge is valid and the result simply loses a hole. Ring count goes from 2 to 1,
@@ -1005,11 +1022,13 @@ generic failure leaves a manager with no way forward.
 
 **Deleting a wall (merging rooms)**
 
-- the rooms must be adjacent — `runs(shared) == 0` means they are not
-- `runs(shared) > 1` with neither room enclosing the other would leave an
-  unclaimed region: *these rooms touch in two places, merging would leave a gap
-  between them*
-- if the two rooms are in two apartments, or in two plain groups, ask which
+- the wall must have a room on both sides; one facing the exterior would open
+  the room to outside rather than merge it with anything
+- the merge must not close around a third room: *these two wrap around the
+  bathroom, so merging them would shut it inside the new room while it is
+  still a space of its own*
+- a caller that names the surviving room, or the surviving envelope, must name
+  one of the two actually involved
   envelope survives rather than guessing, and re-bind `domain_ref` afterwards.
   An apartment against a plain group needs no question — the apartment wins
 

@@ -6,18 +6,31 @@
  * apart. Knocking a hole while keeping both spaces is a different intent and
  * a different operation: `state = "opening"`, not implemented here.
  *
+ * Exactly the wall that was clicked goes, and no other. Where the two rooms
+ * shared more than one wall, the rest stay standing inside the merged room
+ * as slits — the same room on both sides — which is what actually happens
+ * when a section of wall is taken out of a flat. The doc calls for every
+ * shared wall to go at once; that loses standing masonry nobody asked about,
+ * and the slit it leaves instead is a shape the model already describes.
+ *
+ * What that does not change is the doc's void rejection. Two rooms that wrap
+ * around a third still close a loop around it once they are one room, and
+ * an even-odd fill then paints that third room as part of the merged one
+ * while it carries on existing. The check for it is the outcome itself —
+ * build the merge, then see whether it swallowed a neighbour — rather than
+ * the number of runs, which only approximates the question.
+ *
  * Every refusal is checked before anything is written.
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { vertexOf } from "./geometry";
-import { interiorRings, ringsOf, signedArea } from "./rings";
+import { insideRings, interiorRings, labelPoint, ringsOf } from "./rings";
 import { groupAccessType } from "./derive";
 import {
   EXTERIOR,
   type Device,
   type Group,
-  type Room,
   type VisualLayerFile,
   type Wall,
 } from "./types";
@@ -35,59 +48,6 @@ export function sharedWalls(
   );
 }
 
-/**
- * Connected components of the shared-wall subgraph.
- *
- * One run merges cleanly. Two or more means the rooms touch in separate
- * places, and unless one encloses the other the region between those runs
- * would belong to nobody.
- */
-export function wallRuns(walls: Wall[]): number {
-  const parent = new Map<string, string>();
-  const find = (x: string): string => {
-    while (parent.get(x) !== x) {
-      parent.set(x, parent.get(parent.get(x)!)!);
-      x = parent.get(x)!;
-    }
-    return x;
-  };
-  for (const w of walls) {
-    for (const v of [w.v1, w.v2]) if (!parent.has(v)) parent.set(v, v);
-  }
-  for (const w of walls) {
-    const a = find(w.v1);
-    const b = find(w.v2);
-    if (a !== b) parent.set(a, b);
-  }
-  return new Set(walls.map((w) => find(w.v1))).size;
-}
-
-function areaOf(layer: VisualLayer, room: Room): number {
-  return interiorRings(ringsOf(layer, room)).reduce(
-    (acc, ring) => acc + Math.abs(signedArea(ring)),
-    0,
-  );
-}
-
-/**
- * Whether `outer` wraps `inner` completely — a lift core inside a car park.
- *
- * Rooms tile the plane here, so "every corner of the inner room is also a
- * corner of the outer one" says it: a room merely adjacent to another always
- * has corners of its own somewhere else. Merging these is valid and the
- * result simply loses a hole, which is why two runs do not condemn it.
- */
-function encloses(layer: VisualLayer, outer: Room, inner: Room): boolean {
-  const rings = interiorRings(ringsOf(layer, outer));
-  if (rings.length < 2) return false;
-  const corners = rings.flat();
-  const near = (x: number, y: number) =>
-    corners.some((c) => Math.abs(c.x - x) < 1e-6 && Math.abs(c.y - y) < 1e-6);
-  return interiorRings(ringsOf(layer, inner))
-    .flat()
-    .every((v) => near(v.x, v.y));
-}
-
 /** Apartments outrank plain envelopes, which outrank being unassigned. */
 function rank(layer: VisualLayer, groupId: string | null): number {
   if (!groupId) return 0;
@@ -98,10 +58,11 @@ function rank(layer: VisualLayer, groupId: string | null): number {
 
 export interface DeleteWallRequest {
   wallId: string;
-  /**
-   * Which room's name and type survive. Not inferable — a kitchen merged
-   * with a dining room could reasonably be either — so the caller decides,
-   * defaulting to the larger room.
+/**
+   * Which room's name and type survive. Not inferable from the shapes — a
+   * kitchen merged with a dining room could reasonably be either — so it
+   * falls to the wall's own orientation: `room_b`, the side on the right
+   * walking v1 to v2. The caller can say otherwise.
    */
   keep?: string;
   name?: string;
@@ -114,12 +75,12 @@ export interface DeleteWallRequest {
 /**
  * Delete a wall, merging the rooms on either side of it.
  *
- * The five things this has to get right, all from the doc: every shared wall
- * goes and not just the clicked one, or a wall is left stranded mid-room;
- * doors on shared walls go while doors on retained walls stay; devices on
- * those doors are orphaned and never deleted, because a reader is a
- * provisioned physical asset; one name survives and the caller picks it; and
- * envelope membership resolves by type precedence.
+ * What this has to get right: only the clicked wall goes, and any other wall
+ * the two rooms shared stays as a slit; doors on retained walls survive,
+ * while a door whose two sides have become one room cannot and goes with it;
+ * devices on those doors are orphaned and never deleted, because a reader is
+ * a provisioned physical asset; one name survives; and envelope membership
+ * resolves by type precedence, with the right-hand side breaking a tie.
  */
 export function deleteWall(
   state: EditState,
@@ -142,20 +103,12 @@ export function deleteWall(
   const roomA = must(layer.rooms, wall.room_a, "room");
   const roomB = must(layer.rooms, wall.room_b, "room");
 
-  const shared = sharedWalls(layer, roomA.id, roomB.id);
-  if (
-    wallRuns(shared) > 1 &&
-    !encloses(layer, roomA, roomB) &&
-    !encloses(layer, roomB, roomA)
-  ) {
-    throw new OperationRejected(
-      `${roomA.name} and ${roomB.name} touch in two places — merging would leave a gap between them that belongs to neither.`,
-    );
-  }
-
   // --- who survives --------------------------------------------------------
-  const keepId =
-    req.keep ?? (areaOf(layer, roomA) >= areaOf(layer, roomB) ? roomA.id : roomB.id);
+  // room_b is the side on the right walking v1 to v2, which is the one the
+  // wall itself nominates. Rooms touching in more than one place need no
+  // special case now that only the clicked wall goes: the other runs stay
+  // standing, so there is no region left over between them.
+  const keepId = req.keep ?? roomB.id;
   if (keepId !== roomA.id && keepId !== roomB.id) {
     throw new OperationRejected(
       `${keepId} is not one of the two rooms this wall separates.`,
@@ -168,33 +121,38 @@ export function deleteWall(
   const rankKeep = rank(layer, keep.group_id);
   const rankGone = rank(layer, gone.group_id);
   let groupId: string | null;
-  if (rankKeep !== rankGone) {
-    groupId = rankKeep > rankGone ? keep.group_id : gone.group_id;
-  } else if (keep.group_id === gone.group_id) {
-    groupId = keep.group_id;
-  } else if (req.groupId !== undefined) {
+  if (req.groupId !== undefined) {
     if (req.groupId !== keep.group_id && req.groupId !== gone.group_id) {
       throw new OperationRejected(
         "The merged room has to stay in one of the two envelopes it came from.",
       );
     }
     groupId = req.groupId;
+  } else if (rankKeep !== rankGone) {
+    // An apartment still beats a plain envelope whichever side it is on:
+    // merging a flat into a hallway must not quietly un-flat it.
+    groupId = rankKeep > rankGone ? keep.group_id : gone.group_id;
   } else {
-    const nameOf = (id: string | null) =>
-      (id && layer.groups.get(id)?.name) ?? "no envelope";
-    throw new OperationRejected(
-      `${nameOf(keep.group_id)} and ${nameOf(gone.group_id)} are of the same standing, so which one the merged room belongs to cannot be read off the data. Pick one.`,
-    );
+    // Two envelopes of the same standing, or the same one twice: the
+    // surviving room's, which is the one on the right of the wall.
+    groupId = keep.group_id;
   }
 
   const next = applyRemoval(file, layer, {
-    wallIds: shared.map((w) => w.id),
+    wallIds: [wall.id],
     keepId: keep.id,
     goneId: gone.id,
     name: req.name,
     spaceType: req.spaceType,
     groupId,
   });
+
+  const swallowed = roomSwallowedBy(next, keep.id);
+  if (swallowed) {
+    throw new OperationRejected(
+      `${roomA.name} and ${roomB.name} wrap around ${swallowed}, so merging them would close it inside the new room while it is still a space of its own.`,
+    );
+  }
 
   return commit(state, "delete_wall", "Remove wall", next);
 }
@@ -226,11 +184,28 @@ function applyRemoval(
 ): VisualLayerFile {
   const doomed = new Set(r.wallIds);
 
-  // Doors in a wall that no longer exists go with it. Doors on the walls
-  // that are kept must survive: a door from either room into the corridor is
-  // still there after the merge.
+  /**
+   * Any other wall the two rooms shared now has the survivor on both sides:
+   * a slit. The wall itself stays — it is still standing — but a door in it
+   * cannot, because a slit has no two sides for a door to open between.
+   */
+  const slit = new Set<string>();
+  if (r.keepId && r.goneId) {
+    for (const w of file.walls) {
+      if (doomed.has(w.id) || w.room_a === w.room_b) continue;
+      const a = w.room_a === r.goneId ? r.keepId : w.room_a;
+      const b = w.room_b === r.goneId ? r.keepId : w.room_b;
+      if (a === b) slit.add(w.id);
+    }
+  }
+
+  // Doors in a wall that no longer exists go with it, and so do doors left
+  // straddling nothing. Doors on retained walls survive: a door from either
+  // room into the corridor is still there after the merge.
   const lostDoors = new Set(
-    file.doors.filter((d) => d.wall_id && doomed.has(d.wall_id)).map((d) => d.id),
+    file.doors
+      .filter((d) => d.wall_id && (doomed.has(d.wall_id) || slit.has(d.wall_id)))
+      .map((d) => d.id),
   );
 
   const walls = file.walls
@@ -307,6 +282,43 @@ function applyRemoval(
       return w ? [w.v1, w.v2] : [];
     }),
   );
+}
+
+/**
+ * A room that ends up inside the merged one without being part of it.
+ *
+ * Only a neighbour can be swallowed: whatever closes around it is made of
+ * the merged room's own walls. Testing the outcome is exact where counting
+ * runs is a proxy — and cheap, since the candidates are one room's
+ * neighbours rather than the floor.
+ */
+function roomSwallowedBy(
+  file: VisualLayerFile,
+  survivorId: string,
+): string | null {
+  const layer = indexVisualLayer(file);
+  const survivor = layer.rooms.get(survivorId);
+  if (!survivor) return null;
+
+  const rings = interiorRings(ringsOf(layer, survivor));
+  if (rings.length < 2) return null; // one ring cannot enclose anything else
+
+  const neighbours = new Set<string>();
+  for (const id of survivor.walls) {
+    const w = layer.walls.get(id);
+    if (!w) continue;
+    for (const side of [w.room_a, w.room_b]) {
+      if (side !== survivorId && side !== EXTERIOR) neighbours.add(side);
+    }
+  }
+
+  for (const id of neighbours) {
+    const room = layer.rooms.get(id);
+    if (!room) continue;
+    const pt = labelPoint(interiorRings(ringsOf(layer, room)));
+    if (pt && insideRings(pt, rings)) return room.name;
+  }
+  return null;
 }
 
 function pruneEmptyGroups(file: VisualLayerFile): Group[] {
@@ -400,15 +412,10 @@ export function dissolveCollinear(
 export function previewDeleteWall(
   state: EditState,
   req: DeleteWallRequest,
-): { ok: true; walls: number } | { ok: false; reason: string } {
+): { ok: true } | { ok: false; reason: string } {
   try {
-    const wall = state.layer.walls.get(req.wallId);
-    const count =
-      wall && wall.room_a !== wall.room_b
-        ? sharedWalls(state.layer, wall.room_a, wall.room_b).length
-        : 1;
     deleteWall(state, req);
-    return { ok: true, walls: count };
+    return { ok: true };
   } catch (e) {
     if (e instanceof OperationRejected) return { ok: false, reason: e.message };
     throw e;
