@@ -8,7 +8,9 @@ import {
   accessPaint,
   allPeople,
   accessShading,
+  EXTERIOR,
   devicesHeldBy,
+  reachable,
   residents,
   visualLayer as layer,
 } from "./index";
@@ -138,5 +140,79 @@ describe("shading the plan", () => {
     expect([...colours].sort()).toEqual(
       [ACCESS_COLORS.open, ACCESS_COLORS.closed].sort(),
     );
+  });
+});
+
+describe("who the building actually lets in where", () => {
+  const openTo = (personId: string) => {
+    const shade = accessShading(layer, new Set(devicesHeldBy(layer, personId)));
+    return new Set(
+      [...shade.entries()]
+        .filter(([, v]) => v === "open")
+        .map(([id]) => layer.rooms.get(id)?.name ?? id),
+    );
+  };
+
+  it("lets a resident into the shared spaces, and their own flat", () => {
+    // R001 lives in A1. The entrance intercom gets her in; the shared
+    // spaces beyond it are not guarded, so they are hers too; and her
+    // own reader opens her flat.
+    const open = openTo("R001");
+    expect(open.has("Lobby")).toBe(true);
+    expect(open.has("Hallway")).toBe(true);
+    expect(open.has("Stairs")).toBe(true);
+    expect(open.has("Elevator")).toBe(true);
+    expect(open.has("Living room")).toBe(true);
+  });
+
+  it("keeps the shop staff out of the rest of the building", () => {
+    // They come in from the street through their own door and hold
+    // nothing else — no intercom, so no lobby, so nothing beyond it.
+    const open = openTo("S004");
+    expect(open.has("Shop floor")).toBe(true);
+    expect(open.has("Lobby")).toBe(false);
+    expect(open.has("Stairs")).toBe(false);
+    expect(open.has("Hallway")).toBe(false);
+  });
+
+  it("keeps the gym staff out of it too, lockers aside", () => {
+    const open = openTo("S015");
+    expect(open.has("Gym floor")).toBe(true);
+    expect(open.has("Locker room M")).toBe(true);
+    expect(open.has("Lobby")).toBe(false);
+  });
+
+  it("is the walk starting outside that makes that true", () => {
+    // Worth pinning: start the walk in the lobby and everybody is
+    // standing in it before they have opened anything, which hands the
+    // shop staff the whole building.
+    const fromLobby = reachable(layer, "0:L", {
+      allowedDevices: new Set(devicesHeldBy(layer, "S004")),
+    }).seen;
+    expect(fromLobby.has("0:L")).toBe(true);
+
+    const fromOutside = reachable(layer, EXTERIOR, {
+      allowedDevices: new Set(devicesHeldBy(layer, "S004")),
+    }).seen;
+    expect(fromOutside.has("0:L")).toBe(false);
+  });
+
+  it("does not call a flat an access group", () => {
+    // An apartment door is a hidden group: the resident holds its
+    // reader in their own right, and it is not something a manager
+    // administers in the groups list.
+    const names = accessGroups().map((g) => g.name);
+    for (const name of names) expect(name).not.toMatch(/^A\d+$/);
+    expect(names).toHaveLength(4);
+
+    // And no group's devices are an apartment reader.
+    const flatReaders = new Set(
+      residents(layer).flatMap((r) =>
+        r.accessPoints.filter((d) => d !== "IC-0-d10"),
+      ),
+    );
+    for (const group of accessGroups()) {
+      for (const id of group.devices) expect(flatReaders.has(id)).toBe(false);
+    }
   });
 });

@@ -10,10 +10,10 @@
  * and a person's reach is the union of the groups they are in.
  */
 import groupsFile from "../fixtures/access_groups.json";
-import { accessType, reachable } from "./access";
+import { reachable } from "./access";
 import type { VisualLayer } from "./load";
 import { allPeople } from "./building";
-import type { Room } from "./types";
+import { EXTERIOR, type Room } from "./types";
 
 /** A permission set, as the building's data defines it. */
 export interface AccessGroup {
@@ -77,20 +77,6 @@ export function devicesHeldBy(layer: VisualLayer, personId: string): string[] {
   return [...held];
 }
 
-/**
- * Where the walk starts: the space the building is entered through.
- *
- * Everything is measured from the front door, because that is where
- * somebody actually arrives. Starting anywhere else would answer a
- * question about a person who is already inside.
- */
-function defaultEntrance(layer: VisualLayer): string | null {
-  const ground = layer.floors[0];
-  const rooms = ground ? (layer.roomsByFloor.get(ground.id) ?? []) : [];
-  const lobby = rooms.find((r) => accessType(layer, r) === "circulation");
-  return lobby?.id ?? rooms[0]?.id ?? null;
-}
-
 /** How a space is drawn in access mode. */
 export type AccessShade = "none" | "open" | "closed";
 
@@ -112,10 +98,14 @@ export function accessShading(
     return out;
   }
 
-  const start = defaultEntrance(layer) ?? layer.file.rooms[0]?.id;
-  if (!start) return out;
-
-  const seen = reachable(layer, start, { allowedDevices: allowed }).seen;
+  // The walk starts outside the building, not in the lobby.
+  //
+  // Starting inside would hand everybody the lobby for free, because a
+  // walk always reaches where it begins — and the shop and gym staff do
+  // not hold the entrance intercom. They come in through their own door
+  // from the street and cannot get into the rest of the building, which
+  // is only true on the plan if the street is where they start.
+  const seen = reachable(layer, EXTERIOR, { allowedDevices: allowed }).seen;
   for (const room of layer.file.rooms) {
     out.set(room.id, seen.has(room.id) ? "open" : "closed");
   }

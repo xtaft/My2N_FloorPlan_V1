@@ -846,10 +846,31 @@ open together" is a real question, while two people are not a thing that
 walks through a door together. Choosing one clears the other.
 
 **Nothing selected is not a question, so it gets no answer**: every space
-is grey. With a selection the walk from the entrance says which spaces
-are behind a door it opens — green — and which are not — red. Every
-space is one or the other; there is no third state once a question has
-been asked.
+is grey. With a selection the walk says which spaces are behind a door
+it opens — green — and which are not — red. Every space is one or the
+other; there is no third state once a question has been asked.
+
+**The walk starts outside the building.** This is the whole of what
+makes the answer honest. A walk always reaches where it begins, so
+starting in the lobby would hand everybody the lobby before they had
+opened anything — and the shop and gym staff do not hold the entrance
+intercom. They come in from the street through their own door and
+cannot get into the rest of the building, which is only true on the
+plan if the street is where they start. A resident holds the intercom,
+so they get the lobby and every shared space beyond it, which is not
+guarded, and their own reader opens their flat.
+
+**The lists are grouped by what things are.** Devices are one flat list:
+grouping them under the access groups would hide the ones no group
+holds and show a device twice when two groups hold it, and "what does
+this device open" has nothing to do with groups. People are split into
+residents and operators for the same reason — somebody in two groups
+would be listed twice and somebody in none would vanish, which is most
+residents, because living somewhere is not a group.
+
+**An apartment door is a hidden group.** The resident holds its reader
+in their own right, so it never appears in the groups list; the four
+that do are the ones a manager administers.
 
 **People never appear on the plan.** A person is not somewhere, they are
 allowed somewhere, and the colours are what says so.
