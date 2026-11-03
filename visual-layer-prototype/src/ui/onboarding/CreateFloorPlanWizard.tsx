@@ -43,6 +43,20 @@ import {
   type FloorList,
 } from "../../model";
 
+/**
+ * Whether a file is a plan to detect from, a picture to draw over, or
+ * neither. Read from the browser's type first and the extension second,
+ * because a file dragged from some places arrives with no type at all.
+ */
+function pdfKind(file: File): "pdf" | "image" | null {
+  const name = file.name.toLowerCase();
+  if (file.type === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  if (file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/.test(name)) {
+    return "image";
+  }
+  return null;
+}
+
 // -------------------------------------------------------- step 1: how
 
 export function ChooseMethodDialog({
@@ -161,26 +175,27 @@ export function AddFloorsDialog({
 }) {
   const pdfOnly = method === "pdf";
   const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
 
-  // A prototype has no file picker worth building, so dropping is
-  // simulated: browse adds plausible pages so the rest of the flow is
-  // real. Everything after this point behaves exactly as it would.
-  const browse = () => {
-    const n = floors.length;
-    onFloors(
-      addFloors(
-        floors,
-        [1, 2, 3, 4, 5].slice(0, 5).map((i) => ({
-          name: `floor_${n + i}.${pdfOnly ? "pdf" : i % 3 === 0 ? "jpg" : "pdf"}`,
-          source: pdfOnly
-            ? ("pdf" as const)
-            : i % 3 === 0
-              ? ("image" as const)
-              : ("pdf" as const),
-        })),
-      ),
-    );
+  /**
+   * What a dropped or chosen file is.
+   *
+   * A PDF is the only thing worth running detection on. Anything else is
+   * a picture of a plan, which can be drawn over but not read — so the
+   * check screen will say nothing was detected rather than pretend.
+   */
+  const take = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const dropped = [...files]
+      .filter((f) => pdfKind(f) !== null)
+      .map((f) => ({ name: f.name, source: pdfKind(f)! }));
+    if (dropped.length > 0) onFloors(addFloors(floors, dropped));
   };
+
+  const accept = pdfOnly
+    ? "application/pdf,.pdf"
+    : "application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg";
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -195,11 +210,34 @@ export function AddFloorsDialog({
             : "Upload an image for each floor to draw over, such as a scan, a photo or a screenshot. Floors can also be added without an image as a blank canvas."}
         </Typography>
 
+        <input
+          ref={picker}
+          type="file"
+          multiple
+          accept={accept}
+          hidden
+          onChange={(e) => {
+            take(e.target.files);
+            // Cleared so choosing the same file twice still fires.
+            e.target.value = "";
+          }}
+        />
         <Box
-          onClick={browse}
+          onClick={() => picker.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            take(e.dataTransfer.files);
+          }}
           sx={{
             border: "1px dashed",
-            borderColor: "divider",
+            borderColor: over ? "primary.main" : "divider",
+            bgcolor: over ? "action.hover" : undefined,
             borderRadius: 1,
             py: 4,
             textAlign: "center",

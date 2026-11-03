@@ -5,12 +5,13 @@
  * and the five tabs are the same on every tab — only the panel under them
  * changes, which is why they live here and the tables do not.
  */
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
 import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
@@ -22,6 +23,7 @@ import Typography from "@mui/material/Typography";
 import AddCircleOutline from "@mui/icons-material/AddCircle";
 import ApartmentOutlined from "@mui/icons-material/ApartmentOutlined";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
+import ChevronRight from "@mui/icons-material/ChevronRight";
 import BadgeOutlined from "@mui/icons-material/BadgeOutlined";
 import FactCheckOutlined from "@mui/icons-material/FactCheckOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
@@ -117,7 +119,7 @@ export function BuildingScreen({
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <IconRail />
-        <SpaceTree buildingName={buildingName} spaces={spaces} width={240} />
+        <SpaceTree buildingName={buildingName} spaces={spaces} width={280} />
 
         <Box sx={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
           <Box sx={{ px: 3, pt: 1.5 }}>
@@ -213,18 +215,21 @@ function Crumb({ children }: { children: string }) {
 function TopBar({ place }: { place: string }) {
   return (
     <AppBar position="static" sx={{ borderBottom: 1, borderColor: "divider" }}>
-      <Toolbar disableGutters sx={{ minHeight: 56, pr: 2 }}>
+      <Toolbar disableGutters sx={{ minHeight: 64, height: 64, pr: 2 }}>
+        {/* The same black 64×64 box the editor's bar has, so the logo does
+            not change size between the two screens. */}
         <Box
           sx={{
-            width: 56,
-            height: 56,
-            bgcolor: "#000",
+            width: 64,
+            height: 64,
+            bgcolor: "common.black",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          <Box component="img" src={logoUrl} alt="2N" sx={{ height: 14 }} />
+          <img src={logoUrl} alt="2N" width={64} height={64} />
         </Box>
         <Typography variant="h6" sx={{ ml: 2 }}>
           My2N
@@ -280,21 +285,20 @@ function TopBar({ place }: { place: string }) {
  * The product's own navigation, which this prototype does not implement —
  * drawn because the screen is unreadable without it, and inert because
  * every one of these is a different part of My2N.
+ *
+ * Four groups with a rule between them, as the design has it: the rail is
+ * 56 wide, its rows are 48 tall, and it ends with the control that widens
+ * it into labels.
  */
-const RAIL = [
-  LanguageOutlined,
-  PlaceOutlined,
-  PersonOutline,
-  VideocamOutlined,
-  SecurityOutlined,
-  FactCheckOutlined,
-  SupportOutlined,
-  SettingsOutlined,
-  NotificationsOutlined,
-  BadgeOutlined,
+const RAIL: React.ElementType[][] = [
+  [LanguageOutlined, PlaceOutlined, PersonOutline],
+  [VideocamOutlined, SecurityOutlined],
+  [FactCheckOutlined, SupportOutlined],
+  [SettingsOutlined, NotificationsOutlined, BadgeOutlined],
 ];
 
 function IconRail() {
+  let n = 0;
   return (
     <Box
       sx={{
@@ -306,17 +310,51 @@ function IconRail() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        pt: 1,
-        gap: 0.5,
       }}
     >
-      {RAIL.map((Icon, i) => (
-        <IconButton key={i} size="small" disabled>
-          <Icon
-            sx={{ fontSize: 20, color: i === 0 ? "primary.main" : undefined }}
-          />
-        </IconButton>
+      {RAIL.map((group, g) => (
+        <Fragment key={g}>
+          {g > 0 && <Divider flexItem sx={{ width: "100%" }} />}
+          <Box sx={{ py: 1, width: "100%" }}>
+            {group.map((Icon, i) => {
+              const first = n++ === 0;
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    height: 48,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconButton size="small" disabled>
+                    <Icon
+                      sx={{
+                        fontSize: 20,
+                        color: first ? "primary.main" : undefined,
+                      }}
+                    />
+                  </IconButton>
+                </Box>
+              );
+            })}
+          </Box>
+        </Fragment>
       ))}
+      <Box sx={{ flex: 1 }} />
+      <Box
+        sx={{
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <IconButton size="small" disabled>
+          <ChevronRight sx={{ fontSize: 20 }} />
+        </IconButton>
+      </Box>
     </Box>
   );
 }

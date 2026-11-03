@@ -38,7 +38,6 @@ import DragHandle from "@mui/icons-material/DragHandle";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import LocationOn from "@mui/icons-material/LocationOn";
-import OpenWith from "@mui/icons-material/OpenWith";
 import Redo from "@mui/icons-material/Redo";
 import Remove from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
@@ -66,6 +65,7 @@ import {
   undo,
   type EditState,
   type FloorList,
+  type Room,
   type Transform,
 } from "../../model";
 
@@ -77,6 +77,26 @@ const MARKS: { id: string; label: string; color: string }[] = [
   { id: "stairs", label: "Stair", color: "#E2B6E8" },
   { id: "elevator", label: "Elevator", color: "#F5C08A" },
 ];
+
+const MARK_COLOR = new Map(MARKS.map((m) => [m.id, m.color]));
+
+/**
+ * Colour on this plan means "this is one of the things you are being
+ * asked about".
+ *
+ * So the three marked kinds are filled and everything else is left bare.
+ * A room or an apartment needs no colour here, because the panel says
+ * anything left unmarked stays one — painting them would be arguing with
+ * the instruction, and a plan where everything is coloured makes the
+ * three that matter impossible to pick out.
+ *
+ * The fills are the legend's own values, from the one list above, so the
+ * swatch beside the instruction and the space on the plan cannot say
+ * different things.
+ */
+function paintForReview(room: Room): string | null {
+  return MARK_COLOR.get(room.space_type ?? "") ?? null;
+}
 
 export interface CheckFloorsScreenProps {
   state: EditState;
@@ -188,18 +208,21 @@ export function CheckFloorsScreen({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <AppBar position="static" sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Toolbar disableGutters sx={{ minHeight: 60, pr: 2 }}>
+        <Toolbar disableGutters sx={{ minHeight: 64, height: 64, pr: 2 }}>
+          {/* The same black 64×64 box the editor's bar has, so the logo
+              does not change size between the two screens. */}
           <Box
             sx={{
-              width: 60,
-              height: 60,
-              bgcolor: "#000",
+              width: 64,
+              height: 64,
+              bgcolor: "common.black",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            <Box component="img" src={logoUrl} alt="2N" sx={{ height: 14 }} />
+            <img src={logoUrl} alt="2N" width={64} height={64} />
           </Box>
           <Typography variant="h6" sx={{ ml: 2 }}>
             My2N
@@ -242,25 +265,15 @@ export function CheckFloorsScreen({
 
             <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
-            {/* Move and Align are one tool: moving the floor over the one
-                below is what aligning is, so Move opens the same view
-                rather than a second way of doing it. */}
+            {/* One tool, not two: moving the floor over the one below is
+                what aligning it is, and the align view is where the
+                moving happens. */}
             <Button
               variant={draft ? "contained" : "outlined"}
               color="inherit"
               size="small"
-              startIcon={<OpenWith sx={{ fontSize: 18 }} />}
-              onClick={draft ? applyAlign : startAlign}
-            >
-              Move
-            </Button>
-            <Button
-              variant="outlined"
-              color="inherit"
-              size="small"
               startIcon={<StraightenOutlined sx={{ fontSize: 18 }} />}
-              onClick={startAlign}
-              disabled={Boolean(draft)}
+              onClick={draft ? applyAlign : startAlign}
             >
               Align floor
             </Button>
@@ -424,6 +437,7 @@ export function CheckFloorsScreen({
               tool="select"
               onSpaceMenu={(target, at) => setMenu({ target, at })}
               showDevices={false}
+              paint={paintForReview}
             />
           )}
         </Box>

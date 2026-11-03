@@ -669,6 +669,14 @@ holds; what the screen adds is a menu to correct their categories, and that
 menu calls the same operations the editor's menus do. Marking is undoable
 because it is an ordinary edit.
 
+**Only the three marked kinds carry colour.** Everything else is drawn as
+walls alone — still clickable, but bare. The panel says anything left
+unmarked stays a room or an apartment, so painting those would argue with
+the instruction, and a plan where everything is coloured makes the three
+that matter impossible to pick out. The fills are the legend's own values,
+read from one list, so the swatch beside the instruction and the space on
+the plan cannot say different things.
+
 A floor is checked by being looked at. Opening it marks it, and the plan
 cannot be saved until all of them have been — asking for a second click to
 confirm you looked would be asking twice, and letting it save with floors

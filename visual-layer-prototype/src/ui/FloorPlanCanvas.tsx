@@ -120,6 +120,13 @@ export interface FloorPlanCanvasProps {
    * screen is about spaces.
    */
   showDevices?: boolean;
+  /**
+   * What colour to fill a room with, overriding its category's own.
+   * Returning null leaves it bare — still clickable, but drawn as walls
+   * alone. The check screen uses this so that the only colour on the plan
+   * is the colour of the thing it is asking about.
+   */
+  paint?: (room: Room) => string | null;
   /** Clicked a folded room with the show tool armed. */
   onShowRoom?: (roomId: string) => void;
   /** Clicked a shown room with the hide tool armed. */
@@ -187,6 +194,7 @@ export function FloorPlanCanvas({
   onDropSpace,
   showDeviceStatus = true,
   showDevices = true,
+  paint,
   onShowRoom,
   onHideRoom,
   placementError,
@@ -558,8 +566,11 @@ export function FloorPlanCanvas({
             const selected =
               room.id === selectedRoomId || room.group_id === selectedGroupId;
 
-            let fill = roomColor(layer, room);
-            let fillOpacity = 0.85;
+            // "transparent" rather than "none": a bare room still has to
+            // take a click, and fill="none" has no interior to hit.
+            const painted = paint ? paint(room) : roomColor(layer, room);
+            let fill = painted ?? "transparent";
+            let fillOpacity = painted === null ? 1 : 0.85;
             if (state === "blocked") {
               fillOpacity = 0.3;
             } else if (state === "unexamined") {
