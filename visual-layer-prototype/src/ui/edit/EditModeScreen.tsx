@@ -445,7 +445,11 @@ export function EditModeScreen({
           onFloorChange={onFloorChange}
           selectedRoomId={selectedRoomId}
           onSelectRoom={selectRoom}
-          onRowMenu={(el, target) => setRowMenu({ el, target })}
+          onRowMenu={
+            mode === "structure"
+              ? (el, target) => setRowMenu({ el, target })
+              : undefined
+          }
           renaming={renaming}
           onRenameChange={(draft) =>
             setRenaming((cur) => (cur ? { ...cur, draft } : cur))

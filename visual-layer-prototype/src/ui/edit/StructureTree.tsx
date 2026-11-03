@@ -72,7 +72,13 @@ export interface StructureTreeProps {
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string | null) => void;
   /** Opens the row menu. Rows with nothing to offer get no button. */
-  onRowMenu: (el: HTMLElement, target: RowTarget) => void;
+  /**
+   * Left out in devices mode. Every item on a row's menu edits the
+   * structure — its name, its category, its envelope — so in the mode
+   * that is about devices there is nothing on it to offer, and the row
+   * draws no button rather than one that opens an empty menu.
+   */
+  onRowMenu?: (el: HTMLElement, target: RowTarget) => void;
   /** The row being renamed in place, if any, and the text so far. */
   renaming: { id: string; draft: string } | null;
   onRenameChange: (draft: string) => void;
@@ -257,7 +263,9 @@ export function StructureTree({
         selected: room.id === selectedRoomId,
         onClick: () => onSelectRoom(room.id),
         tint: roomColor(layer, room),
-        onMenu: (el) => onRowMenu(el, { kind: "room", room }),
+        onMenu:
+          onRowMenu && ((el: HTMLElement) =>
+            onRowMenu(el, { kind: "room", room })),
       },
     );
   };
@@ -303,7 +311,9 @@ export function StructureTree({
             expandable: true,
             expanded: true,
             onToggle: () => toggle(group.id),
-            onMenu: (el) => onRowMenu(el, { kind: "group", group }),
+            onMenu:
+              onRowMenu && ((el: HTMLElement) =>
+                onRowMenu(el, { kind: "group", group })),
           })}
           {kids}
           {hits.map((r) => renderRoom(r, depth + 1))}
@@ -324,7 +334,9 @@ export function StructureTree({
             expanded: isOpen,
             onToggle: () => toggle(group.id),
             onClick: () => expandable && toggle(group.id),
-            onMenu: (el) => onRowMenu(el, { kind: "group", group }),
+            onMenu:
+              onRowMenu && ((el: HTMLElement) =>
+                onRowMenu(el, { kind: "group", group })),
           },
         )}
         {isOpen && (
