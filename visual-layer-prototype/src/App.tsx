@@ -15,6 +15,13 @@ import Typography from "@mui/material/Typography";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import { ThemeProvider } from "@mui/material/styles";
 import { AccessPanel } from "./ui/AccessPanel";
+import { BuildingScreen } from "./ui/app/BuildingScreen";
+import {
+  AddFloorsDialog,
+  ChooseMethodDialog,
+  CreatingDialog,
+} from "./ui/onboarding/CreateFloorPlanWizard";
+import { CheckFloorsScreen } from "./ui/onboarding/CheckFloorsScreen";
 import { FloorPlanCanvas, typesOnFloor } from "./ui/FloorPlanCanvas";
 import { NavigationDrawer } from "./ui/NavigationDrawer";
 import { EditModeScreen } from "./ui/edit/EditModeScreen";
@@ -27,7 +34,9 @@ import {
   reachable,
   shaftMembers,
   unguardedDevices,
+  type CreateMethod,
   type EditState,
+  type FloorList,
 } from "./model";
 
 /** The mock's building; the model has no building entity above a floor. */
@@ -39,7 +48,32 @@ export default function App() {
   // in one is visible in the other.
   const [edit, setEdit] = useState<EditState>(() => initEditState(fixture));
   const [savedAt, setSavedAt] = useState(0);
-  const [screen, setScreen] = useState<"view" | "edit">("view");
+  /**
+   * Where the product starts is the building, not the plan: the customer
+   * has their apartments, residents and devices already, and the plan is
+   * the thing they are about to make.
+   */
+  const [screen, setScreen] = useState<"building" | "check" | "view" | "edit">(
+    "building",
+  );
+  const [hasPlan, setHasPlan] = useState(false);
+
+  /** Where the creation wizard has got to, and what it has collected. */
+  const [step, setStep] = useState<"none" | "how" | "what" | "creating">(
+    "none",
+  );
+  const [method, setMethod] = useState<CreateMethod>("pdf");
+  const [pending, setPending] = useState<FloorList>([]);
+
+  const startWizard = (picked: CreateMethod | null) => {
+    setPending([]);
+    if (picked === null) {
+      setStep("how");
+      return;
+    }
+    setMethod(picked);
+    setStep("what");
+  };
 
   const layer = edit.layer;
   const [floorId, setFloorId] = useState(layer.floors[0].id);
@@ -80,6 +114,71 @@ export default function App() {
   }, [layer]);
 
   const legend = useMemo(() => typesOnFloor(layer, floorId), [layer, floorId]);
+
+  if (screen === "check") {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <CheckFloorsScreen
+          state={edit}
+          onChange={setEdit}
+          place={PLACE}
+          buildingName={BUILDING_NAME}
+          floors={pending}
+          onFloors={setPending}
+          onCancel={() => setScreen("building")}
+          onSave={() => {
+            setHasPlan(true);
+            setScreen("edit");
+          }}
+        />
+      </ThemeProvider>
+    );
+  }
+
+  if (screen === "building") {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BuildingScreen
+          layer={layer}
+          buildingName={BUILDING_NAME}
+          place={PLACE}
+          hasPlan={hasPlan}
+          onCreatePlan={() => startWizard(null)}
+          onCreatePlanWith={startWizard}
+          onOpenPlan={() => setScreen("edit")}
+        />
+        <ChooseMethodDialog
+          open={step === "how"}
+          onCancel={() => setStep("none")}
+          onNext={(picked) => {
+            setMethod(picked);
+            setStep("what");
+          }}
+        />
+        <AddFloorsDialog
+          open={step === "what"}
+          method={method}
+          floors={pending}
+          onFloors={setPending}
+          onBack={() => setStep("how")}
+          onCancel={() => setStep("none")}
+          onNext={() => setStep("creating")}
+        />
+        <CreatingDialog
+          open={step === "creating"}
+          floors={pending}
+          onBack={() => setStep("what")}
+          onCancel={() => setStep("none")}
+          onDone={() => {
+            setStep("none");
+            setScreen("check");
+          }}
+        />
+      </ThemeProvider>
+    );
+  }
 
   if (screen === "edit") {
     return (

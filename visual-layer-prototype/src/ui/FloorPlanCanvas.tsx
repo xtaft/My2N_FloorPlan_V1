@@ -114,6 +114,12 @@ export interface FloorPlanCanvasProps {
    * plan, and whether a reader is reachable today is not part of that.
    */
   showDeviceStatus?: boolean;
+  /**
+   * Whether to draw the devices at all. Off while the plan is being
+   * checked: nothing is placed yet at that point, and the question on
+   * screen is about spaces.
+   */
+  showDevices?: boolean;
   /** Clicked a folded room with the show tool armed. */
   onShowRoom?: (roomId: string) => void;
   /** Clicked a shown room with the hide tool armed. */
@@ -180,6 +186,7 @@ export function FloorPlanCanvas({
   onPlaceSpace,
   onDropSpace,
   showDeviceStatus = true,
+  showDevices = true,
   onShowRoom,
   onHideRoom,
   placementError,
@@ -798,7 +805,7 @@ export function FloorPlanCanvas({
           {/* Devices. A reader sits on the side access is verified from.
               The hovered one is drawn last so its name is not buried under a
               neighbour. */}
-          {[...scene.glyphs]
+          {(showDevices ? [...scene.glyphs] : [])
             .sort((a, b) =>
               Number(a.device.id === hoverDevice) -
               Number(b.device.id === hoverDevice),

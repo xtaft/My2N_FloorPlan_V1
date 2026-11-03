@@ -115,6 +115,34 @@ function DeviceIcon({ deviceType }: { deviceType: string }) {
   );
 }
 
+/**
+ * The same icon away from the map, for a table cell or a legend.
+ *
+ * The device tables name the product — IP Style, IndoorView — and showing
+ * the drawing beside it is what ties a row to the thing on the plan. One
+ * set of vectors, so the two can never show different hardware.
+ */
+export function DeviceGlyph({
+  type,
+  size = 20,
+}: {
+  type: string;
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="-2 0 20 32"
+      fill="currentColor"
+      aria-hidden
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <DeviceIcon deviceType={type} />
+    </svg>
+  );
+}
+
 export interface DeviceMarkerProps {
   name: string;
   deviceType: string;

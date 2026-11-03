@@ -608,6 +608,80 @@ on screen until something is in it. Nothing is stored for this, which is
 the trade: reload before filling it and the row is gone, though the
 category is still there to be found by anything that looks it up.
 
+## Before there is a floor plan
+
+The plan is not where the product starts. A customer arrives with their
+apartments, their residents, their operators and their devices already in
+My2N, and no drawing of any of it. The floor plan is the thing they are
+about to make, and the first screen is the building without one.
+
+That screen holds nothing of its own. Every list on it is derived from the
+same file the plan is drawn from, with the plan ignored, so the building
+seen before drawing and the building edited afterwards cannot drift apart:
+
+| List | Derived as |
+|---|---|
+| spaces | the envelopes, flat — no floors, because which storey each is on is what the plan is for |
+| residents | the people whose access reaches an apartment, in that apartment |
+| operators | everyone else, ranked into one property manager, two on maintenance, the rest employees |
+| devices | answering units in their flat; everything else unplaced |
+
+**Answering units are placed and nothing else is**, and that is not a
+simplification. A unit belongs to a flat, so it is placed from the day the
+flat exists. A reader or an intercom goes on a door, and until the building
+has been drawn there are no doors — which is the honest state, and also the
+clearest statement of what the floor plan is worth.
+
+Two things the data had to settle rather than a rule. Residents and staff
+are numbered separately in the fixture, R001… and S001…, so a name handed
+out by the digits in an id collides the two lists; position in a sorted
+list cannot. And of the common spaces, the lobby is one a customer
+administers while the four hallways are not — the difference being that
+every resident is admitted to the lobby and nobody is admitted to a
+hallway, because walking down it needs no permission.
+
+### Making the plan
+
+Four steps, and the list of floors is the whole state of them. It is plain
+data with plain functions over it; each modal and the check screen are
+views of that list, and none of them owns it.
+
+1. **How.** Upload PDFs, or draw manually. Asked only when the way in did
+   not already say: the empty state's two buttons each name a method, so
+   they skip this.
+2. **What.** Pages, in order, highest on top. The PDF path wants vector
+   plans to detect from; the manual path takes any image to draw over, adds
+   blank floors, and will go on with nothing at all. One floor is the
+   ground floor — exactly one, reasserted after every add and remove,
+   because the storey numbers are counted from it and a floor below it is
+   a basement.
+3. **Wait.** Detection, one floor at a time, closable.
+4. **Check.** Below.
+
+### Checking a floor
+
+Detection is a guess, and this is where somebody reads it. Three things, in
+the order the panel lists them: which spaces are shared, which are stairs
+and lifts, and whether the floor sits over the one below.
+
+**No segmentation happens here.** The spaces are the ones the model already
+holds; what the screen adds is a menu to correct their categories, and that
+menu calls the same operations the editor's menus do. Marking is undoable
+because it is an ordinary edit.
+
+A floor is checked by being looked at. Opening it marks it, and the plan
+cannot be saved until all of them have been — asking for a second click to
+confirm you looked would be asking twice, and letting it save with floors
+unread would make the step decorative.
+
+Moving and aligning are the same tool, because moving a floor over the one
+below *is* aligning it. A floor detection found nothing on is not an error:
+the page is kept, the panel says so, and the layout can be drawn over it in
+the editor.
+
+Saving hands over to the editor, which is everything the rest of this
+document describes.
+
 ## Deleting a space — which removes a name, not an area
 
 A space cannot simply go. The floor is tiled, so its area would belong to
