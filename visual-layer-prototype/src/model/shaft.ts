@@ -14,6 +14,7 @@
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import { indexVisualLayer, must, type VisualLayer } from "./load";
+import { groupAccessType } from "./derive";
 import type { Door, Group, VisualLayerFile } from "./types";
 
 /** The categories that make a space part of the vertical circulation. */
@@ -238,18 +239,47 @@ export function setRoomSpaceType(
   }
   if (room.space_type === nextType) return state;
 
+  /**
+   * A room that no longer shares its envelope's category is no longer part
+   * of it. An apartment whose bedroom is suddenly a plant room is not an
+   * apartment with a plant room in it — the envelope says what the spaces
+   * inside it are, so disagreeing with it means leaving.
+   *
+   * Inheriting is not disagreeing: a null category is the room saying the
+   * envelope decides.
+   */
+  const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
+  const leaves =
+    nextType !== null &&
+    group !== undefined &&
+    groupAccessType(layer, group) !== nextType;
+
   const rooms = file.rooms.map((r) =>
-    r.id === roomId ? { ...r, space_type: nextType } : r,
+    r.id === roomId
+      ? { ...r, space_type: nextType, group_id: leaves ? null : r.group_id }
+      : r,
   );
+
+  const prune = (groups: Group[]) => {
+    const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
+    const hasChild = new Set(groups.map((g) => g.parent_group_id).filter(Boolean));
+    return groups.filter((g) => used.has(g.id) || hasChild.has(g.id));
+  };
 
   const impact = shaftImpact(layer, roomId, nextType);
   if (!impact) {
-    return commit(state, "set_space_type", "Change category", { ...file, rooms });
+    return commit(state, "set_space_type", "Change category", {
+      ...file,
+      rooms,
+      groups: prune(file.groups),
+    });
   }
 
   // Out of the shaft: clear the envelope's id, then rebuild the links.
-  const groups = file.groups.map((g) =>
-    g.id === room.group_id ? { ...g, shaft_id: null } : g,
+  const groups = prune(
+    file.groups.map((g) =>
+      g.id === room.group_id ? { ...g, shaft_id: null } : g,
+    ),
   );
 
   return commit(

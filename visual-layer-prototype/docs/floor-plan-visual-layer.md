@@ -633,6 +633,14 @@ the side on the right walking v1 → v2. Same for `space_type`. Asking is worse
 than a rule here, because the question comes up on every merge and the answer
 is almost never interesting; a caller that does care can still say.
 
+**A category of its own takes a room out of its envelope.** An envelope says
+what the spaces inside it are, so a room that no longer agrees is no longer one
+of them: giving a bedroom the technical category detaches it from the flat, and
+an envelope left empty goes. Inheriting is not disagreeing — a null category is
+the room saying the envelope decides. The detached room then belongs to no
+envelope, which is why the types panel lists a category's loose spaces beside
+its envelopes; counting envelopes alone would show the change nowhere.
+
 **Envelope membership resolves by type precedence.** Three cases:
 
 | Rooms in | Result |
@@ -912,6 +920,15 @@ this section exists to avoid. So the hallway side surfaces and the apartment
 side does not: a room whose envelope is an apartment stays hidden, and the flat
 remains the thing the map shows. Everywhere else both sides surface, which is
 why a gym's locker room and the gym floor outside it both appear.
+
+**What stops a room being folded away is being guarded, not holding hardware.**
+A device sitting in a room is the flat's — an answering unit draws with the
+flat whether or not the room around it is on the map — so it is no reason to
+keep that room visible. A device on a room's door is only a reason if it
+verifies access *into that room*: a walk-through room carries the readers for
+the rooms beyond it, and those rooms are the boundaries being checked. On this
+floor plan the hallway carries seven apartment entrance readers and not one of
+them guards the hallway, so the hallway folds and the seven flats do not.
 
 While a group is collapsed, interior **doors** reveal on demand — faint glyphs,
 no walls, no room fills. Far less clutter than revealing full geometry, and it

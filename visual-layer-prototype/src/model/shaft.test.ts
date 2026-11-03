@@ -112,7 +112,10 @@ describe("setRoomSpaceType", () => {
     const after = setRoomSpaceType(before, "2:S", "technical");
 
     expect(after.layer.rooms.get("2:S")!.space_type).toBe("technical");
-    expect(after.layer.groups.get("2:gS")!.shaft_id).toBeNull();
+    // Technical is not what the Stairs envelope is, so the room leaves it —
+    // and that envelope held nothing else, so it goes too, shaft id and all.
+    expect(after.layer.rooms.get("2:S")!.group_id).toBeNull();
+    expect(after.layer.groups.has("2:gS")).toBe(false);
     expect(shaftStoreys(after.layer, "shaft_stairs").length).toBe(4);
     // 0-1 and 3-4 survive; 1-2 and 2-3 are gone and nothing spans the gap.
     expect(links(after, "shaft_stairs").length).toBe(2);
@@ -183,11 +186,19 @@ describe("setRoomSpaceType", () => {
     );
   });
 
-  it("keeps a shaft room in its shaft when moved to the other shaft type", () => {
-    // Stairs to elevator is still vertical circulation, so the chain stands.
+  it("takes a stairwell out of the stairs when it is called a lift", () => {
+    // Still vertical circulation, so nothing about shafts objects — but it
+    // is no longer what the Stairs envelope says its spaces are, so it
+    // leaves, and leaving the envelope is leaving the shaft.
     const before = state();
     const after = setRoomSpaceType(before, "2:S", "elevator");
-    expect(after.layer.groups.get("2:gS")!.shaft_id).toBe("shaft_stairs");
-    expect(links(after, "shaft_stairs").length).toBe(4);
+
+    expect(after.layer.rooms.get("2:S")!.group_id).toBeNull();
+    expect(after.layer.groups.has("2:gS")).toBe(false);
+    expect(shaftStoreys(after.layer, "shaft_stairs").length).toBe(4);
+    expect(shaftRuns(after.layer, "shaft_stairs")).toEqual([
+      [0, 1],
+      [3, 4],
+    ]);
   });
 });

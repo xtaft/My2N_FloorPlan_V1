@@ -30,7 +30,10 @@ import AddIcon from "@mui/icons-material/Add";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
+import InputBase from "@mui/material/InputBase";
 import ArrowBack from "@mui/icons-material/ArrowBack";
+import Check from "@mui/icons-material/Check";
+import Clear from "@mui/icons-material/Clear";
 import Delete from "@mui/icons-material/Delete";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
@@ -45,9 +48,19 @@ import {
   roomColor,
   spaceCategories,
   type Group,
+  type SpaceCategory,
   type Room,
   type VisualLayer,
 } from "../../model";
+
+/**
+ * What a category holds: its envelopes, plus the spaces that sit in no
+ * envelope at all. A room given a category of its own has left whichever
+ * envelope disagreed with it, so counting envelopes alone would say a
+ * category was empty while listing something inside it.
+ */
+const size = (category: SpaceCategory) =>
+  category.groups.length + category.rooms.length;
 
 const menuItemSx = { minHeight: 36, py: 0.25 } as const;
 const menuIconSx = { minWidth: 0, mr: 2, color: "action.active" } as const;
@@ -88,6 +101,8 @@ export function CategoriesDrawer({
   );
   const [renaming, setRenaming] = useState<string | null>(null);
   const [reassigning, setReassigning] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [hex, setHex] = useState("");
   const [draft, setDraft] = useState("");
 
   const isExpanded = (id: string) => expanded[id] === true;
@@ -283,10 +298,10 @@ export function CategoriesDrawer({
               <Fragment key={key}>
                 <ListItemButton
                   sx={{ minHeight: 48, pl: 1, pr: 1 }}
-                  onClick={() => category.groups.length > 0 && toggle(key)}
+                  onClick={() => size(category) > 0 && toggle(key)}
                 >
                   <Box sx={{ width: 28, display: "flex", alignItems: "center" }}>
-                    {category.groups.length > 0 ? (
+                    {size(category) > 0 ? (
                       open ? (
                         <ExpandMore sx={{ fontSize: 20 }} />
                       ) : (
@@ -335,7 +350,7 @@ export function CategoriesDrawer({
                         <Box component="span" sx={{ display: "flex", gap: 1 }}>
                           <span>{category.name}</span>
                           <Typography component="span" color="text.secondary">
-                            ({category.groups.length})
+                            ({size(category)})
                           </Typography>
                         </Box>
                       }
@@ -355,7 +370,17 @@ export function CategoriesDrawer({
                   </IconButton>
                 </ListItemButton>
 
-                {open && category.groups.map((g) => renderEnvelope(g, 1))}
+                {open && (
+                  <>
+                    {category.groups.map((g) => renderEnvelope(g, 1))}
+                    {/* Spaces in no envelope. A room given a category of its
+                        own leaves the envelope that disagreed with it, so
+                        without these the change would show up nowhere. */}
+                    {category.rooms.map((r) =>
+                      renderRoom(r, 1, floorName(r.floor_id)),
+                    )}
+                  </>
+                )}
               </Fragment>
             );
           })}
@@ -400,10 +425,29 @@ export function CategoriesDrawer({
         onClose={() => {
           setMenu(null);
           setReassigning(false);
+          setPicking(false);
         }}
         slotProps={{ paper: { sx: { width: 256 } } }}
       >
-        {reassigning
+        {picking
+          ? [
+              <ColorPicker
+                key="picker"
+                hex={hex}
+                onHexChange={setHex}
+                onPick={(color) => {
+                  if (menu) onRecolor(menu.typeId, color);
+                  setPicking(false);
+                  setHex("");
+                  setMenu(null);
+                }}
+                onCancel={() => {
+                  setPicking(false);
+                  setHex("");
+                }}
+              />,
+            ]
+          : reassigning
           ? [
               <MenuItem
                 key="back"
@@ -488,10 +532,7 @@ export function CategoriesDrawer({
               <MenuItem
                 key="color"
                 sx={menuItemSx}
-                onClick={() => {
-                  if (menu) onRecolor(menu.typeId, nextColor());
-                  setMenu(null);
-                }}
+                onClick={() => setPicking(true)}
               >
                 <ListItemIcon sx={menuIconSx}>
                   <PaletteOutlined sx={{ fontSize: 20 }} />
@@ -540,11 +581,102 @@ export function CategoriesDrawer({
   );
 }
 
-const PALETTE = [
-  "#6B8FD4", "#8FA8CC", "#C9CFD6", "#A8B4C4", "#D4A96B",
-  "#7FC4A8", "#5FA88C", "#B0A8A0", "#D48A8A", "#9B8FD4",
+
+/**
+ * Figma 2:53313 — the category menu turns into this rather than opening a
+ * second popover: it is the same decision, so it belongs in the same place.
+ *
+ * A swatch is the colour at full strength as a border around itself at 40%,
+ * which is roughly how the space reads on the plan — a solid outline round a
+ * washed fill. Picking from a set keeps the plan legible; the hex field is
+ * there for the one that has to match something outside it.
+ */
+const SWATCHES = [
+  "#1e88e5", "#ff8a65", "#00e676", "#cee500", "#cfd8dc",
+  "#0d47a1", "#e91e63", "#009688", "#ffd600", "#9e9e9e",
+  "#673ab7", "#d50000", "#1b5e20", "#663c00", "#212121",
 ];
 
-function nextColor(): string {
-  return PALETTE[Math.floor(Math.random() * PALETTE.length)];
+const HEX = /^#?([0-9a-fA-F]{6})$/;
+
+function ColorPicker({
+  hex,
+  onHexChange,
+  onPick,
+  onCancel,
+}: {
+  hex: string;
+  onHexChange: (value: string) => void;
+  onPick: (color: string) => void;
+  onCancel: () => void;
+}) {
+  const match = HEX.exec(hex.trim());
+  const typed = match ? `#${match[1].toLowerCase()}` : null;
+
+  return (
+    <Box
+      sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}
+      // The menu would take a click on a swatch as a selection and close.
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+        {SWATCHES.map((color) => (
+          <Box
+            key={color}
+            role="button"
+            aria-label={color}
+            onClick={() => onPick(color)}
+            sx={{
+              width: 24,
+              height: 24,
+              borderRadius: "2px",
+              cursor: "pointer",
+              border: 1,
+              borderColor: color,
+              // 40% of the same colour, as the design has it.
+              bgcolor: color + "66",
+              "&:hover": { outline: "2px solid", outlineColor: "action.active" },
+            }}
+          />
+        ))}
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+          pl: 1.5,
+          pr: 0.5,
+          borderRadius: 1,
+          border: 1,
+          borderColor: "divider",
+        }}
+      >
+        <Typography variant="body1" color="text.primary">
+          #
+        </Typography>
+        <InputBase
+          value={hex.replace(/^#/, "")}
+          placeholder="000000"
+          onChange={(e) => onHexChange(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter" && typed) onPick(typed);
+            if (e.key === "Escape") onCancel();
+          }}
+          sx={{ flex: 1, minWidth: 0, fontSize: 16, py: 1 }}
+        />
+        <IconButton
+          size="small"
+          disabled={!typed}
+          onClick={() => typed && onPick(typed)}
+        >
+          <Check sx={{ fontSize: 20 }} />
+        </IconButton>
+        <IconButton size="small" onClick={onCancel}>
+          <Clear sx={{ fontSize: 20 }} />
+        </IconButton>
+      </Box>
+    </Box>
+  );
 }

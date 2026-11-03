@@ -15,9 +15,9 @@
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { dist, lerp, normal, unit, wallEnds, wallLength } from "./geometry";
 import { roomsOf } from "./access";
-import { doorsOfRoom } from "./derive";
 import {
   EXTERIOR,
+  type Device,
   type Door,
   type Point,
   type SpaceType,
@@ -264,6 +264,26 @@ export function addDoor(state: EditState, req: AddDoorRequest): EditState {
  * Hiding refuses for a room that carries hardware — a reader in an invisible
  * room is a boundary nobody can see.
  */
+/**
+ * The device that verifies access INTO this room, if any.
+ *
+ * Being guarded is what stops a room being folded away, and it is narrower
+ * than carrying hardware. A room with an answering unit in it can fold —
+ * the unit belongs to the flat and draws with it. A walk-through room can
+ * fold even though a reader stands in it, because that reader guards the
+ * room beyond; it is the room beyond that has to stay visible, since that
+ * is the boundary being checked.
+ */
+export function guardingDevice(
+  layer: VisualLayer,
+  roomId: string,
+): Device | null {
+  for (const device of layer.file.devices) {
+    if (device.guards.includes(roomId)) return device;
+  }
+  return null;
+}
+
 export function setRoomSurfaced(
   state: EditState,
   roomId: string,
@@ -275,21 +295,11 @@ export function setRoomSurfaced(
   if (room.surfaced === surfaced) return state;
 
   if (!surfaced) {
-    if ((layer.devicesInRoom.get(roomId) ?? []).length > 0) {
+    const guard = guardingDevice(layer, roomId);
+    if (guard) {
       throw new OperationRejected(
-        `${room.name} holds a device. A room with hardware in it cannot be hidden.`,
+        `${guard.name} verifies access into ${room.name}. A room somebody has to be let into has to be visible, or the check guards a boundary nobody can see.`,
       );
-    }
-    // Any device on any of the room's doors, not only one guarding this
-    // side. A reader sits on a boundary, and a boundary with one invisible
-    // side is a boundary nobody can see.
-    for (const door of doorsOfRoom(layer, room)) {
-      const onDoor = layer.devicesOnDoor.get(door.id) ?? [];
-      if (onDoor.length > 0) {
-        throw new OperationRejected(
-          `${onDoor[0].name} is on ${room.name}'s door. A room whose door carries a device cannot be hidden — the reader would sit on a boundary nobody can see.`,
-        );
-      }
     }
   }
 

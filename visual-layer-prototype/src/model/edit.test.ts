@@ -6,6 +6,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  guardingDevice,
   OperationRejected,
   UNDO_DEPTH,
   addDoor,
@@ -196,32 +197,59 @@ describe("show and hide room", () => {
     expect(next.layer.rooms.get("1:B1")!.surfaced).toBe(true);
   });
 
-  it("refuses to hide a room that holds a device", () => {
-    // 1:L1 hosts the A1 answering unit.
-    const next = setRoomSurfaced(state, "1:L1", true);
-    expect(() => setRoomSurfaced(next, "1:L1", false)).toThrow(
-      /holds a device/,
+  it("hides a room that merely holds a device", () => {
+    // Holding hardware is not what stops a room folding away — being the
+    // room somebody has to be let into is. An answering unit belongs to the
+    // flat and draws with it, so the room around it can fold.
+    //
+    // Every room in the fixture that holds a unit is also guarded, so put
+    // one somewhere that is not: a bedroom nothing verifies access into.
+    const moved = initEditState({
+      ...state.file,
+      devices: state.file.devices.map((d) =>
+        d.id === "AN-A1" ? { ...d, host_id: "1:B1" } : d,
+      ),
+    });
+    expect(moved.layer.devicesInRoom.get("1:B1")!.length).toBe(1);
+
+    const shown = setRoomSurfaced(moved, "1:B1", true);
+    const hidden = setRoomSurfaced(shown, "1:B1", false);
+    expect(hidden.layer.rooms.get("1:B1")!.surfaced).toBe(false);
+    // The unit is still there, and still in that room.
+    expect(hidden.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe(
+      "1:B1",
     );
   });
 
-  it("refuses to hide a room whose door carries any device", () => {
-    // The gym's locker room is surfaced because its door carries a reader.
-    expect(state.layer.rooms.get("0:GL1")!.surfaced).toBe(true);
+  it("refuses to hide a room access is verified into", () => {
+    // AC-U2 guards the men's locker room, so that is the boundary being
+    // checked and it has to stay visible.
+    expect(guardingDevice(state.layer, "0:GL1")).not.toBeNull();
     expect(() => setRoomSurfaced(state, "0:GL1", false)).toThrow(
-      /cannot be hidden/,
+      /verifies access into/,
     );
   });
 
-  it("refuses even when the device guards the other side of the door", () => {
-    // AC-0-d8 is on the gym's entrance door and guards 0:GM, not the lobby.
-    // The lobby is still on that boundary, so it cannot be hidden either —
-    // a reader with one invisible side is a reader nobody can see.
-    const gymEntrance = state.layer.doors.get("0:d8")!;
-    const devices = state.layer.devicesOnDoor.get(gymEntrance.id)!;
-    expect(devices[0].guards).toEqual(["0:GM"]);
-    expect(() => setRoomSurfaced(state, "0:GM", false)).toThrow(
-      /cannot be hidden/,
+  it("hides a walk-through room whose readers guard the rooms beyond", () => {
+    // The hallway carries seven apartment entrance readers on its doors,
+    // and not one of them verifies access into the hallway — they verify
+    // access into the flats. So the flats have to stay visible and the
+    // hallway does not.
+    const hall = state.layer.rooms.get("1:H")!;
+    const onItsDoors = doorsOfRoom(state.layer, hall).flatMap(
+      (d) => state.layer.devicesOnDoor.get(d.id) ?? [],
     );
+    expect(onItsDoors.length).toBeGreaterThan(0);
+    expect(guardingDevice(state.layer, "1:H")).toBeNull();
+    for (const device of onItsDoors) {
+      expect(device.guards).not.toContain("1:H");
+      for (const guarded of device.guards) {
+        expect(guardingDevice(state.layer, guarded)).not.toBeNull();
+      }
+    }
+
+    const after = setRoomSurfaced(state, "1:H", false);
+    expect(after.layer.rooms.get("1:H")!.surfaced).toBe(false);
   });
 
   it("surfacing an apartment room makes the lists name it", () => {

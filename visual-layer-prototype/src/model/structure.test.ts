@@ -12,6 +12,8 @@ import {
   hideRoomRefusal,
   initEditState,
   renameGroup,
+  setRoomSpaceType,
+  spaceCategories,
   renameRoom,
   roomsInGroup,
   setGroupRoomsSurfaced,
@@ -317,5 +319,78 @@ describe("deleteRoom and unassignRoom", () => {
 
   it("refuses a room it does not have", () => {
     expect(() => deleteRoom(state(), "1:nope")).toThrow();
+  });
+});
+
+describe("a category of its own takes a room out of its envelope", () => {
+  it("detaches when the new category is not the envelope's", () => {
+    const before = state();
+    const room = before.layer.rooms.get("1:B1")!;
+    expect(accessType(before.layer, room)).toBe("apartment");
+
+    const after = setRoomSpaceType(before, "1:B1", "technical");
+    expect(after.layer.rooms.get("1:B1")!.group_id).toBeNull();
+    expect(accessType(after.layer, after.layer.rooms.get("1:B1")!)).toBe(
+      "technical",
+    );
+  });
+
+  it("stays when the new category is the envelope's own", () => {
+    const before = state();
+    const group = before.layer.rooms.get("1:B1")!.group_id;
+    const after = setRoomSpaceType(before, "1:B1", "apartment");
+    expect(after.layer.rooms.get("1:B1")!.group_id).toBe(group);
+  });
+
+  it("stays when the room goes back to inheriting", () => {
+    // A null category is the room saying the envelope decides, which is
+    // agreement rather than disagreement.
+    const before = setRoomSpaceType(state(), "1:B1", "apartment");
+    const after = setRoomSpaceType(before, "1:B1", null);
+    expect(after.layer.rooms.get("1:B1")!.group_id).toBeTruthy();
+  });
+
+  it("leaves its geometry and the rest of the flat alone", () => {
+    const before = state();
+    const after = setRoomSpaceType(before, "1:B1", "technical");
+    expect(after.file.walls).toEqual(before.file.walls);
+    expect(after.layer.rooms.get("1:L1")!.group_id).toBe(
+      before.layer.rooms.get("1:L1")!.group_id,
+    );
+  });
+
+  it("is undone", () => {
+    const before = state();
+    expect(undo(setRoomSpaceType(before, "1:B1", "technical")).file).toEqual(
+      before.file,
+    );
+  });
+});
+
+describe("the categories panel shows loose spaces", () => {
+  const find = (cats: ReturnType<typeof spaceCategories>, id: string | null) =>
+    cats.find((c) => c.id === id)!;
+
+  it("lists a room that has left its envelope under its own category", () => {
+    // Otherwise changing a room's category would show up nowhere: it is not
+    // an envelope, so the panel would simply lose sight of it.
+    const before = state();
+    expect(find(spaceCategories(before.layer), "technical").rooms).toEqual([]);
+
+    const after = setRoomSpaceType(before, "1:B1", "technical");
+    const cats = spaceCategories(after.layer);
+    expect(find(cats, "technical").rooms.map((r) => r.id)).toContain("1:B1");
+  });
+
+  it("puts one with no category at all in the Unknown bucket", () => {
+    const after = unassignRoom(state(), "1:B1");
+    const unknown = spaceCategories(after.layer).find((c) => c.id === null)!;
+    expect(unknown.rooms.map((r) => r.id)).toContain("1:B1");
+  });
+
+  it("leaves rooms inside an envelope out of it — the envelope stands for them", () => {
+    const cats = spaceCategories(state().layer);
+    const all = cats.flatMap((c) => c.rooms);
+    for (const room of all) expect(room.group_id).toBeNull();
   });
 });

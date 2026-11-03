@@ -157,6 +157,12 @@ export interface SpaceCategory {
   color: string;
   /** The envelopes of this type — apartments, not their rooms. */
   groups: Group[];
+  /**
+   * Spaces in no envelope. A room that is given a category of its own
+   * leaves whatever envelope disagreed with it, so without these the panel
+   * would show the change nowhere — the room would simply vanish from it.
+   */
+  rooms: Room[];
 }
 
 const UNBOUND_COLOR = "#DADDE1";
@@ -184,13 +190,27 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
     else byType.set(key, [g]);
   }
 
+  const looseByType = new Map<string | null, Room[]>();
+  for (const room of layer.file.rooms) {
+    if (room.group_id !== null) continue;
+    const key = accessType(layer, room);
+    const list = looseByType.get(key);
+    if (list) list.push(room);
+    else looseByType.set(key, [room]);
+  }
+
   const out: SpaceCategory[] = layer.file.space_types
-    .filter((t) => (byType.get(t.id) ?? []).length > 0)
+    .filter(
+      (t) =>
+        (byType.get(t.id) ?? []).length > 0 ||
+        (looseByType.get(t.id) ?? []).length > 0,
+    )
     .map((t) => ({
       id: t.id,
       name: t.name,
       color: t.color,
       groups: byType.get(t.id) ?? [],
+      rooms: looseByType.get(t.id) ?? [],
     }));
 
   // Unbound is a valid state a manager must resolve, so the bucket is always
@@ -200,6 +220,7 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
     name: "Unknown",
     color: UNBOUND_COLOR,
     groups: byType.get(null) ?? [],
+    rooms: looseByType.get(null) ?? [],
   });
   return out;
 }
