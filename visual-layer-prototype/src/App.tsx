@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import CssBaseline from "@mui/material/CssBaseline";
 import Divider from "@mui/material/Divider";
@@ -11,30 +12,45 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import { ThemeProvider } from "@mui/material/styles";
 import { AccessPanel } from "./ui/AccessPanel";
 import { FloorPlanCanvas, typesOnFloor } from "./ui/FloorPlanCanvas";
 import { NavigationDrawer } from "./ui/NavigationDrawer";
+import { EditModeScreen } from "./ui/edit/EditModeScreen";
 import { theme } from "./ui/theme";
 import {
   buildAdjacency,
   defaultStartRoom,
+  fixture,
+  initEditState,
   reachable,
   shaftMembers,
   unguardedDevices,
-  visualLayer as layer,
+  type EditState,
 } from "./model";
 
+/** The mock's building; the model has no building entity above a floor. */
+const BUILDING_NAME = "Tower A";
+const PLACE = "Riverside, Prague 4";
+
 export default function App() {
+  // One editable model, shared by the viewer and edit mode, so an edit made
+  // in one is visible in the other.
+  const [edit, setEdit] = useState<EditState>(() => initEditState(fixture));
+  const [savedAt, setSavedAt] = useState(0);
+  const [screen, setScreen] = useState<"view" | "edit">("view");
+
+  const layer = edit.layer;
   const [floorId, setFloorId] = useState(layer.floors[0].id);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [showAllRooms, setShowAllRooms] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
-  // Built once per topology change, not per render.
-  const adjacency = useMemo(() => buildAdjacency(layer), []);
-  const startRoom = useMemo(() => defaultStartRoom(layer), []);
+  // Rebuilt whenever the model changes — the index is derived, never patched.
+  const adjacency = useMemo(() => buildAdjacency(layer), [layer]);
+  const startRoom = useMemo(() => defaultStartRoom(layer), [layer]);
 
   const reach = useMemo(() => {
     if (!profileId) return null;
@@ -46,7 +62,7 @@ export default function App() {
       { allowedDevices: new Set(profile.devices) },
       adjacency,
     );
-  }, [profileId, adjacency, startRoom]);
+  }, [layer, profileId, adjacency, startRoom]);
 
   const warnings = useMemo(() => {
     const out: string[] = [];
@@ -61,15 +77,37 @@ export default function App() {
       if (members.length < 2) out.push(`shaft ${shaft} has one member`);
     }
     return out;
-  }, []);
+  }, [layer]);
 
-  const legend = useMemo(() => typesOnFloor(layer, floorId), [floorId]);
+  const legend = useMemo(() => typesOnFloor(layer, floorId), [layer, floorId]);
+
+  if (screen === "edit") {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <EditModeScreen
+          state={edit}
+          onChange={setEdit}
+          buildingName={BUILDING_NAME}
+          place={PLACE}
+          floorId={floorId}
+          onFloorChange={setFloorId}
+          dirty={edit.undo.length > savedAt}
+          onClose={() => setScreen("view")}
+          onSave={() => {
+            setSavedAt(edit.undo.length);
+            setScreen("view");
+          }}
+        />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-        <AppBar position="static" elevation={0} color="default">
+        <AppBar position="static">
           <Toolbar variant="dense" sx={{ gap: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Floor Plan — Visual Layer
@@ -97,10 +135,16 @@ export default function App() {
                   onChange={(e) => setShowAllRooms(e.target.checked)}
                 />
               }
-              label={
-                <Typography variant="caption">Show all rooms</Typography>
-              }
+              label={<Typography variant="caption">Show all rooms</Typography>}
             />
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<EditOutlined />}
+              onClick={() => setScreen("edit")}
+            >
+              Edit
+            </Button>
           </Toolbar>
           <Divider />
           <Tabs

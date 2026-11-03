@@ -4,8 +4,12 @@
  * reader positions from `guards`. Nothing is read out of the fixture that the
  * fixture does not store.
  */
-import { useMemo } from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  TransformComponent,
+  TransformWrapper,
+  type ReactZoomPanPinchContentRef,
+} from "react-zoom-pan-pinch";
 import {
   RingCache,
   accessType,
@@ -15,6 +19,7 @@ import {
   isWallVisible,
   labelPoint,
   lerp,
+  nearestWall,
   ringsToPath,
   roomColor,
   roomsOf,
@@ -23,14 +28,18 @@ import {
   wallSolidSpans,
   type Device,
   type Door,
+  type Point,
   type Reachability,
   type VisualLayer,
   type Wall,
+  type WallHit,
 } from "../model";
 import { roomAccessState } from "../model";
 
 const WALL_COLOR = "#2E3338";
 const DOOR_COLOR = "#5A646E";
+const GHOST_OK = "#2196f3";
+const GHOST_BAD = "#C62828";
 const PAD = 40;
 
 export interface FloorPlanCanvasProps {
@@ -42,6 +51,43 @@ export interface FloorPlanCanvasProps {
   selectedRoomId: string | null;
   selectedGroupId: string | null;
   onSelectRoom: (roomId: string | null) => void;
+  /** "door" arms wall-click placement; anything else leaves the map inert. */
+  tool?: "select" | "door";
+  /** Called with the wall and side under the pointer when it is clicked. */
+  onPlaceDoor?: (hit: WallHit) => void;
+  /** Why a door could not go where the pointer is, for the ghost's colour. */
+  placementError?: (hit: WallHit) => string | null;
+  /**
+   * Hands the zoom controls out so a toolbar outside the canvas can drive
+   * them. TransformWrapper is not a forwardRef component in this version —
+   * passing it a `ref` warns and yields nothing — so the controls come from
+   * its render prop instead.
+   */
+  onControls?: (controls: CanvasControls) => void;
+}
+
+export interface CanvasControls {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  reset: () => void;
+}
+
+/** Publishes the controls once they exist, without rendering anything. */
+function ControlsBridge({
+  utils,
+  onControls,
+}: {
+  utils: ReactZoomPanPinchContentRef;
+  onControls?: (controls: CanvasControls) => void;
+}) {
+  useEffect(() => {
+    onControls?.({
+      zoomIn: () => utils.zoomIn(),
+      zoomOut: () => utils.zoomOut(),
+      reset: () => utils.resetTransform(),
+    });
+  }, [utils, onControls]);
+  return null;
 }
 
 interface DeviceGlyph {
@@ -65,8 +111,14 @@ export function FloorPlanCanvas({
   selectedRoomId,
   selectedGroupId,
   onSelectRoom,
+  tool = "select",
+  onPlaceDoor,
+  placementError,
+  onControls,
 }: FloorPlanCanvasProps) {
   const rings = useMemo(() => new RingCache(layer), [layer]);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [hover, setHover] = useState<WallHit | null>(null);
 
   const scene = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
@@ -122,6 +174,30 @@ export function FloorPlanCanvas({
     };
   }, [layer, floorId]);
 
+  /** Screen pixels to the SVG's own user units, whatever the zoom and pan. */
+  const toSvgPoint = useCallback((clientX: number, clientY: number): Point | null => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const pt = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+    return { x: pt.x, y: pt.y };
+  }, []);
+
+  const placing = tool === "door";
+
+  const handleMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!placing) return;
+      const pt = toSvgPoint(e.clientX, e.clientY);
+      if (!pt) return;
+      setHover(nearestWall(layer, floorId, pt, 45));
+    },
+    [placing, toSvgPoint, layer, floorId],
+  );
+
+  const hoverError = hover && placementError ? placementError(hover) : null;
+
   return (
     <TransformWrapper
       minScale={0.4}
@@ -129,15 +205,35 @@ export function FloorPlanCanvas({
       limitToBounds={false}
       doubleClick={{ mode: "reset" }}
       wheel={{ step: 0.08 }}
+      // While the door tool is armed a drag must not pan the map, or every
+      // attempt to place a door slides the plan instead.
+      panning={{ disabled: placing }}
     >
+      {(utils) => (
+      <>
+      <ControlsBridge utils={utils} onControls={onControls} />
       <TransformComponent
         wrapperStyle={{ width: "100%", height: "100%" }}
         contentStyle={{ width: "100%", height: "100%" }}
       >
         <svg
+          ref={svgRef}
           viewBox={scene.viewBox}
-          style={{ width: "100%", height: "100%", display: "block" }}
-          onClick={() => onSelectRoom(null)}
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+            cursor: placing ? "crosshair" : "default",
+          }}
+          onClick={() => {
+            if (placing) {
+              if (hover && onPlaceDoor) onPlaceDoor(hover);
+              return;
+            }
+            onSelectRoom(null);
+          }}
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHover(null)}
         >
           {/* Room fills. Adjacent rooms in one envelope share a colour, so an
               apartment reads as one shape without its interior being drawn. */}
@@ -167,8 +263,9 @@ export function FloorPlanCanvas({
                   fillRule="evenodd"
                   stroke={selected ? "#17406B" : "none"}
                   strokeWidth={selected ? 6 : 0}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: placing ? "crosshair" : "pointer" }}
                   onClick={(e) => {
+                    if (placing) return; // the svg handler places the door
                     e.stopPropagation();
                     onSelectRoom(room.id);
                   }}
@@ -259,9 +356,61 @@ export function FloorPlanCanvas({
             rings={rings}
             showAllRooms={showAllRooms}
           />
+
+          {/* The door the pointer would place, and whether it would be let. */}
+          {placing && hover && (
+            <DoorGhost layer={layer} hit={hover} error={hoverError} />
+          )}
         </svg>
       </TransformComponent>
+      </>
+      )}
     </TransformWrapper>
+  );
+}
+
+function DoorGhost({
+  layer,
+  hit,
+  error,
+}: {
+  layer: VisualLayer;
+  hit: WallHit;
+  error: string | null;
+}) {
+  const wall = layer.walls.get(hit.wallId);
+  if (!wall) return null;
+  const [a, b] = wallEnds(layer, wall);
+  const colour = error ? GHOST_BAD : GHOST_OK;
+
+  // Half the standard width as a fraction, so the ghost is the real size.
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  const half = 43.5 / (2 * length);
+  const p1 = lerp(a, b, Math.max(0, hit.t - half));
+  const p2 = lerp(a, b, Math.min(1, hit.t + half));
+
+  return (
+    <g pointerEvents="none">
+      <line
+        x1={a.x}
+        y1={a.y}
+        x2={b.x}
+        y2={b.y}
+        stroke={colour}
+        strokeOpacity={0.35}
+        strokeWidth={10}
+        strokeLinecap="round"
+      />
+      <line
+        x1={p1.x}
+        y1={p1.y}
+        x2={p2.x}
+        y2={p2.y}
+        stroke={colour}
+        strokeWidth={10}
+        strokeLinecap="butt"
+      />
+    </g>
   );
 }
 
@@ -425,9 +574,7 @@ export function typesOnFloor(layer: VisualLayer, floorId: string): string[] {
 
 /** Exported for the inspector: which rooms a door connects. */
 export function doorRoomNames(layer: VisualLayer, door: Door): string[] {
-  return roomsOf(layer, door).map(
-    (id) => layer.rooms.get(id)?.name ?? id,
-  );
+  return roomsOf(layer, door).map((id) => layer.rooms.get(id)?.name ?? id);
 }
 
 /** Exported so the inspector can report a wall without re-deriving it. */

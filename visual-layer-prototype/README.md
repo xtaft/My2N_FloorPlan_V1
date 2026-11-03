@@ -150,9 +150,48 @@ render unaligned.
 - **Show all rooms** — a view toggle that reveals the rooms the surfacing rule
   hides. It stores nothing.
 
+## Edit mode
+
+`src/ui/edit/` implements the Structure screen from the Figma file
+(`building/floorplan/editMode/StructureMode`, node `36:4871`) against the real
+fixture. The design is built on Material UI, so the theme in `src/ui/theme.ts`
+restates the file's own variables — `#2196f3`, Roboto, MUI elevations — and the
+components carry the rest.
+
+Reach it with **Edit** in the viewer's app bar. What works:
+
+- **Door** — click a wall to put a door in it. The ghost follows the pointer
+  and turns red where the operation would refuse. Width comes from whatever
+  the rest of that floor already uses, and the side you click decides which
+  room the leaf opens into.
+- **Show room / Hide room** — the two manual surfacing overrides, on the
+  selected room.
+- **The categories drawer** — rename and recolour a space type and every space
+  of that type follows, because none of them holds a colour of its own. Counts
+  are derived. An `Unknown` bucket appears if any room stops resolving a type.
+- **Undo / redo** — five deep, labelled with the operation.
+
+What the screen draws but does not do: **Wall**, **Stairs**, **Elevator**,
+**Edit image**, **Background image**, **New space**, and the **Devices** mode.
+Each is disabled with a tooltip saying why rather than failing silently.
+
+### Two things about the editing model
+
+**Operations never mutate.** Each returns a new `VisualLayerFile` and the
+indexes are rebuilt from it, so nothing derived can be left stale by a missed
+update — which is the whole reason the architecture stores so little.
+
+**Undo keeps whole snapshots, not diffs.** The doc specifies `affected` as the
+complete records an operation touched, because several operations destroy
+information that cannot be reconstructed from the resulting state. A snapshot
+is the strongest form of that, and at this size it costs less than the
+per-operation inverse logic it replaces. Five deep, as specified.
+
 ## Not built
 
-This is the model layer and a viewer. The editing operations the architecture
-describes — `split_wall`, wall deletion and the room merge it implies, group
-split and merge, the undo stack — are specified in the doc but not implemented
-here.
+The geometry operations the architecture describes and this pass does not
+implement: `split_wall` and the add-wall boundary walk, wall deletion and the
+room merge it implies (with all five things that operation has to get right),
+collinear dissolve, group split and merge, and shaft tagging. `add_door` is
+the one geometry operation here, and it was the cheap one to port — the Python
+in `data/build_visual_layer.py` already had it.
