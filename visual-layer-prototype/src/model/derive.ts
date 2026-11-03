@@ -67,19 +67,19 @@ export function floorEnvelopes(layer: VisualLayer, floorId: string): Group[] {
  * the nearest ancestor that defines one.
  */
 /**
- * Whether a list — the tree, the categories drawer — names this room.
+ * Whether a list — the tree, the categories drawer — names this room, and
+ * whether the map treats it as a thing of its own.
  *
- * A flat is the unit a manager works with, so its bedrooms and bathrooms stay
- * folded inside it and the apartment is what the lists show. Every other
- * envelope lists its rooms: a gym's locker rooms and a shop's storage are
- * things you administer, not interior detail.
- *
- * Surfacing overrides it. A surfaced apartment room is listed, which is the
- * whole point of "show separately".
+ * It is exactly `surfaced`, and deliberately nothing more. Which rooms start
+ * out visible is a question for the data, not for a rule here: a flat's rooms
+ * arrive unsurfaced so the apartment is what the lists show, and every other
+ * envelope's rooms arrive surfaced. Deciding it here instead would mean
+ * `surfaced = false` had two different meanings — "this type is folded by
+ * default" and "someone hid this one" — and Hide room could never take a
+ * locker room out of the tree.
  */
-export function isRoomListed(layer: VisualLayer, room: Room): boolean {
-  if (room.surfaced) return true;
-  return accessType(layer, room) !== "apartment";
+export function isRoomListed(_layer: VisualLayer, room: Room): boolean {
+  return room.surfaced;
 }
 
 /**

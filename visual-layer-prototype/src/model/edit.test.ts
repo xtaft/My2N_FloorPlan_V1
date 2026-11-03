@@ -238,15 +238,66 @@ describe("show and hide room", () => {
     expect(hidden.layer.rooms.get("1:B1")!.surfaced).toBe(false);
   });
 
-  it("changes nothing about the access graph", () => {
-    // Surfacing is purely visual: the access graph already contains every room.
-    const before = buildAdjacency(state.layer);
+  it("shows any room at all — there are no preconditions", () => {
+    for (const room of state.file.rooms) {
+      if (room.surfaced) continue;
+      expect(() => setRoomSurfaced(state, room.id, true)).not.toThrow();
+    }
+  });
+
+  it("touches one field and nothing else", () => {
     const next = setRoomSurfaced(state, "1:B1", true);
-    const after = buildAdjacency(next.layer);
-    expect(after.size).toBe(before.size);
-    expect(next.layer.rooms.get("1:B1")!.group_id).toBe(
-      state.layer.rooms.get("1:B1")!.group_id,
+    const before = state.file;
+    expect(next.file.walls).toBe(before.walls);
+    expect(next.file.doors).toBe(before.doors);
+    expect(next.file.groups).toBe(before.groups);
+    expect(next.file.devices).toBe(before.devices);
+    // The room keeps every wall and its envelope — no merge, no regroup.
+    const a = state.layer.rooms.get("1:B1")!;
+    const b = next.layer.rooms.get("1:B1")!;
+    expect(b.walls).toEqual(a.walls);
+    expect(b.group_id).toBe(a.group_id);
+    expect({ ...b, surfaced: a.surfaced }).toEqual(a);
+  });
+
+  it("leaves reachability exactly as it was, either way", () => {
+    // Access runs over rooms regardless of visibility, so showing and hiding
+    // cannot change who can get where.
+    const everything = new Set(state.file.devices.map((d) => d.id));
+    const before = reachable(
+      state.layer,
+      "0:L",
+      { allowedDevices: everything },
+      buildAdjacency(state.layer),
     );
+
+    const shown = setRoomSurfaced(state, "1:B1", true);
+    const hidden = setRoomSurfaced(shown, "0:CS1", false);
+
+    for (const s of [shown, hidden]) {
+      const after = reachable(
+        s.layer,
+        "0:L",
+        { allowedDevices: everything },
+        buildAdjacency(s.layer),
+      );
+      expect([...after.seen].sort()).toEqual([...before.seen].sort());
+      expect(after.blocked.size).toBe(before.blocked.size);
+    }
+  });
+
+  it("takes a hidden room out of the lists, whatever its type", () => {
+    // Hide has to work for a room whose type is listed by default, or the
+    // action silently does nothing visible.
+    const storage = state.layer.rooms.get("0:CS1")!;
+    expect(isRoomListed(state.layer, storage)).toBe(true);
+    const next = setRoomSurfaced(state, "0:CS1", false);
+    expect(isRoomListed(next.layer, next.layer.rooms.get("0:CS1")!)).toBe(false);
+    // And the whole envelope lights up where it was.
+    expect(highlightTargets(next.layer, "0:CS1").sort()).toEqual([
+      "0:CM1",
+      "0:CS1",
+    ]);
   });
 });
 

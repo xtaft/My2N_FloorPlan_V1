@@ -20,6 +20,7 @@ import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
 import ElevatorOutlined from "@mui/icons-material/ElevatorOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
 import StairsOutlined from "@mui/icons-material/StairsOutlined";
+import UnfoldMoreOutlined from "@mui/icons-material/UnfoldMoreOutlined";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
@@ -38,6 +39,13 @@ export interface FloorPlanActionBarProps {
   onShowRoom: () => void;
   onHideRoom: () => void;
   selectionLabel: string | null;
+  /**
+   * The doc's view toggle: reveals the rooms folded inside their envelopes
+   * so one can be picked and shown. It is a view, not an edit — it stores
+   * nothing and Esc reverts it.
+   */
+  showAllRooms: boolean;
+  onToggleShowAllRooms: () => void;
 }
 
 const toolSx = { height: 30 } as const;
@@ -52,6 +60,8 @@ export function FloorPlanActionBar({
   onShowRoom,
   onHideRoom,
   selectionLabel,
+  showAllRooms,
+  onToggleShowAllRooms,
 }: FloorPlanActionBarProps) {
   const toolButton = (
     id: EditTool,
@@ -132,6 +142,18 @@ export function FloorPlanActionBar({
               Hide room
             </Button>
           </span>
+        </Tooltip>
+        <Tooltip title="Reveal the rooms folded inside their envelopes, so one can be picked. A view only — it stores nothing, and Esc reverts it.">
+          <Button
+            variant={showAllRooms ? "contained" : "outlined"}
+            color={showAllRooms ? "primary" : "inherit"}
+            size="small"
+            startIcon={<UnfoldMoreOutlined sx={{ fontSize: 16 }} />}
+            sx={toolSx}
+            onClick={onToggleShowAllRooms}
+          >
+            All rooms
+          </Button>
         </Tooltip>
       </Stack>
 

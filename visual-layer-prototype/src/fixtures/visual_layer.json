@@ -4961,7 +4961,7 @@
       "group_id": "0:gS",
       "space_type": "stairs",
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:E",
@@ -4975,7 +4975,7 @@
       "group_id": "0:gE",
       "space_type": "elevator",
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:TECH",
@@ -5026,7 +5026,7 @@
       "group_id": "0:C1",
       "space_type": null,
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:CM2",
@@ -5056,7 +5056,7 @@
       "group_id": "0:C2",
       "space_type": null,
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:GB1",
@@ -5070,7 +5070,7 @@
       "group_id": "0:gGL1",
       "space_type": "room",
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:GB2",
@@ -5084,7 +5084,7 @@
       "group_id": "0:gGL2",
       "space_type": "room",
       "floor_id": "0:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "0:GL1",
@@ -5179,7 +5179,7 @@
       "group_id": "1:gS",
       "space_type": "stairs",
       "floor_id": "1:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "1:E",
@@ -5194,7 +5194,7 @@
       "group_id": "1:gE",
       "space_type": "elevator",
       "floor_id": "1:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "1:B1",
@@ -5558,7 +5558,7 @@
       "group_id": "2:gS",
       "space_type": "stairs",
       "floor_id": "2:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "2:E",
@@ -5573,7 +5573,7 @@
       "group_id": "2:gE",
       "space_type": "elevator",
       "floor_id": "2:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "2:B21",
@@ -5937,7 +5937,7 @@
       "group_id": "3:gS",
       "space_type": "stairs",
       "floor_id": "3:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "3:E",
@@ -5952,7 +5952,7 @@
       "group_id": "3:gE",
       "space_type": "elevator",
       "floor_id": "3:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "3:B31",
@@ -6316,7 +6316,7 @@
       "group_id": "4:gS",
       "space_type": "stairs",
       "floor_id": "4:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "4:E",
@@ -6331,7 +6331,7 @@
       "group_id": "4:gE",
       "space_type": "elevator",
       "floor_id": "4:floor",
-      "surfaced": false
+      "surfaced": true
     },
     {
       "id": "4:B41",

@@ -18,6 +18,7 @@ import {
   doorGeometry,
   groupOuterWalls,
   highlightTargets,
+  isRoomListed,
   isWallVisible,
   labelPoint,
   lerp,
@@ -53,6 +54,12 @@ export interface FloorPlanCanvasProps {
   selectedRoomId: string | null;
   selectedGroupId: string | null;
   onSelectRoom: (roomId: string | null) => void;
+  /**
+   * Called instead of onSelectRoom when the pointer is over a room the lists
+   * do not name: a hidden room cannot be clicked or acted on, so the envelope
+   * is what the map offers.
+   */
+  onSelectGroup?: (groupId: string | null) => void;
   /** "door" arms wall-click placement; anything else leaves the map inert. */
   tool?: "select" | "door";
   /** Called with the wall and side under the pointer when it is clicked. */
@@ -113,6 +120,7 @@ export function FloorPlanCanvas({
   selectedRoomId,
   selectedGroupId,
   onSelectRoom,
+  onSelectGroup,
   tool = "select",
   onPlaceDoor,
   placementError,
@@ -131,7 +139,10 @@ export function FloorPlanCanvas({
     if (!hoverRoom) return null;
     const room = layer.rooms.get(hoverRoom);
     if (!room) return null;
-    const rooms = new Set(highlightTargets(layer, hoverRoom));
+    // While the view toggle reveals every room, each is its own target.
+    const rooms = new Set(
+      showAllRooms ? [hoverRoom] : highlightTargets(layer, hoverRoom),
+    );
     // Outline the envelope when the whole flat is lit, the room's own ring
     // when it is not. groupOuterWalls gives the envelope's outline directly:
     // the walls whose two rooms are in different envelopes.
@@ -140,7 +151,7 @@ export function FloorPlanCanvas({
         ? groupOuterWalls(layer, room.group_id)
         : [];
     return { rooms, outline, single: rooms.size === 1 };
-  }, [layer, hoverRoom]);
+  }, [layer, hoverRoom, showAllRooms]);
 
   const scene = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
@@ -293,6 +304,13 @@ export function FloorPlanCanvas({
                   onClick={(e) => {
                     if (placing) return; // the svg handler places the door
                     e.stopPropagation();
+                    // A hidden room cannot be clicked or acted on. While its
+                    // flat is folded the envelope is what the map offers;
+                    // the view toggle is how you reach the room itself.
+                    if (!showAllRooms && !isRoomListed(layer, room)) {
+                      onSelectGroup?.(room.group_id);
+                      return;
+                    }
                     onSelectRoom(room.id);
                   }}
                 />

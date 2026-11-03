@@ -3,7 +3,7 @@
  * (36:4871) — app bar, floor-plan action bar, then the 256 / canvas / 320
  * three-column content.
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Snackbar from "@mui/material/Snackbar";
@@ -56,6 +56,9 @@ export function EditModeScreen({
   const [tool, setTool] = useState<EditTool>("select");
   const [mode, setMode] = useState<EditModeName>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  // A view, not an edit: nothing is stored and Esc reverts it.
+  const [showAllRooms, setShowAllRooms] = useState(false);
   const [toast, setToast] = useState<{ text: string; kind: "ok" | "bad" } | null>(
     null,
   );
@@ -67,6 +70,28 @@ export function EditModeScreen({
 
   const { layer } = state;
   const selected = selectedRoomId ? layer.rooms.get(selectedRoomId) : undefined;
+
+  // Esc reverts the view toggle, as the doc specifies, and clears selection.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setShowAllRooms(false);
+      setSelectedRoomId(null);
+      setSelectedGroupId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const selectRoom = useCallback((id: string | null) => {
+    setSelectedRoomId(id);
+    setSelectedGroupId(null);
+  }, []);
+
+  const selectGroup = useCallback((id: string | null) => {
+    setSelectedGroupId(id);
+    setSelectedRoomId(null);
+  }, []);
 
   /** Run an operation, and turn a refusal into a message rather than a throw. */
   const run = useCallback(
@@ -145,6 +170,8 @@ export function EditModeScreen({
         canShowRoom={canShowRoom}
         canHideRoom={canHideRoom}
         selectionLabel={selected?.name ?? null}
+        showAllRooms={showAllRooms}
+        onToggleShowAllRooms={() => setShowAllRooms((v) => !v)}
         onShowRoom={() =>
           selectedRoomId && run(() => setRoomSurfaced(state, selectedRoomId, true))
         }
@@ -160,18 +187,21 @@ export function EditModeScreen({
           floorId={floorId}
           onFloorChange={onFloorChange}
           selectedRoomId={selectedRoomId}
-          onSelectRoom={setSelectedRoomId}
+          onSelectRoom={selectRoom}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
           <FloorPlanCanvas
             layer={layer}
             floorId={floorId}
-            showAllRooms={tool === "door"}
+            // The door tool needs every wall clickable, so it reveals the
+            // rooms for as long as it is armed.
+            showAllRooms={showAllRooms || tool === "door"}
             reach={null}
             selectedRoomId={selectedRoomId}
-            selectedGroupId={null}
-            onSelectRoom={setSelectedRoomId}
+            selectedGroupId={selectedGroupId}
+            onSelectRoom={selectRoom}
+            onSelectGroup={selectGroup}
             tool={tool === "door" ? "door" : "select"}
             onPlaceDoor={handlePlaceDoor}
             placementError={placementError}
@@ -183,7 +213,7 @@ export function EditModeScreen({
           layer={layer}
           selectedRoomId={selectedRoomId}
           onSelectRoom={(id) => {
-            setSelectedRoomId(id);
+            selectRoom(id);
             const room = layer.rooms.get(id);
             if (room && room.floor_id !== floorId) onFloorChange(room.floor_id);
           }}
