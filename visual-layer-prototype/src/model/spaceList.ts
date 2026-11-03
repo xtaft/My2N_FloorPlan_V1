@@ -13,7 +13,40 @@
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import type { VisualLayer } from "./load";
-import type { Room, UnplacedSpace } from "./types";
+import { groupAccessType } from "./derive";
+import type { Room, UnplacedSpace, VisualLayerFile } from "./types";
+
+/**
+ * Giving a room a category of its own is the same act however it is done —
+ * from the menu, from an imported list, or by placing a space onto it — so
+ * it carries the same consequence: a room that no longer shares its
+ * envelope's category is no longer part of it.
+ *
+ * Without this, importing a list would be the one way to leave a technical
+ * room sitting inside an apartment, which is exactly the state the rule
+ * exists to prevent.
+ */
+function retyped(
+  layer: VisualLayer,
+  room: Room,
+  nextType: string | null,
+): { space_type: string | null; group_id: string | null } {
+  if (nextType === null) {
+    return { space_type: null, group_id: room.group_id };
+  }
+  const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
+  const leaves = group !== undefined && groupAccessType(layer, group) !== nextType;
+  return { space_type: nextType, group_id: leaves ? null : room.group_id };
+}
+
+/** An envelope emptied by a retype is a row that names nothing. */
+function pruneGroups(file: VisualLayerFile, rooms: Room[]) {
+  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
+  const hasChild = new Set(
+    file.groups.map((g) => g.parent_group_id).filter(Boolean),
+  );
+  return file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id));
+}
 
 export interface SpaceRow {
   name: string;
@@ -246,10 +279,16 @@ export function applySpaceList(
   const rooms: Room[] = file.rooms.map((room) => {
     const m = byRoom.get(room.id);
     if (!m) return room;
+    // A blank Type column says nothing, which is not the same as saying
+    // unknown, so the room keeps the category and the envelope it had.
+    const category =
+      m.row.type === ""
+        ? { space_type: room.space_type, group_id: room.group_id }
+        : retyped(state.layer, room, m.typeId);
     return {
       ...room,
+      ...category,
       name: m.row.name,
-      space_type: m.row.type === "" ? room.space_type : m.typeId,
       note: m.row.note === "" ? (room.note ?? null) : m.row.note,
     };
   });
@@ -289,8 +328,91 @@ export function applySpaceList(
     {
       ...file,
       rooms,
+      groups: pruneGroups(file, rooms),
       unplaced_spaces: [...existing, ...added],
       counts: { ...file.counts, imported_spaces: summary.added },
     },
   );
+}
+
+/**
+ * Give an imported space a shape: bind it to a room drawn on the plan.
+ *
+ * The room takes the space's name, category and note — the list is the
+ * statement of what that space is, and the room was only ever the shape
+ * waiting for one. The space then leaves the list, because it is placed.
+ *
+ * This is the import's first matching step done by hand, for the rows whose
+ * names nobody could have guessed.
+ */
+export function placeSpace(
+  state: EditState,
+  spaceId: string,
+  roomId: string,
+): EditState {
+  const { layer, file } = state;
+  const space = (file.unplaced_spaces ?? []).find((s) => s.id === spaceId);
+  if (!space) {
+    throw new OperationRejected("That space is not waiting to be placed.");
+  }
+  const room = layer.rooms.get(roomId);
+  if (!room) throw new OperationRejected(`No such room: ${roomId}`);
+
+  if (space.floor_id !== null && space.floor_id !== room.floor_id) {
+    const name = (id: string) =>
+      layer.floors.find((f) => f.id === id)?.name ?? id;
+    throw new OperationRejected(
+      `${space.name} belongs to ${name(space.floor_id)}, and that space is on ${name(room.floor_id)}. Change its floor first, or place it on the right one.`,
+    );
+  }
+
+  const category =
+    space.space_type === null
+      ? { space_type: room.space_type, group_id: room.group_id }
+      : retyped(layer, room, space.space_type);
+
+  const rooms = file.rooms.map((r) =>
+    r.id === roomId
+      ? { ...r, ...category, name: space.name, note: space.note ?? r.note ?? null }
+      : r,
+  );
+
+  return commit(state, "place_space", `Place ${space.name}`, {
+    ...file,
+    rooms,
+    groups: pruneGroups(file, rooms),
+    unplaced_spaces: (file.unplaced_spaces ?? []).filter(
+      (s) => s.id !== spaceId,
+    ),
+  });
+}
+
+/** Drop a space from the list without placing it. */
+export function removeUnplacedSpace(
+  state: EditState,
+  spaceId: string,
+): EditState {
+  const { file } = state;
+  const space = (file.unplaced_spaces ?? []).find((s) => s.id === spaceId);
+  if (!space) {
+    throw new OperationRejected("That space is not waiting to be placed.");
+  }
+  return commit(state, "place_space", `Remove ${space.name}`, {
+    ...file,
+    unplaced_spaces: (file.unplaced_spaces ?? []).filter(
+      (s) => s.id !== spaceId,
+    ),
+  });
+}
+
+/** What a category holds, for the drawer's secondary line. */
+export function categoryTally(
+  layer: VisualLayer,
+  typeId: string | null,
+): { unplaced: number } {
+  return {
+    unplaced: (layer.file.unplaced_spaces ?? []).filter(
+      (s) => (s.space_type ?? null) === typeId,
+    ).length,
+  };
 }

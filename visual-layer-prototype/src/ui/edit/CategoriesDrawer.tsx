@@ -44,9 +44,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import type { RowTarget } from "./StructureRowMenu";
 import {
+  categoryTally,
   isRoomListed,
   passThroughRoom,
   roomColor,
+  roomsInGroup,
   spaceCategories,
   type Group,
   type SpaceCategory,
@@ -62,6 +64,16 @@ import {
  */
 const size = (category: SpaceCategory) =>
   category.groups.length + category.rooms.length;
+
+/**
+ * What a row holds, said rather than counted in brackets. Spaces still to
+ * place are named only when there are some: a trailing "0 unplaced" on
+ * every category is noise on a building nobody has imported a list into.
+ */
+function tally(spaces: number, unplaced: number): string {
+  const first = `${spaces} space${spaces === 1 ? "" : "s"}`;
+  return unplaced > 0 ? `${first} | ${unplaced} unplaced` : first;
+}
 
 /** Wide enough for a category name and a count; wider if asked. */
 export const DRAWER_MIN = 240;
@@ -235,7 +247,12 @@ export function CategoriesDrawer({
             primary={group.name}
             // The floor, because the same envelope name repeats on every
             // storey: four Hallways, five Stairs.
-            secondary={floorName(group.floor_id)}
+            // The floor, because the same envelope name repeats on
+            // every storey, and then what is inside it.
+            secondary={`${floorName(group.floor_id)} · ${tally(
+              roomsInGroup(layer, group.id).length,
+              0,
+            )}`}
             primaryTypographyProps={{ variant: "body1", noWrap: true }}
             secondaryTypographyProps={{ variant: "body2" }}
           />
@@ -319,7 +336,7 @@ export function CategoriesDrawer({
             return (
               <Fragment key={key}>
                 <ListItemButton
-                  sx={{ minHeight: 48, pl: 1, pr: 1 }}
+                  sx={{ minHeight: 68, pl: 1, pr: 1 }}
                   onClick={() => size(category) > 0 && toggle(key)}
                 >
                   <Box sx={{ width: 28, display: "flex", alignItems: "center" }}>
@@ -371,12 +388,14 @@ export function CategoriesDrawer({
                       primary={
                         <Box component="span" sx={{ display: "flex", gap: 1 }}>
                           <span>{category.name}</span>
-                          <Typography component="span" color="text.secondary">
-                            ({size(category)})
-                          </Typography>
                         </Box>
                       }
+                      secondary={tally(
+                        size(category),
+                        categoryTally(layer, category.id).unplaced,
+                      )}
                       primaryTypographyProps={{ variant: "body1" }}
+                      secondaryTypographyProps={{ variant: "body2" }}
                     />
                   )}
                   <IconButton

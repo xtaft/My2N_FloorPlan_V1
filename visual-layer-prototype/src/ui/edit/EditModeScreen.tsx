@@ -12,6 +12,13 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import Divider from "@mui/material/Divider";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Delete from "@mui/icons-material/Delete";
+import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AlignFloorView } from "./AlignFloorView";
@@ -38,6 +45,8 @@ import {
   type Transform,
   applySpaceList,
   deleteDoor,
+  placeSpace,
+  removeUnplacedSpace,
   deleteRoom,
   detachRoom,
   flipDoorHinge,
@@ -110,6 +119,17 @@ export function EditModeScreen({
 }: EditModeScreenProps) {
   const [tool, setTool] = useState<EditTool>("select");
   const [importing, setImporting] = useState(false);
+  /** The menu on a space that has no shape yet. */
+  const [unplacedMenu, setUnplacedMenu] = useState<{
+    el: HTMLElement;
+    spaceId: string;
+  } | null>(null);
+  /**
+   * A space armed for placing. The next room clicked on the plan takes its
+   * name and category — this is the import's first matching step done by
+   * hand, for the rows whose names nobody could have guessed.
+   */
+  const [placing, setPlacing] = useState<string | null>(null);
   const [treeWidth, setTreeWidth] = useState(TREE_DEFAULT);
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
@@ -396,6 +416,7 @@ export function EditModeScreen({
           }
           onRenameCommit={commitRename}
           onRenameCancel={() => setRenaming(null)}
+          onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
           width={treeWidth}
           onWidthChange={setTreeWidth}
         />
@@ -442,6 +463,13 @@ export function EditModeScreen({
             divideError={divideError}
             onDeleteWall={handleDeleteWall}
             deleteWallError={deleteWallError}
+            placingSpace={placing !== null}
+            onPlaceSpace={(roomId) => {
+              const spaceId = placing;
+              if (!spaceId) return;
+              run(() => placeSpace(state, spaceId, roomId));
+              setPlacing(null);
+            }}
             onSpaceMenu={(target, at) => {
               const found =
                 target.kind === "room"
@@ -497,6 +525,62 @@ export function EditModeScreen({
           }
         />
       </Box>
+
+      {/* What a space with no shape can do: take one, or go. */}
+      <Menu
+        anchorEl={unplacedMenu?.el ?? null}
+        open={Boolean(unplacedMenu)}
+        onClose={() => setUnplacedMenu(null)}
+        slotProps={{ paper: { sx: { width: 256 } } }}
+      >
+        <MenuItem
+          sx={{ minHeight: 36, py: 0.25 }}
+          onClick={() => {
+            setPlacing(unplacedMenu?.spaceId ?? null);
+            setUnplacedMenu(null);
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: 2, color: "action.active" }}>
+            <PlaceOutlined sx={{ fontSize: 20 }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Place on the plan"
+            primaryTypographyProps={{ variant: "body1" }}
+          />
+        </MenuItem>
+        <Divider sx={{ my: 1 }} />
+        <MenuItem
+          sx={{ minHeight: 36, py: 0.25 }}
+          onClick={() => {
+            const id = unplacedMenu?.spaceId;
+            if (id) run(() => removeUnplacedSpace(state, id));
+            setUnplacedMenu(null);
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: 2, color: "error.main" }}>
+            <Delete sx={{ fontSize: 20 }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Remove from the list"
+            primaryTypographyProps={{ variant: "body1", color: "error.main" }}
+          />
+        </MenuItem>
+      </Menu>
+
+      {/* While a space is armed, say which one and offer a way out. */}
+      <Snackbar
+        open={placing !== null}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        message={`Click the space on the plan that is ${
+          (layer.file.unplaced_spaces ?? []).find((x) => x.id === placing)
+            ?.name ?? "this space"
+        }`}
+        action={
+          <Button color="inherit" size="small" onClick={() => setPlacing(null)}>
+            Cancel
+          </Button>
+        }
+      />
 
       <ImportSpaceList
         open={importing}

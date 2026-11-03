@@ -5,11 +5,14 @@ import { describe, expect, it } from "vitest";
 import { fixture } from "./load";
 import {
   OperationRejected,
+  accessType,
   applySpaceList,
   initEditState,
   matchSpaceList,
   normalise,
   parseSpaceList,
+  placeSpace,
+  removeUnplacedSpace,
   summarise,
   undo,
   type EditState,
@@ -271,5 +274,140 @@ describe("applySpaceList", () => {
 
   it("refuses an empty list", () => {
     expect(() => applySpaceList(state(), [])).toThrow(OperationRejected);
+  });
+});
+
+describe("placeSpace", () => {
+  const importOne = (s: EditState, row: string[]) =>
+    applySpaceList(
+      s,
+      matchSpaceList(s.layer, parseSpaceList([["Name", "Floor", "Type", "Note"], row])),
+    );
+
+  it("gives the space's name, category and note to the room", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "Commercial unit", "top"]);
+    const space = before.file.unplaced_spaces![0];
+
+    const after = placeSpace(before, space.id, "1:B1");
+    const room = after.layer.rooms.get("1:B1")!;
+    expect(room.name).toBe("Penthouse");
+    expect(room.space_type).toBe("commercial");
+    expect(room.note).toBe("top");
+  });
+
+  it("takes the space off the list once it is placed", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "", ""]);
+    const after = placeSpace(before, before.file.unplaced_spaces![0].id, "1:B1");
+    expect(after.file.unplaced_spaces).toEqual([]);
+  });
+
+  it("leaves the shape and the devices alone", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "", ""]);
+    const after = placeSpace(before, before.file.unplaced_spaces![0].id, "1:L1");
+    expect(after.file.walls).toEqual(before.file.walls);
+    expect(after.layer.rooms.get("1:L1")!.walls).toEqual(
+      before.layer.rooms.get("1:L1")!.walls,
+    );
+    expect(after.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe("1:L1");
+  });
+
+  it("keeps the room's category when the space names none", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "", ""]);
+    const was = before.layer.rooms.get("1:B1")!.space_type;
+    const after = placeSpace(before, before.file.unplaced_spaces![0].id, "1:B1");
+    expect(after.layer.rooms.get("1:B1")!.space_type).toBe(was);
+  });
+
+  it("refuses a room on another storey", () => {
+    const before = importOne(state(), ["Penthouse", "floor 4", "", ""]);
+    const id = before.file.unplaced_spaces![0].id;
+    expect(() => placeSpace(before, id, "1:B1")).toThrow(/belongs to floor 4/);
+  });
+
+  it("places a space with no floor anywhere", () => {
+    const before = importOne(state(), ["Penthouse", "", "", ""]);
+    const id = before.file.unplaced_spaces![0].id;
+    expect(placeSpace(before, id, "1:B1").layer.rooms.get("1:B1")!.name).toBe(
+      "Penthouse",
+    );
+  });
+
+  it("is undone", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "", ""]);
+    const after = placeSpace(before, before.file.unplaced_spaces![0].id, "1:B1");
+    expect(undo(after).file).toEqual(before.file);
+  });
+
+  it("drops a space from the list without touching the plan", () => {
+    const before = importOne(state(), ["Penthouse", "floor 1", "", ""]);
+    const after = removeUnplacedSpace(before, before.file.unplaced_spaces![0].id);
+    expect(after.file.unplaced_spaces).toEqual([]);
+    expect(after.file.rooms).toEqual(before.file.rooms);
+  });
+
+  it("refuses a space that is not on the list", () => {
+    expect(() => placeSpace(state(), "space:9", "1:B1")).toThrow(
+      OperationRejected,
+    );
+  });
+});
+
+describe("a category from a list takes a room out of its envelope too", () => {
+  it("detaches on import, the same as changing it by hand", () => {
+    // Otherwise an imported list would be the one way to leave a technical
+    // room sitting inside an apartment.
+    const before = state();
+    expect(accessType(before.layer, before.layer.rooms.get("1:B1")!)).toBe(
+      "apartment",
+    );
+    const after = applySpaceList(
+      before,
+      matchSpaceList(
+        before.layer,
+        parseSpaceList([
+          ["Name", "Floor", "Type"],
+          ["Bedroom", "floor 1", "Technical"],
+        ]),
+      ),
+    );
+    const room = after.file.rooms.find((r) => r.name === "Bedroom")!;
+    expect(room.space_type).toBe("technical");
+    expect(room.group_id).toBeNull();
+  });
+
+  it("detaches when a space is placed onto a room of another kind", () => {
+    const imported = applySpaceList(
+      state(),
+      matchSpaceList(
+        state().layer,
+        parseSpaceList([
+          ["Name", "Floor", "Type"],
+          ["Plant room", "floor 1", "Technical"],
+        ]),
+      ),
+    );
+    const after = placeSpace(
+      imported,
+      imported.file.unplaced_spaces![0].id,
+      "1:B1",
+    );
+    expect(after.layer.rooms.get("1:B1")!.space_type).toBe("technical");
+    expect(after.layer.rooms.get("1:B1")!.group_id).toBeNull();
+  });
+
+  it("stays put when the list names the envelope's own category", () => {
+    const before = state();
+    const group = before.layer.rooms.get("1:B1")!.group_id;
+    const after = applySpaceList(
+      before,
+      matchSpaceList(
+        before.layer,
+        parseSpaceList([
+          ["Name", "Floor", "Type"],
+          ["Bedroom", "floor 1", "Apartment"],
+        ]),
+      ),
+    );
+    expect(after.layer.rooms.get("1:B1")!.group_id).toBe(group);
   });
 });

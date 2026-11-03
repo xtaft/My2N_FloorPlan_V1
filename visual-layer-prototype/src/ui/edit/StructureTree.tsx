@@ -79,6 +79,8 @@ export interface StructureTreeProps {
   onRenameChange: (draft: string) => void;
   onRenameCommit: () => void;
   onRenameCancel: () => void;
+  /** The menu on a space that has been imported but not drawn yet. */
+  onUnplacedMenu: (el: HTMLElement, spaceId: string) => void;
   /** Figma has it at 256; the user can have it wider. */
   width: number;
   onWidthChange: (width: number) => void;
@@ -96,6 +98,7 @@ export function StructureTree({
   onRenameChange,
   onRenameCommit,
   onRenameCancel,
+  onUnplacedMenu,
   width,
   onWidthChange,
 }: StructureTreeProps) {
@@ -441,7 +444,10 @@ export function StructureTree({
                           2,
                           <PlaceOutlined sx={{ fontSize: 20 }} />,
                           space.name,
-                          { muted: true },
+                          {
+                            muted: true,
+                            onMenu: (el) => onUnplacedMenu(el, space.id),
+                          },
                         ),
                       )}
                   </>

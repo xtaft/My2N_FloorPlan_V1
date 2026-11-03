@@ -551,6 +551,17 @@ with no walls breaks every derivation that assumes an outline — so these sit
 beside the rooms exactly as an orphaned device sits beside the placed ones,
 and the tree lists them under their floor so the import is visible somewhere.
 
+**Placing one is step 1 done by hand.** A space waiting on the list is
+armed from its row and given the next space clicked on the plan: that room
+takes its name, category and note, and the space leaves the list. It refuses
+a room on another storey, since a row that named a floor meant it.
+
+Setting a room's category is the same act however it is reached — the menu,
+an imported list, or placing a space onto it — so it carries the same
+consequence everywhere: a room that no longer shares its envelope's category
+leaves it. Without that, an import would be the one way to leave a technical
+room sitting inside an apartment.
+
 **Nothing is deleted, ever.** A name or a type is replaced only where a row
 matched, which is what makes importing the same list twice an update rather
 than a second copy of the building. A blank Type column says nothing, which

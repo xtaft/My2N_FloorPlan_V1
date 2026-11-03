@@ -97,6 +97,12 @@ export interface FloorPlanCanvasProps {
   ) => void;
   onDoorMenu?: (doorId: string, at: { top: number; left: number }) => void;
   /**
+   * A space from the import list is waiting for a shape, so the next click
+   * on a room gives it one instead of opening that room's menu.
+   */
+  placingSpace?: boolean;
+  onPlaceSpace?: (roomId: string) => void;
+  /**
    * Device status badges. Off while editing: the editor is for changing the
    * plan, and whether a reader is reachable today is not part of that.
    */
@@ -163,6 +169,8 @@ export function FloorPlanCanvas({
   deleteWallError,
   onSpaceMenu,
   onDoorMenu,
+  placingSpace = false,
+  onPlaceSpace,
   showDeviceStatus = true,
   onShowRoom,
   onHideRoom,
@@ -340,7 +348,7 @@ export function FloorPlanCanvas({
   const drawing = tool === "wall";
   const erasing = tool === "remove_wall";
   /** Each of these aims at the plan, so none may let a drag pan it. */
-  const aiming = placing || drawing || erasing;
+  const aiming = placing || drawing || erasing || placingSpace;
 
   /**
    * The point on a room's boundary that the pointer is offering. Unbounded
@@ -563,6 +571,13 @@ export function FloorPlanCanvas({
                     // wall, which is not this room's to claim.
                     if (placing || erasing) return;
                     e.stopPropagation();
+
+                    // A space waiting for a shape takes the next room
+                    // clicked, rather than that room opening its menu.
+                    if (placingSpace) {
+                      onPlaceSpace?.(room.id);
+                      return;
+                    }
 
                     if (drawing) {
                       // Snapped from this click's own position rather than
