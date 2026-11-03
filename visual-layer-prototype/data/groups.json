@@ -1,0 +1,542 @@
+[
+  {
+    "id": "0:floorgroup",
+    "name": "Floor 0",
+    "space_type": null,
+    "parent_group_id": null,
+    "floor_id": "0:floor",
+    "sort_index": 0.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "0:C1",
+    "name": "C1",
+    "space_type": "commercial",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 50.0,
+    "domain_ref": "unit:C1",
+    "shaft_id": null
+  },
+  {
+    "id": "0:C2",
+    "name": "C2",
+    "space_type": "commercial",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 51.0,
+    "domain_ref": "unit:C2",
+    "shaft_id": null
+  },
+  {
+    "id": "0:GYM",
+    "name": "GYM",
+    "space_type": "gym",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 52.0,
+    "domain_ref": "unit:GYM",
+    "shaft_id": null
+  },
+  {
+    "id": "0:gGL1",
+    "name": "Locker room M",
+    "space_type": null,
+    "parent_group_id": "0:GYM",
+    "floor_id": "0:floor",
+    "sort_index": 62.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "0:gGL2",
+    "name": "Locker room W",
+    "space_type": null,
+    "parent_group_id": "0:GYM",
+    "floor_id": "0:floor",
+    "sort_index": 62.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "0:gL",
+    "name": "Lobby",
+    "space_type": "circulation",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 100.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "0:gS",
+    "name": "Stairs",
+    "space_type": "stairs",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 101.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_stairs"
+  },
+  {
+    "id": "0:gE",
+    "name": "Elevator",
+    "space_type": "elevator",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 102.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_lift"
+  },
+  {
+    "id": "0:gTECH",
+    "name": "Technical room",
+    "space_type": "technical",
+    "parent_group_id": "0:floorgroup",
+    "floor_id": "0:floor",
+    "sort_index": 103.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "1:floorgroup",
+    "name": "Floor 1",
+    "space_type": null,
+    "parent_group_id": null,
+    "floor_id": "1:floor",
+    "sort_index": 1.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "1:A1",
+    "name": "A1",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 10.0,
+    "domain_ref": "unit:A1",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A2",
+    "name": "A2",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 11.0,
+    "domain_ref": "unit:A2",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A3",
+    "name": "A3",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 12.0,
+    "domain_ref": "unit:A3",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A4",
+    "name": "A4",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 13.0,
+    "domain_ref": "unit:A4",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A5",
+    "name": "A5",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 14.0,
+    "domain_ref": "unit:A5",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A6",
+    "name": "A6",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 15.0,
+    "domain_ref": "unit:A6",
+    "shaft_id": null
+  },
+  {
+    "id": "1:A7",
+    "name": "A7",
+    "space_type": "apartment",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 16.0,
+    "domain_ref": "unit:A7",
+    "shaft_id": null
+  },
+  {
+    "id": "1:gH",
+    "name": "Hallway",
+    "space_type": "circulation",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 100.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "1:gS",
+    "name": "Stairs",
+    "space_type": "stairs",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 101.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_stairs"
+  },
+  {
+    "id": "1:gE",
+    "name": "Elevator",
+    "space_type": "elevator",
+    "parent_group_id": "1:floorgroup",
+    "floor_id": "1:floor",
+    "sort_index": 102.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_lift"
+  },
+  {
+    "id": "2:floorgroup",
+    "name": "Floor 2",
+    "space_type": null,
+    "parent_group_id": null,
+    "floor_id": "2:floor",
+    "sort_index": 2.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "2:A21",
+    "name": "A21",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 10.0,
+    "domain_ref": "unit:A21",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A22",
+    "name": "A22",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 11.0,
+    "domain_ref": "unit:A22",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A23",
+    "name": "A23",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 12.0,
+    "domain_ref": "unit:A23",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A24",
+    "name": "A24",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 13.0,
+    "domain_ref": "unit:A24",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A25",
+    "name": "A25",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 14.0,
+    "domain_ref": "unit:A25",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A26",
+    "name": "A26",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 15.0,
+    "domain_ref": "unit:A26",
+    "shaft_id": null
+  },
+  {
+    "id": "2:A27",
+    "name": "A27",
+    "space_type": "apartment",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 16.0,
+    "domain_ref": "unit:A27",
+    "shaft_id": null
+  },
+  {
+    "id": "2:gH",
+    "name": "Hallway",
+    "space_type": "circulation",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 100.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "2:gS",
+    "name": "Stairs",
+    "space_type": "stairs",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 101.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_stairs"
+  },
+  {
+    "id": "2:gE",
+    "name": "Elevator",
+    "space_type": "elevator",
+    "parent_group_id": "2:floorgroup",
+    "floor_id": "2:floor",
+    "sort_index": 102.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_lift"
+  },
+  {
+    "id": "3:floorgroup",
+    "name": "Floor 3",
+    "space_type": null,
+    "parent_group_id": null,
+    "floor_id": "3:floor",
+    "sort_index": 3.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "3:A31",
+    "name": "A31",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 10.0,
+    "domain_ref": "unit:A31",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A32",
+    "name": "A32",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 11.0,
+    "domain_ref": "unit:A32",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A33",
+    "name": "A33",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 12.0,
+    "domain_ref": "unit:A33",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A34",
+    "name": "A34",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 13.0,
+    "domain_ref": "unit:A34",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A35",
+    "name": "A35",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 14.0,
+    "domain_ref": "unit:A35",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A36",
+    "name": "A36",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 15.0,
+    "domain_ref": "unit:A36",
+    "shaft_id": null
+  },
+  {
+    "id": "3:A37",
+    "name": "A37",
+    "space_type": "apartment",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 16.0,
+    "domain_ref": "unit:A37",
+    "shaft_id": null
+  },
+  {
+    "id": "3:gH",
+    "name": "Hallway",
+    "space_type": "circulation",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 100.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "3:gS",
+    "name": "Stairs",
+    "space_type": "stairs",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 101.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_stairs"
+  },
+  {
+    "id": "3:gE",
+    "name": "Elevator",
+    "space_type": "elevator",
+    "parent_group_id": "3:floorgroup",
+    "floor_id": "3:floor",
+    "sort_index": 102.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_lift"
+  },
+  {
+    "id": "4:floorgroup",
+    "name": "Floor 4",
+    "space_type": null,
+    "parent_group_id": null,
+    "floor_id": "4:floor",
+    "sort_index": 4.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "4:A41",
+    "name": "A41",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 10.0,
+    "domain_ref": "unit:A41",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A42",
+    "name": "A42",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 11.0,
+    "domain_ref": "unit:A42",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A43",
+    "name": "A43",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 12.0,
+    "domain_ref": "unit:A43",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A44",
+    "name": "A44",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 13.0,
+    "domain_ref": "unit:A44",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A45",
+    "name": "A45",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 14.0,
+    "domain_ref": "unit:A45",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A46",
+    "name": "A46",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 15.0,
+    "domain_ref": "unit:A46",
+    "shaft_id": null
+  },
+  {
+    "id": "4:A47",
+    "name": "A47",
+    "space_type": "apartment",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 16.0,
+    "domain_ref": "unit:A47",
+    "shaft_id": null
+  },
+  {
+    "id": "4:gH",
+    "name": "Hallway",
+    "space_type": "circulation",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 100.0,
+    "domain_ref": null,
+    "shaft_id": null
+  },
+  {
+    "id": "4:gS",
+    "name": "Stairs",
+    "space_type": "stairs",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 101.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_stairs"
+  },
+  {
+    "id": "4:gE",
+    "name": "Elevator",
+    "space_type": "elevator",
+    "parent_group_id": "4:floorgroup",
+    "floor_id": "4:floor",
+    "sort_index": 102.0,
+    "domain_ref": null,
+    "shaft_id": "shaft_lift"
+  }
+]

@@ -1,0 +1,503 @@
+[
+  {
+    "id": "P1",
+    "devices": [
+      "AC-0-d11"
+    ],
+    "rooms": [
+      "0:CM2"
+    ],
+    "people": [
+      "S007",
+      "S008",
+      "S009"
+    ],
+    "people_count": 3
+  },
+  {
+    "id": "P2",
+    "devices": [
+      "AC-0-d8"
+    ],
+    "rooms": [
+      "0:GM"
+    ],
+    "people": [
+      "S010",
+      "S011",
+      "S012",
+      "S013",
+      "S014",
+      "S015"
+    ],
+    "people_count": 6
+  },
+  {
+    "id": "P3",
+    "devices": [
+      "AC-0-d9"
+    ],
+    "rooms": [
+      "0:CM1"
+    ],
+    "people": [
+      "S004",
+      "S005",
+      "S006"
+    ],
+    "people_count": 3
+  },
+  {
+    "id": "P4",
+    "devices": [
+      "AC-1-d11",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L1"
+    ],
+    "people": [
+      "R001",
+      "R002"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P5",
+    "devices": [
+      "AC-1-d12",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L3"
+    ],
+    "people": [
+      "R005",
+      "R006"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P6",
+    "devices": [
+      "AC-1-d13",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L5"
+    ],
+    "people": [
+      "R009"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P7",
+    "devices": [
+      "AC-1-d7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L2"
+    ],
+    "people": [
+      "R003",
+      "R004"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P8",
+    "devices": [
+      "AC-1-d8",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L4"
+    ],
+    "people": [
+      "R007",
+      "R008"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P9",
+    "devices": [
+      "AC-1-d9",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L6"
+    ],
+    "people": [
+      "R010",
+      "R011"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P10",
+    "devices": [
+      "AC-1-dA7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "1:L7"
+    ],
+    "people": [
+      "R012",
+      "R013"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P11",
+    "devices": [
+      "AC-2-d11",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L21"
+    ],
+    "people": [
+      "R014"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P12",
+    "devices": [
+      "AC-2-d12",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L23"
+    ],
+    "people": [
+      "R017"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P13",
+    "devices": [
+      "AC-2-d13",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L25"
+    ],
+    "people": [
+      "R020"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P14",
+    "devices": [
+      "AC-2-d7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L22"
+    ],
+    "people": [
+      "R015",
+      "R016"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P15",
+    "devices": [
+      "AC-2-d8",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L24"
+    ],
+    "people": [
+      "R018",
+      "R019"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P16",
+    "devices": [
+      "AC-2-d9",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L26"
+    ],
+    "people": [
+      "R021"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P17",
+    "devices": [
+      "AC-2-dA7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "2:L27"
+    ],
+    "people": [
+      "R022"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P18",
+    "devices": [
+      "AC-3-d11",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L31"
+    ],
+    "people": [
+      "R023",
+      "R024"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P19",
+    "devices": [
+      "AC-3-d12",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L33"
+    ],
+    "people": [
+      "R027"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P20",
+    "devices": [
+      "AC-3-d13",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L35"
+    ],
+    "people": [
+      "R030"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P21",
+    "devices": [
+      "AC-3-d7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L32"
+    ],
+    "people": [
+      "R025",
+      "R026"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P22",
+    "devices": [
+      "AC-3-d8",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L34"
+    ],
+    "people": [
+      "R028",
+      "R029"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P23",
+    "devices": [
+      "AC-3-d9",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L36"
+    ],
+    "people": [
+      "R031",
+      "R032"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P24",
+    "devices": [
+      "AC-3-dA7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "3:L37"
+    ],
+    "people": [
+      "R033",
+      "R034"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P25",
+    "devices": [
+      "AC-4-d11",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L41"
+    ],
+    "people": [
+      "R035",
+      "R036"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P26",
+    "devices": [
+      "AC-4-d12",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L43"
+    ],
+    "people": [
+      "R039"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P27",
+    "devices": [
+      "AC-4-d13",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L45"
+    ],
+    "people": [
+      "R041",
+      "R042"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P28",
+    "devices": [
+      "AC-4-d7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L42"
+    ],
+    "people": [
+      "R037",
+      "R038"
+    ],
+    "people_count": 2
+  },
+  {
+    "id": "P29",
+    "devices": [
+      "AC-4-d8",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L44"
+    ],
+    "people": [
+      "R040"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P30",
+    "devices": [
+      "AC-4-d9",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L46"
+    ],
+    "people": [
+      "R043"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P31",
+    "devices": [
+      "AC-4-dA7",
+      "IC-0-d10"
+    ],
+    "rooms": [
+      "0:L",
+      "4:L47"
+    ],
+    "people": [
+      "R044"
+    ],
+    "people_count": 1
+  },
+  {
+    "id": "P32",
+    "devices": [
+      "IC-0-d10",
+      "RD-0-d3"
+    ],
+    "rooms": [
+      "0:L",
+      "0:TECH"
+    ],
+    "people": [
+      "S001",
+      "S002",
+      "S003"
+    ],
+    "people_count": 3
+  }
+]
