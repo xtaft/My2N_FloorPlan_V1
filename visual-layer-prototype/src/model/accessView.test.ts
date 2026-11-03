@@ -280,9 +280,9 @@ describe("marking the tree with where you can get", () => {
   });
 });
 
-describe("a credential opens its own door, wherever that door is", () => {
+describe("what a set of devices opens, and what lies beyond", () => {
   const open = (devices: string[]) => {
-    const shade = accessShading(layer, new Set(devices));
+    const shade = accessShading(layer, new Set(devices), "devices");
     return new Set(
       [...shade.entries()]
         .filter(([, v]) => v === "open")
@@ -290,40 +290,92 @@ describe("a credential opens its own door, wherever that door is", () => {
     );
   };
 
-  it("lets maintenance into the technical room", () => {
-    // The Maintenance group holds one device, the reader on the
-    // technical room — and that room's only door is off the lobby. A
-    // walk that starts at the street never gets there, because the
-    // lobby needs the entrance intercom. But the reader is exactly
-    // what the technical door asks for, so holding it is enough.
-    const gained = open(["RD-0-d3"]);
-    expect(gained.has("Technical room")).toBe(true);
+  it("opens the room a reader guards, wherever that door is", () => {
+    // Maintenance holds one device, the reader on the technical room,
+    // whose single door is off the lobby. Asking "what does this open"
+    // is not asking anyone to walk there from the street.
+    expect(open(["RD-0-d3"]).has("Technical room")).toBe(true);
   });
 
-  it("lets them back out of it, because the door only reads one way", () => {
-    // The reader checks the way *in*. Standing inside, the door opens,
-    // so the lobby and everything unguarded beyond it follows.
+  it("does not hand back the space you were standing in", () => {
+    // You were in the lobby when you used the reader. The reader did
+    // not let you in there, so it does not colour it — and through the
+    // lobby it would otherwise claim every shared space in the
+    // building, which is the opposite of what an inside reader means.
     const gained = open(["RD-0-d3"]);
-    expect(gained.has("Lobby")).toBe(true);
-    expect(gained.has("Stairs")).toBe(true);
+    expect(gained.has("Lobby")).toBe(false);
+    expect(gained.has("Stairs")).toBe(false);
+    expect(gained.has("Elevator")).toBe(false);
+    expect(gained.has("Hallway")).toBe(false);
   });
 
-  it("still does not let them into a flat", () => {
-    const gained = open(["RD-0-d3"]);
-    expect(gained.has("Living room")).toBe(false);
-  });
-
-  it("still keeps the shop staff in their unit", () => {
-    // Not because of where the walk starts, but because the unit has
-    // no inside door: its only other door is to the street.
+  it("carries on through whatever is unlocked beyond it", () => {
+    // The shop's reader opens the shop floor, and the storage behind
+    // it has no door of its own to ask for anything.
     const gained = open(["AC-0-d9"]);
     expect(gained.has("Shop floor")).toBe(true);
     expect(gained.has("Storage")).toBe(true);
     expect(gained.has("Lobby")).toBe(false);
-    expect(gained.has("Technical room")).toBe(false);
   });
 
-  it("opens nothing at all when nothing is held", () => {
-    expect(accessShading(layer, new Set(["nope"])).get("0:L")).toBe("closed");
+  it("gives the entrance intercom the lobby and the shared spaces", () => {
+    // Here the space on the far side *is* what the device opens, and
+    // everything beyond it is unguarded.
+    const gained = open(["IC-0-d10"]);
+    expect(gained.has("Lobby")).toBe(true);
+    expect(gained.has("Stairs")).toBe(true);
+    expect(gained.has("Hallway")).toBe(true);
+    // But not through a door that asks for something else.
+    expect(gained.has("Technical room")).toBe(false);
+    expect(gained.has("Living room")).toBe(false);
+  });
+
+  it("adds a flat when its reader is selected too", () => {
+    const gained = open(["IC-0-d10", "AC-1-d11"]);
+    expect(gained.has("Lobby")).toBe(true);
+    expect(gained.has("Living room")).toBe(true);
+  });
+
+  it("opens nothing for a device that is on no door", () => {
+    expect(open(["nope"]).size).toBe(0);
+    // An answering unit guards nothing, so it admits nobody anywhere.
+    expect(open(["AN-A1"]).size).toBe(0);
+  });
+});
+
+describe("a person is asked about from the street", () => {
+  const open = (personId: string) => {
+    const shade = accessShading(
+      layer,
+      new Set(devicesHeldBy(layer, personId)),
+      "outside",
+    );
+    return new Set(
+      [...shade.entries()]
+        .filter(([, v]) => v === "open")
+        .map(([id]) => layer.rooms.get(id)?.name ?? id),
+    );
+  };
+
+  it("includes everything they pass through on the way", () => {
+    // The same technical room, asked about as a journey rather than as
+    // a device: the maintenance technician holds the entrance intercom
+    // too, so the lobby really is hers and she really can get there.
+    const hannah = open("S002");
+    expect(hannah.has("Lobby")).toBe(true);
+    expect(hannah.has("Technical room")).toBe(true);
+  });
+
+  it("stops at the front door for somebody without a key to it", () => {
+    const lorenzo = open("S004");
+    expect(lorenzo.has("Shop floor")).toBe(true);
+    expect(lorenzo.has("Lobby")).toBe(false);
+  });
+
+  it("gets a resident home through the shared spaces", () => {
+    const grace = open("R001");
+    expect(grace.has("Lobby")).toBe(true);
+    expect(grace.has("Stairs")).toBe(true);
+    expect(grace.has("Living room")).toBe(true);
   });
 });

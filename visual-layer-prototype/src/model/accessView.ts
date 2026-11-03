@@ -10,7 +10,7 @@
  * and a person's reach is the union of the groups they are in.
  */
 import groupsFile from "../fixtures/access_groups.json";
-import { accessType, reachable } from "./access";
+import { accessType, buildAdjacency, reachable } from "./access";
 import type { VisualLayer } from "./load";
 import { allPeople } from "./building";
 import { EXTERIOR, type Room } from "./types";
@@ -88,9 +88,27 @@ export type AccessShade = "none" | "open" | "closed";
  * selection, the walk from the entrance says which spaces are behind a
  * door it opens and which are not, and every space is one or the other.
  */
+/**
+ * Which question is being asked.
+ *
+ * A **person** is checked from the street: can this human, carrying
+ * what they carry, get from the pavement to here? Everything they pass
+ * through on the way is theirs, shared spaces included.
+ *
+ * A **group or a set of devices** is a different question — not about
+ * anybody's journey but about what these devices open. So the answer
+ * starts at each device's own door and goes further *in*. It does not
+ * hand you the space you were standing in to use the device: the
+ * technical room's reader opens the technical room, and the lobby on
+ * the other side of that door is where you already were, not something
+ * the reader grants.
+ */
+export type AccessFrom = "outside" | "devices";
+
 export function accessShading(
   layer: VisualLayer,
   allowed: ReadonlySet<string>,
+  from: AccessFrom = "outside",
 ): Map<string, AccessShade> {
   const out = new Map<string, AccessShade>();
   if (allowed.size === 0) {
@@ -98,32 +116,11 @@ export function accessShading(
     return out;
   }
 
-  // Where a credential puts you, and then wherever you can walk on.
-  //
-  // The street is one place to begin — most people arrive there — but
-  // not the only one. A credential admits you through *its own* door,
-  // wherever that door happens to be, and the technical room is the
-  // case that shows it: its single door is off the lobby, so somebody
-  // holding only the technical reader never reaches it from the street
-  // even though that reader is exactly what the door asks for.
-  //
-  // So every room a selected device guards is also a starting point,
-  // and the walk spreads from each until it meets a door asking for
-  // something not held. The shop and gym staff still stay put, not
-  // because the walk started outside but because their units have no
-  // inside door — only the one to the street.
-  const seeds = new Set<string>([EXTERIOR]);
-  for (const device of layer.file.devices) {
-    if (!allowed.has(device.id)) continue;
-    for (const roomId of device.guards) seeds.add(roomId);
-  }
+  const seen =
+    from === "outside"
+      ? reachable(layer, EXTERIOR, { allowedDevices: allowed }).seen
+      : beyondTheDevices(layer, allowed);
 
-  const seen = new Set<string>();
-  for (const from of seeds) {
-    for (const id of reachable(layer, from, { allowedDevices: allowed }).seen) {
-      seen.add(id);
-    }
-  }
   for (const room of layer.file.rooms) {
     out.set(room.id, seen.has(room.id) ? "open" : "closed");
   }
@@ -143,6 +140,64 @@ export function accessPaint(
   shading: Map<string, AccessShade>,
 ): (room: Room) => string | null {
   return (room) => ACCESS_COLORS[shading.get(room.id) ?? "none"];
+}
+
+/** Whether this door lets you into `into` with what is held. */
+function admits(
+  layer: VisualLayer,
+  doorId: string,
+  into: string,
+  allowed: ReadonlySet<string>,
+): boolean {
+  const guards = (layer.devicesOnDoor.get(doorId) ?? []).filter((d) =>
+    d.guards.includes(into),
+  );
+  if (guards.length === 0) return true;
+  return guards.some((d) => allowed.has(d.id));
+}
+
+/**
+ * What a set of devices opens, and what lies beyond it.
+ *
+ * Each device admits you to the room it guards; from there the walk
+ * carries on through whatever else is unlocked, and stops at any door
+ * asking for something not held.
+ *
+ * It never goes back out through the device's own door. That door is
+ * how you arrived, so the room on its far side is where you were
+ * standing — not somewhere the device let you in to. Without this the
+ * technical room's reader would hand you the lobby, and through the
+ * lobby every shared space in the building, which is the opposite of
+ * what a reader on an inside door means.
+ */
+function beyondTheDevices(
+  layer: VisualLayer,
+  allowed: ReadonlySet<string>,
+): Set<string> {
+  const adjacency = buildAdjacency(layer);
+  const open = new Set<string>();
+
+  for (const device of layer.file.devices) {
+    if (!allowed.has(device.id)) continue;
+    if (device.host_kind !== "door" || device.host_id === null) continue;
+    const arrivedBy = device.host_id;
+
+    for (const start of device.guards) {
+      const queue = [start];
+      open.add(start);
+      for (let head = 0; head < queue.length; head += 1) {
+        for (const { door, other } of adjacency.get(queue[head]) ?? []) {
+          if (door.id === arrivedBy) continue; // the way you came in
+          if (other === EXTERIOR || open.has(other)) continue;
+          if (!admits(layer, door.id, other, allowed)) continue;
+          open.add(other);
+          queue.push(other);
+        }
+      }
+    }
+  }
+
+  return open;
 }
 
 /**

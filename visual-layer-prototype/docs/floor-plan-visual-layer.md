@@ -850,26 +850,31 @@ is grey. With a selection the walk says which spaces are behind a door
 it opens — green — and which are not — red. Every space is one or the
 other; there is no third state once a question has been asked.
 
-**A credential opens its own door, wherever that door is.** The walk
-begins at the street *and* at every room a selected device guards, and
-spreads from each until it meets a door asking for something not held.
+**Two selections, two questions, two walks.** This is the heart of
+access mode, and getting it wrong looks plausible either way round.
 
-The street alone is not enough, and the technical room is the case that
-proves it: its single door is off the lobby, so somebody holding only
-the technical reader never reaches it from outside — even though that
-reader is precisely what the door asks for. Seeding the walk at the
-guarded room fixes it, and the reader still opens nothing else.
+A **person** is checked from the street: can this human, carrying what
+they carry, get from the pavement to here? Everything they pass through
+on the way is theirs, the lobby and the shared spaces included. A
+maintenance technician holds the entrance intercom as well as the
+technical reader, so the lobby really is hers and she really can reach
+the technical room.
 
-The shop and gym staff stay in their units under this rule too, and for
-a better reason than the walk's starting point: their units have no
-inside door at all, only the one to the street. A resident holds the
-intercom, so they get the lobby and every shared space beyond it, which
-is unguarded, and their own reader opens their flat.
+A **group or a set of devices** is not about anybody's journey. It asks
+what these devices open, so the answer starts at each device's own door
+and goes further *in*, stopping at any door that asks for something not
+held. It never gives back the space you were standing in to use the
+device: the technical room's reader opens the technical room, and the
+lobby on the other side of that door is where you already were. Without
+that exclusion the reader would claim the lobby, and through the lobby
+every shared space in the building — the opposite of what a reader on
+an inside door means.
 
-A one-sided reader lets you back out. The technical room's reader
-checks the way *in*; standing inside, the door opens, so the lobby and
-the circulation beyond it follow. That is the building, not a gap in
-the model.
+The same group read the other way shows why the person walk cannot
+answer both: from the street, a holder of only the technical reader
+never reaches the technical door at all, because the lobby it opens off
+needs the intercom. One question wants the journey; the other wants the
+door.
 
 **The lists are grouped by what things are.** Devices are one flat list:
 grouping them under the access groups would hide the ones no group

@@ -196,8 +196,13 @@ export function EditModeScreen({
   }, [layer, personId, picked]);
 
   const shading = useMemo(
-    () => (mode === "access" ? accessShading(layer, allowed) : null),
-    [mode, layer, allowed],
+    () =>
+      mode === "access"
+        ? // A person is asked about from the street; a selection of
+          // devices is asked about from the doors themselves.
+          accessShading(layer, allowed, personId ? "outside" : "devices")
+        : null,
+    [mode, layer, allowed, personId],
   );
 
   /** The same answer, for the tree: the map only shows one storey. */
