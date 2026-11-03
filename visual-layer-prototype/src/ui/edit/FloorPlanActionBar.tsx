@@ -19,6 +19,7 @@ import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
 import ElevatorOutlined from "@mui/icons-material/ElevatorOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
 import StairsOutlined from "@mui/icons-material/StairsOutlined";
+import LayersClearOutlined from "@mui/icons-material/LayersClearOutlined";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
@@ -28,6 +29,7 @@ export type EditTool =
   | "show"
   | "hide"
   | "wall"
+  | "remove_wall"
   | "door"
   | "stairs"
   | "elevator";
@@ -109,6 +111,12 @@ export function FloorPlanActionBar({
           "Wall",
           <VerticalSplitOutlined sx={{ fontSize: 16 }} />,
           "Click one wall of a room, then another, to divide it in two",
+        )}
+        {toolButton(
+          "remove_wall",
+          "Remove wall",
+          <LayersClearOutlined sx={{ fontSize: 16 }} />,
+          "Click a wall to take it out. The rooms on either side become one.",
         )}
         {toolButton(
           "door",

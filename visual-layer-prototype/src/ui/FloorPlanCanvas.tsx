@@ -25,6 +25,7 @@ import {
   lerp,
   nearestWall,
   nearestWallInRoom,
+  sharedWalls,
   ringsToPath,
   roomColor,
   roomsOf,
@@ -72,13 +73,17 @@ export interface FloorPlanCanvasProps {
    * folded inside their envelopes and offers them for showing; "hide" folds
    * a shown room back. "select" leaves the map to selection.
    */
-  tool?: "select" | "door" | "show" | "hide" | "wall";
+  tool?: "select" | "door" | "show" | "hide" | "wall" | "remove_wall";
   /** Called with the wall and side under the pointer when it is clicked. */
   onPlaceDoor?: (hit: WallHit) => void;
   /** Both ends of a finished cut, each already snapped to a wall. */
   onDivideRoom?: (req: DivideRoomRequest) => void;
   /** Why the cut being drawn would be refused, for the ghost's colour. */
   divideError?: (req: DivideRoomRequest) => string | null;
+  /** The wall clicked with the remove tool armed. */
+  onDeleteWall?: (wallId: string) => void;
+  /** Why removing the wall under the pointer would be refused. */
+  deleteWallError?: (wallId: string) => string | null;
   /**
    * Device status badges. Off while editing: the editor is for changing the
    * plan, and whether a reader is reachable today is not part of that.
@@ -142,6 +147,8 @@ export function FloorPlanCanvas({
   onPlaceDoor,
   onDivideRoom,
   divideError,
+  onDeleteWall,
+  deleteWallError,
   showDeviceStatus = true,
   onShowRoom,
   onHideRoom,
@@ -317,8 +324,9 @@ export function FloorPlanCanvas({
 
   const placing = tool === "door";
   const drawing = tool === "wall";
-  /** Either tool aims at the plan, so neither may let a drag pan it. */
-  const aiming = placing || drawing;
+  const erasing = tool === "remove_wall";
+  /** Each of these aims at the plan, so none may let a drag pan it. */
+  const aiming = placing || drawing || erasing;
 
   /**
    * The point on a room's boundary that the pointer is offering. Unbounded
@@ -374,7 +382,37 @@ export function FloorPlanCanvas({
     [aiming, drawing, cutFrom, roomAt, snapTo, toSvgPoint, layer, floorId],
   );
 
-  const hoverError = hover && placementError ? placementError(hover) : null;
+  /**
+   * The hovered wall, but only while it still exists.
+   *
+   * Removing a wall deletes the very wall the pointer is resting on, and the
+   * hit kept in state outlives it by a render. Anything that looks the wall
+   * up then fails on a wall that is gone — and these lookups are meant to be
+   * strict, so it is a thrown error and a blank screen, not a quiet null.
+   */
+  const liveHover = hover && layer.walls.has(hover.wallId) ? hover : null;
+
+  // Only the door ghost wants this, and asking outside that tool means
+  // running an add-door preview on every render for no reason.
+  const hoverError =
+    placing && liveHover && placementError ? placementError(liveHover) : null;
+
+  /**
+   * What a click with the remove tool would take. A slit belongs to one
+   * room and goes on its own; anything else takes its whole shared run.
+   */
+  const wallsUnderErase = useMemo(() => {
+    if (!erasing || !liveHover) return [];
+    const wall = layer.walls.get(liveHover.wallId);
+    if (!wall) return [];
+    if (wall.room_a === wall.room_b) return [wall];
+    return sharedWalls(layer, wall.room_a, wall.room_b);
+  }, [erasing, liveHover, layer]);
+
+  const eraseError =
+    erasing && liveHover && deleteWallError
+      ? deleteWallError(liveHover.wallId)
+      : null;
 
   return (
     <TransformWrapper
@@ -413,7 +451,13 @@ export function FloorPlanCanvas({
           }}
           onClick={() => {
             if (placing) {
-              if (hover && onPlaceDoor) onPlaceDoor(hover);
+              if (liveHover && onPlaceDoor) onPlaceDoor(liveHover);
+              return;
+            }
+            if (erasing) {
+              // Sent even when the preview is red, so the refusal can name
+              // the reason rather than the click doing nothing.
+              if (liveHover && onDeleteWall) onDeleteWall(liveHover.wallId);
               return;
             }
             // Clicking off the plan abandons a half-drawn wall rather than
@@ -462,7 +506,9 @@ export function FloorPlanCanvas({
                     setHoverRoom((cur) => (cur === room.id ? null : cur))
                   }
                   onClick={(e) => {
-                    if (placing) return; // the svg handler places the door
+                    // The svg handler owns both of these: they act on a
+                    // wall, which is not this room's to claim.
+                    if (placing || erasing) return;
                     e.stopPropagation();
 
                     if (drawing) {
@@ -666,8 +712,32 @@ export function FloorPlanCanvas({
           />
 
           {/* The door the pointer would place, and whether it would be let. */}
-          {placing && hover && (
-            <DoorGhost layer={layer} hit={hover} error={hoverError} />
+          {placing && liveHover && (
+            <DoorGhost layer={layer} hit={liveHover} error={hoverError} />
+          )}
+
+          {/* Every wall that would go, not just the one under the pointer:
+              two rooms often share a wall split at T-junctions, and leaving
+              the rest behind would strand them inside the merged room. */}
+          {erasing && liveHover && (
+            <g pointerEvents="none">
+              {wallsUnderErase.map((w) => {
+                const [a, b] = wallEnds(layer, w);
+                return (
+                  <line
+                    key={w.id}
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke={eraseError ? GHOST_BAD : GHOST_OK}
+                    strokeWidth={12}
+                    strokeLinecap="round"
+                    strokeOpacity={0.75}
+                  />
+                );
+              })}
+            </g>
           )}
 
           {/* The wall being drawn. Both ends sit on the boundary already, so

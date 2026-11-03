@@ -16,7 +16,9 @@ import { StructureTree } from "./StructureTree";
 import {
   OperationRejected,
   addDoor,
+  deleteWall,
   divideRoom,
+  previewDeleteWall,
   previewDivide,
   type DivideRoomRequest,
   addSpaceType,
@@ -141,6 +143,19 @@ export function EditModeScreen({
     [run, state],
   );
 
+  const deleteWallError = useCallback(
+    (wallId: string) => {
+      const preview = previewDeleteWall(state, { wallId });
+      return preview.ok ? null : preview.reason;
+    },
+    [state],
+  );
+
+  const handleDeleteWall = useCallback(
+    (wallId: string) => run(() => deleteWall(state, { wallId })),
+    [run, state],
+  );
+
   const undoLabel = state.undo[state.undo.length - 1]?.label ?? null;
   const redoLabel = state.redo[state.redo.length - 1]?.label ?? null;
 
@@ -217,6 +232,7 @@ export function EditModeScreen({
             tool={
               tool === "door" ||
               tool === "wall" ||
+              tool === "remove_wall" ||
               tool === "show" ||
               tool === "hide"
                 ? tool
@@ -228,6 +244,8 @@ export function EditModeScreen({
             onPlaceDoor={handlePlaceDoor}
             onDivideRoom={handleDivideRoom}
             divideError={divideError}
+            onDeleteWall={handleDeleteWall}
+            deleteWallError={deleteWallError}
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
             placementError={placementError}

@@ -6,10 +6,11 @@
  * a generic failure leaves a manager with no way forward.
  *
  * Here: add door, the two surfacing overrides, and the space-type edits the
- * categories panel owns. Dividing a room — split_wall and the boundary walk
- * — lives in divide.ts, which is the only operation that makes new geometry.
- * Still unbuilt from the doc: wall deletion and the room merge it implies,
- * group split and merge, collinear dissolve.
+ * categories panel owns. The two operations that change geometry have their
+ * own modules — divide.ts for split_wall and the boundary walk, merge.ts for
+ * wall deletion, the room merge it is, and the collinear dissolve that
+ * follows. Still unbuilt from the doc: group split and merge, and the
+ * knock-through that keeps both spaces (state = "opening").
  */
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { dist, lerp, normal, unit, wallEnds, wallLength } from "./geometry";
@@ -40,6 +41,7 @@ export class OperationRejected extends Error {
 export type OperationKind =
   | "add_door"
   | "divide"
+  | "delete_wall"
   | "show_room"
   | "hide_room"
   | "add_space_type"
