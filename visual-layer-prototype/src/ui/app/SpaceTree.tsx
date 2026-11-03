@@ -22,12 +22,13 @@ import TextField from "@mui/material/TextField";
 import ApartmentOutlined from "@mui/icons-material/ApartmentOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
-import type { BuildingSpace } from "../../model";
+import type { BuildingSpace, BuildingStorey } from "../../model";
 
 /**
  * Row geometry, taken from the design's frames rather than guessed.
@@ -45,12 +46,24 @@ const RAIL = 12;
 export interface SpaceTreeProps {
   buildingName: string;
   spaces: BuildingSpace[];
+  /**
+   * Once the plan exists the spaces sit under the storey they turned
+   * out to be on. Before it, there are no storeys to sit under.
+   */
+  storeys?: BuildingStorey[] | null;
   width: number;
 }
 
-export function SpaceTree({ buildingName, spaces, width }: SpaceTreeProps) {
+export function SpaceTree({
+  buildingName,
+  spaces,
+  storeys = null,
+  width,
+}: SpaceTreeProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
+  /** Storeys are open until shut, so the building reads at a glance. */
+  const [closed, setClosed] = useState<Set<string>>(new Set());
 
   const matches = query.trim() !== "";
   const visible = matches
@@ -70,6 +83,44 @@ export function SpaceTree({ buildingName, spaces, width }: SpaceTreeProps) {
       else next.add(id);
       return next;
     });
+
+  /**
+   * A space and, when it opens, what is inside it.
+   *
+   * An apartment never opens: the rooms in it are a consequence of the
+   * floor plan, and a flat is the one thing the customer manages.
+   */
+  const renderSpace = (space: BuildingSpace, depth: number) => {
+    const expandable = !space.apartment && space.rooms.length > 1;
+    const isOpen = open.has(space.id) || (matches && expandable);
+    return (
+      <Fragment key={space.id}>
+        <Row
+          depth={depth}
+          icon={
+            expandable ? (
+              <WidgetsOutlined sx={iconSx} />
+            ) : (
+              <MeetingRoomOutlined sx={iconSx} />
+            )
+          }
+          label={space.name}
+          open={isOpen}
+          expandable={expandable}
+          onToggle={() => toggle(space.id)}
+        />
+        {isOpen &&
+          space.rooms.map((room) => (
+            <Row
+              key={room.id}
+              depth={depth + 1}
+              icon={<MeetingRoomOutlined sx={iconSx} />}
+              label={room.name}
+            />
+          ))}
+      </Fragment>
+    );
+  };
 
   return (
     <Box
@@ -124,41 +175,36 @@ export function SpaceTree({ buildingName, spaces, width }: SpaceTreeProps) {
             menu={false}
           />
 
-          {visible.map((space) => {
-              // An apartment is one space the customer manages. The rooms
-              // inside it are a consequence of the floor plan, and there
-              // is no floor plan yet — opening a flat here would show
-              // something this screen is not supposed to know.
-              const expandable = !space.apartment && space.rooms.length > 1;
-              const isOpen = open.has(space.id) || (matches && expandable);
-              return (
-                <Fragment key={space.id}>
-                  <Row
-                    depth={1}
-                    icon={
-                      expandable ? (
-                        <WidgetsOutlined sx={iconSx} />
-                      ) : (
-                        <MeetingRoomOutlined sx={iconSx} />
-                      )
-                    }
-                    label={space.name}
-                    open={isOpen}
-                    expandable={expandable}
-                    onToggle={() => toggle(space.id)}
-                  />
-                  {isOpen &&
-                    space.rooms.map((room) => (
-                      <Row
-                        key={room.id}
-                        depth={2}
-                        icon={<MeetingRoomOutlined sx={iconSx} />}
-                        label={room.name}
-                      />
-                    ))}
-                </Fragment>
+          {storeys?.map((storey) => {
+            // By id, not by identity: the storeys are built from their
+            // own call and carry different objects for the same spaces.
+            const shown = new Set(visible.map((x) => x.id));
+            const inside = storey.spaces.filter((x) => shown.has(x.id));
+            if (matches && inside.length === 0) return null;
+            const isOpen = !closed.has(storey.id) || Boolean(matches);
+            return (
+              <Fragment key={storey.id}>
+                <Row
+                  depth={1}
+                  icon={<LayersOutlined sx={iconSx} />}
+                  label={storey.name}
+                  open={isOpen}
+                  expandable
+                  onToggle={() =>
+                    setClosed((was) => {
+                      const next = new Set(was);
+                      if (next.has(storey.id)) next.delete(storey.id);
+                      else next.add(storey.id);
+                      return next;
+                    })
+                  }
+                />
+                {isOpen && inside.map((space) => renderSpace(space, 2))}
+              </Fragment>
             );
           })}
+
+          {!storeys && visible.map((space) => renderSpace(space, 1))}
         </List>
       </Box>
     </Box>

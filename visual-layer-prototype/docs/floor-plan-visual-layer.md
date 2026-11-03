@@ -608,6 +608,25 @@ on screen until something is in it. Nothing is stored for this, which is
 the trade: reload before filling it and the row is gone, though the
 category is still there to be found by anything that looks it up.
 
+## Once the floor plan exists
+
+Saving from the editor comes back to the building, where the Floor
+Plan tab is now the plan itself rather than a card inviting you to open
+one. The same three modes the editor has — structure, devices, access —
+switch the right-hand panel, and a floor strip switches the storey.
+
+It is the plan at rest: you look at it, you ask it who gets in where,
+and you go to the editor to change it. So the structure and device
+panels here are lists and nothing more, with no row menus and no drag.
+Access mode needs no such treatment and reuses the editor's own panel
+whole, because asking what a credential opens never changes anything.
+
+**The tree stops being flat.** Before the plan, the customer's spaces
+are a list, because which storey a flat is on is exactly what nobody
+knows yet. Drawing the plan answers that, and it is the one visible
+difference the plan makes to a screen that is otherwise about data the
+customer already had.
+
 ## Before there is a floor plan
 
 The plan is not where the product starts. A customer arrives with their

@@ -276,3 +276,30 @@ export function deviceStatusName(status: BuildingDevice["status"]): string {
   if (status === "offline") return "Offline";
   return "Need settings";
 }
+
+/** A storey and the spaces on it, for the tree once a plan exists. */
+export interface BuildingStorey {
+  id: string;
+  name: string;
+  spaces: BuildingSpace[];
+}
+
+/**
+ * The same spaces, now grouped by the storey they turned out to be on.
+ *
+ * Before the plan this list is flat, because which floor a flat is on
+ * is exactly what nobody knows yet. Drawing the plan answers that, and
+ * the tree stops being flat — the one visible difference the plan makes
+ * to a screen that is otherwise about the customer's own data.
+ */
+export function spacesByFloor(layer: VisualLayer): BuildingStorey[] {
+  const spaces = buildingSpaces(layer);
+  const floorOf = new Map<string, string>();
+  for (const group of layer.file.groups) floorOf.set(group.id, group.floor_id);
+
+  return layer.floors.map((floor) => ({
+    id: floor.id,
+    name: floor.name,
+    spaces: spaces.filter((s) => floorOf.get(s.id) === floor.id),
+  }));
+}

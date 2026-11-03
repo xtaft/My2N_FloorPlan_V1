@@ -196,10 +196,13 @@ export default function App() {
           floorId={floorId}
           onFloorChange={setFloorId}
           dirty={edit.undo.length > savedAt}
-          onClose={() => setScreen("view")}
+          // Leaving the editor goes back to the building, where the
+          // Floor Plan tab now holds the plan itself.
+          onClose={() => setScreen("building")}
           onSave={() => {
             setSavedAt(edit.undo.length);
-            setScreen("view");
+            setHasPlan(true);
+            setScreen("building");
           }}
         />
       </ThemeProvider>

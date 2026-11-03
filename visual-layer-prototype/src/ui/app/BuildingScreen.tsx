@@ -45,12 +45,15 @@ import { SpaceTree } from "./SpaceTree";
 import {
   buildingDevices,
   buildingSpaces,
+  spacesByFloor,
   operators,
   residents,
   type VisualLayer,
 } from "../../model";
 
 export type BuildingTab =
+  | "overview"
+  | "structure"
   | "residents"
   | "devices"
   | "operators"
@@ -71,6 +74,8 @@ export interface BuildingScreenProps {
 }
 
 const TABS: { id: BuildingTab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "structure", label: "Structure" },
   { id: "residents", label: "Residents" },
   { id: "devices", label: "Devices" },
   { id: "operators", label: "Operators" },
@@ -88,8 +93,10 @@ export function BuildingScreen({
   onOpenPlan,
 }: BuildingScreenProps) {
   const [tab, setTab] = useState<BuildingTab>("plan");
+  const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
 
   const spaces = useMemo(() => buildingSpaces(layer), [layer]);
+  const storeys = useMemo(() => spacesByFloor(layer), [layer]);
   const people = useMemo(() => residents(layer), [layer]);
   const staff = useMemo(() => operators(layer), [layer]);
   const devices = useMemo(() => buildingDevices(layer), [layer]);
@@ -119,7 +126,13 @@ export function BuildingScreen({
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <IconRail />
-        <SpaceTree buildingName={buildingName} spaces={spaces} width={280} />
+        <SpaceTree
+          buildingName={buildingName}
+          spaces={spaces}
+          // Flat until the plan says which storey each space is on.
+          storeys={hasPlan ? storeys : null}
+          width={280}
+        />
 
         <Box sx={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
           <Box sx={{ px: 3, pt: 1.5 }}>
@@ -189,9 +202,14 @@ export function BuildingScreen({
             {tab === "residents" && <ResidentsTable residents={people} />}
             {tab === "devices" && <DevicesTable devices={devices} />}
             {tab === "operators" && <OperatorsTable operators={staff} />}
+            {tab === "overview" && <ComingSoon what="Overview" />}
+            {tab === "structure" && <ComingSoon what="Structure" />}
             {tab === "logs" && <ComingSoon what="Logs & Events" />}
             {tab === "plan" && (
               <FloorPlanTab
+                layer={layer}
+                floorId={floorId}
+                onFloorChange={setFloorId}
                 hasPlan={hasPlan}
                 onCreate={onCreatePlanWith}
                 onOpen={onOpenPlan}

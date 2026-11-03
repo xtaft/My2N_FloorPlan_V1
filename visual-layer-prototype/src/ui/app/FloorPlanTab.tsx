@@ -10,9 +10,13 @@ import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import MapOutlined from "@mui/icons-material/MapOutlined";
+import { FloorPlanView } from "./FloorPlanView";
+import type { VisualLayer } from "../../model";
 
 export interface FloorPlanTabProps {
+  layer: VisualLayer;
+  floorId: string;
+  onFloorChange: (floorId: string) => void;
   hasPlan: boolean;
   /**
    * The empty state names the method, so it goes straight to that upload
@@ -23,7 +27,27 @@ export interface FloorPlanTabProps {
   onOpen: () => void;
 }
 
-export function FloorPlanTab({ hasPlan, onCreate, onOpen }: FloorPlanTabProps) {
+export function FloorPlanTab({
+  layer,
+  floorId,
+  onFloorChange,
+  hasPlan,
+  onCreate,
+  onOpen,
+}: FloorPlanTabProps) {
+  // Once the plan exists this tab *is* the plan — not a card inviting
+  // you to open one somewhere else.
+  if (hasPlan) {
+    return (
+      <FloorPlanView
+        layer={layer}
+        floorId={floorId}
+        onFloorChange={onFloorChange}
+        onEdit={onOpen}
+      />
+    );
+  }
+
   return (
     <Paper
       variant="outlined"
@@ -36,22 +60,7 @@ export function FloorPlanTab({ hasPlan, onCreate, onOpen }: FloorPlanTabProps) {
         p: 4,
       }}
     >
-      {hasPlan ? (
-        <Box>
-          <MapOutlined sx={{ fontSize: 40, color: "text.secondary" }} />
-          <Typography variant="h5" sx={{ mt: 2 }}>
-            The floor plan is ready
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Open it to place the devices that are still waiting, and to check
-            who can reach what.
-          </Typography>
-          <Button variant="contained" sx={{ mt: 3 }} onClick={onOpen}>
-            Open floor plan
-          </Button>
-        </Box>
-      ) : (
-        <Box>
+      <Box>
           <Typography variant="h5">No floor plans yet</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Upload floor plans as PDFs and My2N will detect the rooms and
@@ -76,8 +85,7 @@ export function FloorPlanTab({ hasPlan, onCreate, onOpen }: FloorPlanTabProps) {
               Upload PDFs
             </Button>
           </Stack>
-        </Box>
-      )}
+      </Box>
     </Paper>
   );
 }
