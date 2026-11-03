@@ -125,14 +125,15 @@ export function StructureTree({
     icon: React.ReactNode,
     label: string,
     opts: {
-      secondary?: string;
+
       expandable?: boolean;
       expanded?: boolean;
       onToggle?: () => void;
       onClick?: () => void;
       selected?: boolean;
       bold?: boolean;
-      swatch?: string;
+      /** Paints the icon in the space's own colour. */
+      tint?: string;
       onMenu?: (el: HTMLElement) => void;
     } = {},
   ) => (
@@ -172,33 +173,21 @@ export function StructureTree({
           display: "flex",
           alignItems: "center",
           flexShrink: 0,
-          color: "action.active",
+          // A space keeps its category's colour, which the swatch used to
+          // carry: the icon wears it instead, so the row says what kind of
+          // space it is and what category it is in at once.
+          color: opts.tint ?? "action.active",
         }}
       >
-        {opts.swatch ? (
-          <Box
-            sx={{
-              width: 16,
-              height: 16,
-              borderRadius: "2px",
-              bgcolor: opts.swatch,
-              border: 1,
-              borderColor: "divider",
-            }}
-          />
-        ) : (
-          icon
-        )}
+        {icon}
       </Box>
       <ListItemText
         primary={label}
-        secondary={opts.secondary}
         primaryTypographyProps={{
           variant: "body1",
           fontWeight: opts.bold ? 700 : 400,
           noWrap: true,
         }}
-        secondaryTypographyProps={{ variant: "body2", noWrap: true }}
       />
       <IconButton
         size="small"
@@ -221,13 +210,24 @@ export function StructureTree({
       <MeetingRoomOutlined sx={{ fontSize: 20 }} />,
       room.name,
       {
-        secondary: room.surfaced ? "shown separately" : undefined,
         selected: room.id === selectedRoomId,
         onClick: () => onSelectRoom(room.id),
-        swatch: roomColor(layer, room),
+        tint: roomColor(layer, room),
       },
     );
   };
+
+  /**
+   * A flat is a unit, and a unit is a door off the hallway — the same thing
+   * a room is, one level up. Envelopes that are not units keep the generic
+   * mark, since a gym is not a door.
+   */
+  const groupIcon = (group: Group) =>
+    groupAccessType(layer, group) === "apartment" ? (
+      <MeetingRoomOutlined sx={{ fontSize: 20 }} />
+    ) : (
+      <WidgetsOutlined sx={{ fontSize: 20 }} />
+    );
 
   const renderGroup = (group: Group, depth: number): React.ReactNode => {
     // An envelope that is just its one room — a stairwell, the technical
@@ -254,13 +254,11 @@ export function StructureTree({
       if (hits.length === 0 && !kids.some(Boolean)) return null;
       return (
         <Fragment key={group.id}>
-          {row(
-            group.id,
-            depth,
-            <WidgetsOutlined sx={{ fontSize: 20 }} />,
-            group.name,
-            { expandable: true, expanded: true, onToggle: () => toggle(group.id) },
-          )}
+          {row(group.id, depth, groupIcon(group), group.name, {
+            expandable: true,
+            expanded: true,
+            onToggle: () => toggle(group.id),
+          })}
           {kids}
           {hits.map((r) => renderRoom(r, depth + 1))}
         </Fragment>
@@ -273,10 +271,9 @@ export function StructureTree({
         {row(
           group.id,
           depth,
-          <WidgetsOutlined sx={{ fontSize: 20 }} />,
+          groupIcon(group),
           group.name,
           {
-            secondary: group.domain_ref ?? undefined,
             expandable,
             expanded: isOpen,
             onToggle: () => toggle(group.id),
@@ -348,10 +345,6 @@ export function StructureTree({
                   <LayersOutlined sx={{ fontSize: 20 }} />,
                   floor.name,
                   {
-                    // `level` is shown because drawer order and storey are
-                    // independent: an order of 3, 5, 4 is legal and should
-                    // not look like a bug.
-                    secondary: `level ${floor.level}`,
                     expandable: true,
                     expanded: isOpen,
                     onToggle: () => toggle(floor.id),
