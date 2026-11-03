@@ -75,8 +75,10 @@ export default function App() {
               Floor Plan — Visual Layer
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {layer.file.counts.rooms} rooms · {layer.file.counts.walls} walls ·{" "}
-              {layer.file.counts.doors} doors · {layer.file.counts.devices}{" "}
+              {/* Counted here rather than read from the fixture's `counts`
+                  block, which is derivable and so can go stale. */}
+              {layer.file.rooms.length} rooms · {layer.file.walls.length} walls
+              · {layer.file.doors.length} doors · {layer.file.devices.length}{" "}
               devices
             </Typography>
             <Box sx={{ flex: 1 }} />

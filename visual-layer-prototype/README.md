@@ -84,6 +84,51 @@ one. The slit rooms pin down which sign that is: in `1:L6` the interior walk
 runs down both sides of the slit wall (13 vertices for 12 walls) while the
 exterior walk never touches it (11), and it is the 13 that comes out negative.
 
+## Conformance with the architecture doc
+
+`src/model/conformance.test.ts` checks the fixture against the structural rules
+the doc states in prose — vertex hygiene, collinear-dissolve debt, the shape of
+each door kind, the shaft rules, the surfacing rule, and the one rule itself.
+
+The fixture passes all of them. Four places where the data and the doc do not
+line up, none of which is a structural break:
+
+**1. Surfacing — the data is right, the sentence is too strong.** The doc says
+"Both of the door's rooms surface, so the reader never sits on a boundary to
+nowhere." The fixture surfaces only the non-apartment side: 28 apartment living
+rooms carry an entrance reader on their hallway door and stay hidden. That
+satisfies the rule's stated reason — no reader sits on a boundary to nowhere,
+because the hallway side always surfaces — while keeping flats collapsed, which
+is what the rest of the section asks for ("Rooms default to hidden; the group is
+what the map shows"). Taken literally the sentence would explode every flat on
+the map. Suggest amending it to *at least one side surfaces*, with the apartment
+exception named.
+
+**2. The access model differs between the doc and the data.** The doc's
+`reachable()` calls `profile.can_enter(access_type(rooms[there], groups))` —
+permission by space *type*. The fixture's profiles are sets of *device ids*, and
+`verify_visual_layer.py` checks device membership. These are not equivalent:
+under the type rule, any resident who can enter one apartment room could enter
+all 76 of them. The data is right and the pseudocode is wrong. `reachable()`
+here takes device ids, with an optional `canEnter` predicate for the doc's
+variant.
+
+**3. Three derivable fields are stored anyway.** `unplaced_devices`, `counts`
+and `profile.rooms` can all be recomputed, so by the one rule they should not be
+in the file. They are build-report metadata rather than model state, and all
+three are currently consistent — tests pin that — but they are exactly the kind
+of field that goes stale. The model layer derives rather than trusting them.
+
+**4. `width` is in canvas units, not metres.** The `Door` dataclass comment says
+"absolute metres"; the values are 41–51 against a coordinate extent of about
+1323 × 785, i.e. SVG pixels. Nothing reads it as metres, but the comment will
+mislead. A scale factor per floor, or a corrected comment, would settle it.
+
+One implementation gap, in the viewer rather than the data: **`Floor.transform`
+is not applied when rendering.** Every floor in this fixture is identity, so
+nothing is visibly wrong, but a building whose floors needed aligning would
+render unaligned.
+
 ## What the app shows
 
 - **Floor tabs** with the storey `level` spelled out, because drawer order and
