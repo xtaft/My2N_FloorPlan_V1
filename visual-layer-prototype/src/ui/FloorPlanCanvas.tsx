@@ -28,6 +28,12 @@ import {
   nearestWallInRoom,
   ringsToPath,
   roomColor,
+  freeDoorSides,
+  goesOnDoors,
+  normal,
+  negate,
+  unit,
+  DEVICE_OFFSET,
   roomsOf,
   signedArea,
   wallEnds,
@@ -108,6 +114,17 @@ export interface FloorPlanCanvasProps {
   selectedDeviceId?: string | null;
   /** Clicking a device opens its menu where the pointer is. */
   onDeviceMenu?: (deviceId: string, at: { top: number; left: number }) => void;
+  /**
+   * The device being dragged from the devices panel, while it is in the
+   * air. Its kind decides what the plan offers to catch it: a reader or
+   * an intercom gets the free sides of every doorway, an answering unit
+   * gets the spaces.
+   */
+  dragging?: { id: string; deviceType: string } | null;
+  /** Dropped on one side of a doorway. */
+  onDropOnDoor?: (deviceId: string, doorId: string, side: "a" | "b") => void;
+  /** Dropped inside a space. */
+  onDropInSpace?: (deviceId: string, roomId: string) => void;
   /**
    * A space from the import list is waiting for a shape, so the next click
    * on a room gives it one instead of opening that room's menu.
@@ -209,6 +226,9 @@ export function FloorPlanCanvas({
   selectedDoorId = null,
   selectedDeviceId = null,
   onDeviceMenu,
+  dragging = null,
+  onDropOnDoor,
+  onDropInSpace,
   placingSpace = false,
   onPlaceSpace,
   onDropSpace,
@@ -232,6 +252,10 @@ export function FloorPlanCanvas({
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [hoverDevice, setHoverDevice] = useState<string | null>(null);
   const [hoverDoor, setHoverDoor] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    doorId: string;
+    side: "a" | "b";
+  } | null>(null);
   // Switching out of structure mode is not a pointer move, so the lit
   // door would otherwise stay lit until the pointer happened to move.
   useEffect(() => {
@@ -629,12 +653,23 @@ export function FloorPlanCanvas({
                   // follows the pointer is the whole of the feedback: it
                   // says which space would take the name.
                   onDragOver={(e) => {
-                    if (!onDropSpace) return;
+                    // A room catches a space from the list, and an
+                    // answering unit, which belongs in a space rather
+                    // than at a doorway.
+                    const unit =
+                      dragging && !goesOnDoors(dragging.deviceType);
+                    if (!onDropSpace && !unit) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
                     setHoverRoom(room.id);
                   }}
                   onDrop={(e) => {
+                    if (dragging && !goesOnDoors(dragging.deviceType)) {
+                      e.preventDefault();
+                      setHoverRoom(null);
+                      onDropInSpace?.(dragging.id, room.id);
+                      return;
+                    }
                     if (!onDropSpace) return;
                     e.preventDefault();
                     const spaceId =
@@ -857,6 +892,51 @@ export function FloorPlanCanvas({
             </g>
           )}
 
+          {/* Where a dragged device can land.
+
+              A reader is offered the free sides of every doorway on the
+              floor: two halves where nothing reads yet, one where
+              something already does, none where both are taken. Which
+              half you drop on is the whole of the choice — it is the
+              side the device reads from, and it fixes the room it
+              checks as the one on the other side.
+
+              An answering unit is offered the spaces instead, because a
+              unit is not something you badge at. */}
+          {dragging && goesOnDoors(dragging.deviceType) &&
+            scene.doors.map((door) =>
+              freeDoorSides(layer, door.id).map((free) => {
+                const half = doorHalf(layer, door, free.side);
+                if (!half) return null;
+                return (
+                  <path
+                    key={`drop:${door.id}:${free.side}`}
+                    d={half}
+                    fill="#2196f3"
+                    fillOpacity={
+                      dropTarget?.doorId === door.id &&
+                      dropTarget.side === free.side
+                        ? 0.55
+                        : 0.2
+                    }
+                    stroke="#2196f3"
+                    strokeWidth={2}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDropTarget({ doorId: door.id, side: free.side });
+                    }}
+                    onDragLeave={() => setDropTarget(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDropTarget(null);
+                      onDropOnDoor?.(dragging.id, door.id, free.side);
+                    }}
+                  />
+                );
+              }),
+            )}
+
           {/* Hit targets for the devices, above everything.
               Markers themselves take no pointer events, so that a reader
               sitting on a doorway cannot swallow the click meant for the
@@ -888,6 +968,31 @@ export function FloorPlanCanvas({
           {/* Devices. A reader sits on the side access is verified from.
               The hovered one is drawn last so its name is not buried under a
               neighbour. */}
+          {/* Which way each reader checks.
+
+              A device reads from the side it is on and admits you to the
+              other, and nothing else on the plan says so — the marker is
+              symmetrical and the room beyond looks the same as the room
+              behind. A short arrow across the doorway does say it, and it
+              is drawn from the model rather than from the drawing: the
+              direction is the device's own anchor offset, reversed. */}
+          {showDevices &&
+            scene.glyphs.map((glyph) => {
+              const arrow = checkArrow(layer, glyph.device, glyph, unitScale);
+              return arrow ? (
+                <path
+                  key={`dir:${glyph.device.id}`}
+                  d={arrow}
+                  fill="none"
+                  stroke="#17406B"
+                  strokeWidth={2 * unitScale}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  pointerEvents="none"
+                />
+              ) : null;
+            })}
+
           {(showDevices ? [...scene.glyphs] : [])
             .sort((a, b) =>
               Number(a.device.id === hoverDevice) -
@@ -1041,6 +1146,88 @@ function DoorGhost({
       />
     </g>
   );
+}
+
+/**
+ * The arrow saying which way a device checks.
+ *
+ * It starts just past the marker and crosses the opening, pointing at
+ * the room the device admits you to. The direction comes out of the
+ * anchor: a door device is drawn one `DEVICE_OFFSET` to its own side of
+ * the wall midpoint, so the vector from the opening to the marker,
+ * reversed, is the way in.
+ *
+ * Nothing is drawn for a device in a space. An answering unit does not
+ * check a way through, so an arrow would be claiming something.
+ */
+function checkArrow(
+  layer: VisualLayer,
+  device: Device,
+  at: { x: number; y: number },
+  unitScale: number,
+): string | null {
+  if (device.host_kind !== "door" || device.host_id === null) return null;
+  const door = layer.doors.get(device.host_id);
+  if (!door || door.wall_id === null) return null;
+  const g = doorGeometry(layer, door);
+  if (!g) return null;
+
+  const mid = { x: (g.p1.x + g.p2.x) / 2, y: (g.p1.y + g.p2.y) / 2 };
+  const away = unit({ x: mid.x - at.x, y: mid.y - at.y });
+  if (!Number.isFinite(away.x) || !Number.isFinite(away.y)) return null;
+
+  // Held off the marker, and sized against the marker rather than the
+  // plan, so it stays legible at every zoom.
+  const px = unitScale;
+  const from = add(at, away, 16 * px);
+  const to = add(from, away, 14 * px);
+  const side = { x: -away.y, y: away.x };
+  const barbA = add(add(to, away, -5 * px), side, 4 * px);
+  const barbB = add(add(to, away, -5 * px), side, -4 * px);
+
+  return [
+    `M ${from.x} ${from.y} L ${to.x} ${to.y}`,
+    `M ${barbA.x} ${barbA.y} L ${to.x} ${to.y} L ${barbB.x} ${barbB.y}`,
+  ].join(" ");
+}
+
+/**
+ * A half-disc on one side of a doorway: where a reader would go.
+ *
+ * Centred on the opening and bulging toward the side it stands for, so
+ * the shape sits exactly where the device will be drawn if it is dropped
+ * there. The sweep is worked out rather than guessed: walking the wall
+ * from one end of the opening to the other, the clockwise half is the
+ * one on the `perp` side, and the arc bulges the other way when the side
+ * is the other way.
+ */
+function doorHalf(
+  layer: VisualLayer,
+  door: Door,
+  side: "a" | "b",
+): string | null {
+  if (door.wall_id === null) return null;
+  const wall = layer.walls.get(door.wall_id);
+  const g = doorGeometry(layer, door);
+  if (!wall || !g) return null;
+
+  const mid = { x: (g.p1.x + g.p2.x) / 2, y: (g.p1.y + g.p2.y) / 2 };
+  const n = unit(normal(layer, wall)); // toward room_a
+  const dir = side === "a" ? n : negate(n);
+  const along = unit({ x: g.p2.x - g.p1.x, y: g.p2.y - g.p1.y });
+
+  // Wide enough to read as a target beside a 40px marker, and never
+  // narrower than the opening it belongs to.
+  const r = Math.max(g.width * 0.75, DEVICE_OFFSET * 1.6);
+  const start = add(mid, along, r);
+  const end = add(mid, along, -r);
+
+  // In screen coordinates a clockwise sweep from start passes through
+  // mid + perp*r, so the flag follows which side perp is on.
+  const perp = { x: -along.y, y: along.x };
+  const sweep = perp.x * dir.x + perp.y * dir.y > 0 ? 1 : 0;
+
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 0 ${sweep} ${end.x} ${end.y} Z`;
 }
 
 function DoorSymbol({

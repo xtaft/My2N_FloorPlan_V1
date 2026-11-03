@@ -8,6 +8,8 @@
  * set.
  */
 import { commit, OperationRejected, type EditState } from "./edit";
+import { deviceSide } from "./derive";
+import { roomsOf } from "./access";
 import type { VisualLayer } from "./load";
 import type { Device } from "./types";
 
@@ -159,3 +161,187 @@ export function isUnassigned(device: Device): boolean {
   return device.host_id === null;
 }
 
+
+// ------------------------------------------------- putting a device somewhere
+
+/**
+ * Which devices go where.
+ *
+ * A reader or an intercom is a thing you present a credential to on your
+ * way through a doorway, so it goes on a door. An answering unit is the
+ * thing that rings inside a flat, so it goes in a space. This is not a
+ * policy — it is what the hardware is.
+ */
+export function goesOnDoors(deviceType: string): boolean {
+  return deviceType !== "answering_unit";
+}
+
+/** One side of a doorway, and whether anything is already reading there. */
+export interface DoorSide {
+  side: "a" | "b";
+  /** The room you stand in on this side. */
+  fromRoomId: string;
+  /** The room a device here would check entry into — the other one. */
+  guardsRoomId: string;
+  /** The device already here, if any. */
+  takenBy: string | null;
+}
+
+/**
+ * The two sides of a doorway.
+ *
+ * A device is drawn on the side access is verified *from* and guards the
+ * room on the other side: you present your card where you are standing to
+ * get in to where you are not. Both halves of that come from one choice,
+ * which is why a drop only has to say which side was dropped on.
+ */
+export function doorSides(layer: VisualLayer, doorId: string): DoorSide[] {
+  const door = layer.doors.get(doorId);
+  if (!door || door.wall_id === null) return [];
+  const [a, b] = roomsOf(layer, door);
+  if (a === b) return []; // a slit is not a way through
+
+  const on = layer.devicesOnDoor.get(doorId) ?? [];
+  const takenOn = (side: "a" | "b") =>
+    on.find((d) => deviceSide(layer, d) === side)?.id ?? null;
+
+  return [
+    { side: "a", fromRoomId: a, guardsRoomId: b, takenBy: takenOn("a") },
+    { side: "b", fromRoomId: b, guardsRoomId: a, takenBy: takenOn("b") },
+  ];
+}
+
+/** The sides a device could still be dropped on. */
+export function freeDoorSides(layer: VisualLayer, doorId: string): DoorSide[] {
+  return doorSides(layer, doorId).filter((s) => s.takenBy === null);
+}
+
+/**
+ * Put a reader or an intercom on one side of a doorway.
+ *
+ * The side says everything: the device is drawn there, and it checks
+ * entry into the room on the other side.
+ *
+ * A room that was folded away inside its flat is surfaced by this. Once
+ * something checks the way in, that way in is a thing the manager has to
+ * see — but it stays in its envelope, because gaining a reader does not
+ * make a bedroom stop being part of the flat.
+ */
+export function placeDeviceOnDoor(
+  state: EditState,
+  deviceId: string,
+  doorId: string,
+  side: "a" | "b",
+): EditState {
+  const { layer, file } = state;
+  const device = must(layer, deviceId);
+
+  if (!goesOnDoors(device.device_type)) {
+    throw new OperationRejected(
+      `${device.name} is an answering unit. It belongs in a space, not on a door.`,
+    );
+  }
+
+  const door = layer.doors.get(doorId);
+  if (!door) throw new OperationRejected(`No such door: ${doorId}`);
+  if (door.wall_id === null) {
+    throw new OperationRejected(
+      `${door.name} is a vertical link between storeys. It has no sides to stand on.`,
+    );
+  }
+
+  const target = doorSides(layer, doorId).find((s) => s.side === side);
+  if (!target) {
+    throw new OperationRejected(`${door.name} has no ${side} side.`);
+  }
+  if (target.takenBy !== null && target.takenBy !== deviceId) {
+    const taken = layer.file.devices.find((d) => d.id === target.takenBy);
+    throw new OperationRejected(
+      `${taken?.name ?? "A device"} is already on that side of ${door.name}.`,
+    );
+  }
+
+  const wall = layer.walls.get(door.wall_id);
+  const devices = file.devices.map((d) =>
+    d.id === deviceId
+      ? {
+          ...d,
+          host_kind: "door" as const,
+          host_id: doorId,
+          position: null,
+          guards: [target.guardsRoomId],
+          floor_id: wall ? layer.rooms.get(wall.room_a)?.floor_id ?? null : null,
+        }
+      : d,
+  );
+
+  // The room it now checks the way into has to be visible, or there is a
+  // check on the map with nothing to point at.
+  const guarded = layer.rooms.get(target.guardsRoomId);
+  const rooms =
+    guarded && !guarded.surfaced
+      ? file.rooms.map((r) =>
+          r.id === guarded.id ? { ...r, surfaced: true } : r,
+        )
+      : file.rooms;
+
+  return commit(state, "place_device", `Place ${device.name}`, {
+    ...file,
+    rooms,
+    devices,
+    unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
+  });
+}
+
+/**
+ * Put an answering unit in a space.
+ *
+ * A unit belongs to the flat rather than to one of its rooms, so a drop
+ * anywhere inside an envelope puts it in the envelope — the room the
+ * record names is where it is drawn, and the drawing already centres it
+ * on the flat.
+ */
+export function placeDeviceInSpace(
+  state: EditState,
+  deviceId: string,
+  roomId: string,
+): EditState {
+  const { layer, file } = state;
+  const device = must(layer, deviceId);
+
+  if (goesOnDoors(device.device_type)) {
+    throw new OperationRejected(
+      `${device.name} reads credentials at a doorway. Drop it on one side of a door.`,
+    );
+  }
+
+  const room = layer.rooms.get(roomId);
+  if (!room) throw new OperationRejected(`No such space: ${roomId}`);
+
+  const already = (layer.devicesInRoom.get(roomId) ?? []).find(
+    (d) => d.id !== deviceId && d.device_type === device.device_type,
+  );
+  if (already) {
+    throw new OperationRejected(
+      `${already.name} is already in ${room.name}.`,
+    );
+  }
+
+  const devices = file.devices.map((d) =>
+    d.id === deviceId
+      ? {
+          ...d,
+          host_kind: "room" as const,
+          host_id: roomId,
+          guards: [],
+          floor_id: room.floor_id,
+        }
+      : d,
+  );
+
+  return commit(state, "place_device", `Place ${device.name}`, {
+    ...file,
+    devices,
+    unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
+  });
+}

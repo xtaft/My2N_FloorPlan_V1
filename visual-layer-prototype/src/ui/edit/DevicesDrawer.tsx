@@ -31,6 +31,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import { DeviceGlyph } from "../DeviceMarker";
 import { ResizeHandle } from "./ResizeHandle";
+import { DEVICE_MIME } from "./spaceDrag";
 import { InlineRename } from "./InlineRename";
 import { DRAWER_MAX, DRAWER_MIN } from "./CategoriesDrawer";
 import {
@@ -46,6 +47,9 @@ export interface DevicesDrawerProps {
   selectedId: string | null;
   onSelect: (deviceId: string | null) => void;
   onMenu: (el: HTMLElement, deviceId: string) => void;
+  /** Picked up, so the plan can show where it could land. */
+  onDragStart: (deviceId: string) => void;
+  onDragEnd: () => void;
   renamingId: string | null;
   onRenameCommit: (deviceId: string, name: string) => void;
   onRenameCancel: () => void;
@@ -58,6 +62,8 @@ export function DevicesDrawer({
   selectedId,
   onSelect,
   onMenu,
+  onDragStart,
+  onDragEnd,
   renamingId,
   onRenameCommit,
   onRenameCancel,
@@ -194,7 +200,22 @@ export function DevicesDrawer({
               key={device.id}
               selected={device.id === selectedId}
               onClick={() => onSelect(device.id)}
-              sx={{ minHeight: 56, pl: 1.5, pr: 0.5 }}
+              // Only a device with nowhere to be is dragged from here.
+              // One already on a door is moved by taking it off first,
+              // which is a decision worth making on purpose.
+              draggable={isUnassigned(device)}
+              onDragStart={(e) => {
+                e.dataTransfer.setData(DEVICE_MIME, device.id);
+                e.dataTransfer.effectAllowed = "move";
+                onDragStart(device.id);
+              }}
+              onDragEnd={() => onDragEnd()}
+              sx={{
+                minHeight: 56,
+                pl: 1.5,
+                pr: 0.5,
+                cursor: isUnassigned(device) ? "grab" : undefined,
+              }}
             >
               <Box sx={{ mr: 1.5, color: "text.secondary", display: "flex" }}>
                 <DeviceGlyph type={device.device_type} size={20} />

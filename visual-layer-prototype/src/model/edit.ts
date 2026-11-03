@@ -59,7 +59,8 @@ export type OperationKind =
   | "rename_space_type"
   | "recolor_space_type"
   | "rename_device"
-  | "unassign_device";
+  | "unassign_device"
+  | "place_device";
 
 export interface EditOperation {
   kind: OperationKind;

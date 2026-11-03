@@ -76,6 +76,8 @@ import {
   previewAddDoor,
   recolorSpaceType,
   redo,
+  placeDeviceInSpace,
+  placeDeviceOnDoor,
   renameDevice,
   renameSpaceType,
   setRoomSurfaced,
@@ -139,6 +141,10 @@ export function EditModeScreen({
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [draggingDevice, setDraggingDevice] = useState<{
+    id: string;
+    deviceType: string;
+  } | null>(null);
   const [renamingDeviceId, setRenamingDeviceId] = useState<string | null>(null);
   const [deviceMenu, setDeviceMenu] = useState<{
     el: HTMLElement | null;
@@ -528,6 +534,15 @@ export function EditModeScreen({
             // being edited are.
             showDevices={mode === "devices"}
             selectedDeviceId={mode === "devices" ? selectedDeviceId : null}
+            dragging={draggingDevice}
+            onDropOnDoor={(deviceId, doorId, side) => {
+              setDraggingDevice(null);
+              run(() => placeDeviceOnDoor(state, deviceId, doorId, side));
+            }}
+            onDropInSpace={(deviceId, roomId) => {
+              setDraggingDevice(null);
+              run(() => placeDeviceInSpace(state, deviceId, roomId));
+            }}
             onDeviceMenu={
               mode === "devices"
                 ? (deviceId, at) => {
@@ -564,6 +579,16 @@ export function EditModeScreen({
               }
             }}
             onMenu={(el, deviceId) => setDeviceMenu({ el, deviceId })}
+            onDragStart={(deviceId) => {
+              const device = layer.file.devices.find((d) => d.id === deviceId);
+              if (device) {
+                setDraggingDevice({
+                  id: device.id,
+                  deviceType: device.device_type,
+                });
+              }
+            }}
+            onDragEnd={() => setDraggingDevice(null)}
             renamingId={renamingDeviceId}
             onRenameCommit={(deviceId, name) => {
               setRenamingDeviceId(null);

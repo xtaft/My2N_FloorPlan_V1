@@ -821,6 +821,38 @@ drops the guards with the place: a reader verifies entry into a room
 *through a door*, and off the door there is no entry left for it to
 verify, so keeping the room would claim a check nothing carries out.
 
+### Placing a device by dragging it
+
+An unplaced device is dragged out of the panel onto the plan. Only
+unplaced ones can be picked up: moving one that is already somewhere
+means taking it off first, which is a decision worth making on purpose.
+
+What the plan offers depends on what is in the air, because the two
+kinds of device are not placed in the same sort of place. A reader or an
+intercom gets **the free sides of every doorway** — two light halves
+where nothing reads yet, one where something already does, none where
+both are taken. An answering unit gets the spaces, because a unit is not
+something you badge at.
+
+**Which half you drop on is the whole of the choice.** It is the side the
+device reads from, and that fixes the room it checks as the one on the
+other side: you present your card where you are standing to get in to
+where you are not. The half is drawn centred on the opening and bulging
+to its side, so it sits exactly where the marker will.
+
+A room that was folded away inside its flat is surfaced by a reader
+landing on its door. Once something checks the way in, that way in is a
+thing the manager has to see — but it stays in its envelope, because
+gaining a reader does not make a bedroom stop being part of the flat.
+
+**A short arrow crosses the doorway** from the device to the room it
+admits you to. Nothing else on the plan says which way the check runs:
+the marker is symmetrical and the room beyond looks like the room
+behind. The arrow is derived, not stored — a door device is drawn one
+offset to its own side of the opening, so the vector from the opening to
+the marker, reversed, is the way in. A device in a space gets none,
+because it checks no way through.
+
 **Devices get hit targets only in devices mode.** Markers take no pointer
 events everywhere else, so that a reader sitting on a doorway cannot
 swallow the click meant for the door. Devices mode has no door selection

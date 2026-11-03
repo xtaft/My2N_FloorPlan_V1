@@ -6,6 +6,12 @@ import { fixture } from "./load";
 import {
   OperationRejected,
   deviceAnchor,
+  doorSides,
+  freeDoorSides,
+  goesOnDoors,
+  placeDeviceInSpace,
+  placeDeviceOnDoor,
+  roomsOf,
   deviceHost,
   deviceRows,
   deviceTypes,
@@ -159,5 +165,154 @@ describe("the devices panel's list", () => {
       "answering_unit",
       "intercom",
     ]);
+  });
+});
+
+describe("the sides of a doorway", () => {
+  it("has two, each checking the way into the other room", () => {
+    const layer = state().layer;
+    const sides = doorSides(layer, "1:d11");
+    expect(sides.map((s) => s.side)).toEqual(["a", "b"]);
+    for (const s of sides) {
+      expect(s.fromRoomId).not.toBe(s.guardsRoomId);
+    }
+    // One side is the room the other side guards, and the other way round.
+    expect(sides[0].fromRoomId).toBe(sides[1].guardsRoomId);
+    expect(sides[1].fromRoomId).toBe(sides[0].guardsRoomId);
+  });
+
+  it("says which side is already read, and leaves one free", () => {
+    const layer = state().layer;
+    const sides = doorSides(layer, "1:d11");
+    const taken = sides.filter((s) => s.takenBy !== null);
+    expect(taken.map((s) => s.takenBy)).toEqual([READER]);
+    expect(freeDoorSides(layer, "1:d11")).toHaveLength(1);
+  });
+
+  it("offers both sides of a door nothing reads", () => {
+    const after = unassignDevice(state(), READER);
+    expect(freeDoorSides(after.layer, "1:d11")).toHaveLength(2);
+  });
+
+  it("knows a reader goes on a door and a unit does not", () => {
+    expect(goesOnDoors("access_unit")).toBe(true);
+    expect(goesOnDoors("intercom")).toBe(true);
+    expect(goesOnDoors("answering_unit")).toBe(false);
+  });
+});
+
+describe("placing a device on a door", () => {
+  /** The reader, taken off so it can be put back by hand. */
+  const loose = () => unassignDevice(state(), READER);
+
+  it("checks the room on the far side from where it is put", () => {
+    const before = loose();
+    const [side] = doorSides(before.layer, "1:d11");
+    const after = placeDeviceOnDoor(before, READER, "1:d11", side.side);
+    const now = find(after, READER);
+
+    expect(now.host_kind).toBe("door");
+    expect(now.host_id).toBe("1:d11");
+    expect(now.guards).toEqual([side.guardsRoomId]);
+    expect(after.file.unplaced_devices).not.toContain(READER);
+  });
+
+  it("draws it on the side it was dropped on", () => {
+    // The side it reads from and the room it checks are two halves of
+    // one choice, so putting it back where it was restores both.
+    const original = state();
+    const was = find(original, READER);
+    const back = placeDeviceOnDoor(
+      loose(),
+      READER,
+      "1:d11",
+      doorSides(original.layer, was.id === READER ? "1:d11" : "1:d11").find(
+        (s) => s.guardsRoomId === was.guards[0],
+      )!.side,
+    );
+    expect(find(back, READER).guards).toEqual(was.guards);
+    expect(deviceAnchor(back.layer, find(back, READER))).toEqual(
+      deviceAnchor(original.layer, was),
+    );
+  });
+
+  it("refuses a side something is already reading", () => {
+    const before = state();
+    const taken = doorSides(before.layer, "1:d11").find(
+      (s) => s.takenBy !== null,
+    )!;
+    const other = unassignDevice(before, "AN-A1"); // any other device
+    expect(() =>
+      placeDeviceOnDoor(other, "IC-0-d10", "1:d11", taken.side),
+    ).toThrow(/already on that side/);
+  });
+
+  it("refuses an answering unit, which is not a thing you badge at", () => {
+    expect(() =>
+      placeDeviceOnDoor(unassignDevice(state(), UNIT), UNIT, "1:d11", "a"),
+    ).toThrow(/belongs in a space/);
+  });
+
+  it("surfaces the room it now checks the way into", () => {
+    // A bedroom is folded inside its flat. Put a reader on its door and
+    // the room has to be visible, or the check points at nothing.
+    const before = loose();
+    const bedroom = before.layer.rooms.get("1:B1")!;
+    expect(bedroom.surfaced).toBe(false);
+
+    const door = before.file.doors.find(
+      (d) =>
+        d.wall_id !== null &&
+        roomsOf(before.layer, d).includes("1:B1"),
+    )!;
+    const side = doorSides(before.layer, door.id).find(
+      (s) => s.guardsRoomId === "1:B1",
+    )!;
+    const after = placeDeviceOnDoor(before, READER, door.id, side.side);
+
+    const now = after.layer.rooms.get("1:B1")!;
+    expect(now.surfaced).toBe(true);
+    // And it is still in the flat: a reader does not move a room out.
+    expect(now.group_id).toBe(bedroom.group_id);
+  });
+
+  it("is undone", () => {
+    const before = loose();
+    expect(undo(placeDeviceOnDoor(before, READER, "1:d11", "a")).file).toEqual(
+      before.file,
+    );
+  });
+});
+
+describe("placing a device in a space", () => {
+  const loose = () => unassignDevice(state(), UNIT);
+
+  it("puts the unit in the room and takes it off the waiting list", () => {
+    const after = placeDeviceInSpace(loose(), UNIT, "1:L1");
+    const now = find(after, UNIT);
+    expect(now.host_kind).toBe("room");
+    expect(now.host_id).toBe("1:L1");
+    expect(now.guards).toEqual([]);
+    expect(after.file.unplaced_devices).not.toContain(UNIT);
+  });
+
+  it("refuses a reader, which has no doorway there to read at", () => {
+    expect(() =>
+      placeDeviceInSpace(unassignDevice(state(), READER), READER, "1:L1"),
+    ).toThrow(/at a doorway/);
+  });
+
+  it("refuses a second unit in a space that has one", () => {
+    const loose2 = unassignDevice(state(), "AN-A2");
+    expect(() => placeDeviceInSpace(loose2, "AN-A2", "1:L1")).toThrow(
+      /already in/,
+    );
+  });
+
+  it("is undone", () => {
+    const before = loose();
+    expect(undo(placeDeviceInSpace(before, UNIT, "1:L1")).file).toEqual(
+      before.file,
+    );
   });
 });
