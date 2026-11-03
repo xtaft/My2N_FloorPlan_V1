@@ -39,6 +39,7 @@ import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import SupportOutlined from "@mui/icons-material/SupportOutlined";
 import VideocamOutlined from "@mui/icons-material/VideocamOutlined";
 import logoUrl from "../../assets/2n-logo.svg";
+import { HEADER_BACKGROUND } from "../theme";
 import { DevicesTable, OperatorsTable, ResidentsTable } from "./BuildingTabs";
 import { FloorPlanTab } from "./FloorPlanTab";
 import { OverviewTab } from "./OverviewTab";
@@ -97,11 +98,17 @@ export function BuildingScreen({
   const [tab, setTab] = useState<BuildingTab>("plan");
   const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
 
+  /** The one tab that is a screen rather than a card on the page. */
+  const planFills = tab === "plan" && hasPlan;
+
   const spaces = useMemo(() => buildingSpaces(layer), [layer]);
   const storeys = useMemo(() => spacesByFloor(layer), [layer]);
   const people = useMemo(() => residents(layer), [layer]);
   const staff = useMemo(() => operators(layer), [layer]);
-  const devices = useMemo(() => buildingDevices(layer), [layer]);
+  const devices = useMemo(
+    () => buildingDevices(layer, hasPlan),
+    [layer, hasPlan],
+  );
 
   // The button at the top right is whatever the tab under it is about.
   const action =
@@ -136,8 +143,23 @@ export function BuildingScreen({
           width={280}
         />
 
-        <Box sx={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
-          <Box sx={{ px: 3, pt: 1.5 }}>
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            sx={{
+              px: 3,
+              pt: 1.5,
+              flexShrink: 0,
+              bgcolor: HEADER_BACKGROUND,
+            }}
+          >
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <HomeOutlined sx={{ fontSize: 16, color: "text.secondary" }} />
               <Crumb>{place}</Crumb>
@@ -200,7 +222,20 @@ export function BuildingScreen({
             </Tabs>
           </Box>
 
-          <Box sx={{ p: 3 }}>
+          {/*
+            The plan fills the screen; everything else is a card on the
+            page. Once there is a floor plan this tab *is* it — toolbar,
+            canvas and drawer edge to edge under the tabs, with no gutter
+            around them and nothing to scroll. The tables keep the page
+            padding, which is the layout the empty state already had.
+          */}
+          <Box
+            sx={
+              planFills
+                ? { flex: 1, minHeight: 0, display: "flex" }
+                : { flex: 1, minHeight: 0, overflowY: "auto", p: 3 }
+            }
+          >
             {tab === "residents" && <ResidentsTable residents={people} />}
             {tab === "devices" && <DevicesTable devices={devices} />}
             {tab === "operators" && <OperatorsTable operators={staff} />}

@@ -121,13 +121,13 @@ export function deviceRows(layer: VisualLayer): DeviceRow[] {
     .sort((a, b) => a.device.name.localeCompare(b.device.name));
 }
 
-function placedOn(layer: VisualLayer, device: Device): string | null {
+export function placedOn(layer: VisualLayer, device: Device): string | null {
   if (device.host_id === null) return null;
   const floor = layer.floors.find((f) => f.id === device.floor_id);
   return floor?.name ?? null;
 }
 
-function placeOf(layer: VisualLayer, device: Device): string | null {
+export function placeOf(layer: VisualLayer, device: Device): string | null {
   if (device.host_id === null) return null;
 
   if (device.host_kind === "room") {

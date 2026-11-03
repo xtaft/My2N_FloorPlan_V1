@@ -37,6 +37,7 @@ import { FloorPlanCanvas } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
 import { AccessDeviceMenu } from "../edit/AccessDeviceMenu";
 import { PersonMenu } from "../edit/PersonMenu";
+import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import {
   accessPaint,
   accessShading,
@@ -91,15 +92,15 @@ export function FloorPlanView({
   );
 
   return (
+    // Not a card on the page: the plan is the screen. It fills whatever
+    // the tabs leave it, edge to edge, with the toolbar sitting directly
+    // under the tab rule and the canvas running to the window.
     <Box
       sx={{
+        flex: 1,
+        minWidth: 0,
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 260px)",
-        minHeight: 520,
-        border: 1,
-        borderColor: "divider",
-        borderRadius: 1,
         bgcolor: "background.paper",
         overflow: "hidden",
       }}
@@ -180,7 +181,7 @@ export function FloorPlanView({
       </Tabs>
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <Box sx={{ flex: 1, minWidth: 0, bgcolor: "#e8e8e8" }}>
+        <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
           <FloorPlanCanvas
             layer={layer}
             floorId={floorId}
@@ -287,6 +288,7 @@ function SidePanel({
         flexShrink: 0,
         borderLeft: 1,
         borderColor: "divider",
+        bgcolor: PANEL_BACKGROUND,
         overflowY: "auto",
       }}
     >

@@ -29,6 +29,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { BuildingSpace, BuildingStorey } from "../../model";
+import { PANEL_BACKGROUND } from "../theme";
 
 /**
  * Row geometry, taken from the design's frames rather than guessed.
@@ -129,7 +130,9 @@ export function SpaceTree({
         flexShrink: 0,
         borderRight: 1,
         borderColor: "divider",
-        bgcolor: "background.paper",
+        // A shade off white, which is what separates the tree from the
+        // icon rail beside it without a second rule between them.
+        bgcolor: PANEL_BACKGROUND,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",

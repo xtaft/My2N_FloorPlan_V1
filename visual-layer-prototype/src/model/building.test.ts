@@ -25,6 +25,18 @@ describe("residents", () => {
     for (const r of all) expect(r.apartment_id).toMatch(/^\d:A\d+$/);
   });
 
+  it("names their answering unit the way the plan names it", () => {
+    // The record points at the device by id. The id is not a name the
+    // product shows anywhere else, so a resident row that printed it
+    // would be naming a box nobody could find in the Devices tab.
+    const grace = residents(layer).find((r) => r.id === "R001")!;
+    expect(grace.answeringUnit).toBe("A1 IndoorView");
+    for (const r of residents(layer)) {
+      if (r.answeringUnit === null) continue;
+      expect(r.answeringUnit).not.toMatch(/^AN-/);
+    }
+  });
+
   it("joins their flat to the plan's envelope for it", () => {
     // The data gives a storey and a name — "A1" on floor 1 — and the
     // plan calls that envelope 1:A1. That join is the only derivation
@@ -178,6 +190,23 @@ describe("the building's devices, before there is a plan", () => {
     for (const d of loose) {
       expect(["Access Unit 2.0", "IP Style"]).toContain(d.type);
     }
+  });
+
+  it("says where the plan put them once there is one", () => {
+    // The same list asked the other question. Nothing is waiting any
+    // more except the two readers the fixture leaves unassigned, and
+    // every placement is one the plan's own device panel would give.
+    const devices = buildingDevices(layer, true);
+    const loose = devices.filter((d) => d.placement === null);
+    expect(loose.map((d) => d.id).sort()).toEqual(["AC-U1", "AC-U2"]);
+
+    const lobby = devices.find((d) => d.name === "Lobby Entrance")!;
+    expect(lobby.placement).toBe("Lobby");
+    expect(lobby.floor).toBe("ground floor");
+
+    const unit = devices.find((d) => d.id === "AN-A1")!;
+    expect(unit.placement).toBe("A1");
+    expect(unit.floor).toBe("floor 1");
   });
 
   it("names the product rather than the model's word for it", () => {

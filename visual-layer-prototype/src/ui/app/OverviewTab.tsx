@@ -40,7 +40,10 @@ export interface OverviewTabProps {
 
 export function OverviewTab({ layer, hasPlan }: OverviewTabProps) {
   const spaces = useMemo(() => buildingSpaces(layer), [layer]);
-  const devices = useMemo(() => buildingDevices(layer), [layer]);
+  const devices = useMemo(
+    () => buildingDevices(layer, hasPlan),
+    [layer, hasPlan],
+  );
 
   const placed = devices.filter((d) => d.placement !== null).length;
   const waiting = devices.length - placed;

@@ -41,9 +41,16 @@ const DEVICE_COLUMNS: Column<BuildingDevice>[] = [
   {
     key: "placement",
     label: "Placement",
-    // An em dash, not an empty cell: nothing has placed it yet, which is
-    // a fact about the device rather than a gap in the table.
-    cell: (d) => d.placement ?? "—",
+    // Where the plan says it is, in the plan's own words: the storey and
+    // the space, the way the editor's device panel reads them out. An em
+    // dash, not an empty cell, while nothing has placed it — that is a
+    // fact about the device rather than a gap in the table.
+    cell: (d) =>
+      d.placement === null
+        ? "—"
+        : d.floor
+          ? `${d.floor}, ${d.placement}`
+          : d.placement,
   },
   {
     key: "status",
@@ -71,7 +78,9 @@ export function DevicesTable({ devices }: { devices: BuildingDevice[] }) {
       rows={devices}
       columns={DEVICE_COLUMNS}
       rowKey={(d) => d.id}
-      searchable={(d) => `${d.name} ${d.type} ${d.placement ?? ""} ${d.id}`}
+      searchable={(d) =>
+        `${d.name} ${d.type} ${d.floor ?? ""} ${d.placement ?? ""} ${d.id}`
+      }
       searchPlaceholder="Name, SN, ID"
       filters={
         <>

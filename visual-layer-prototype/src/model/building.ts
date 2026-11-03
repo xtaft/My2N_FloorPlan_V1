@@ -24,6 +24,7 @@
 import peopleFile from "../fixtures/people.json";
 import { accessType, roomsInGroup } from "./access";
 import { allEnvelopes } from "./derive";
+import { placeOf, placedOn } from "./device";
 import type { VisualLayer } from "./load";
 import type { Group } from "./types";
 
@@ -116,10 +117,28 @@ export function residents(layer: VisualLayer): Resident[] {
         apartment_name: group?.name ?? record.apartment ?? "",
         floor: record.floor ?? 0,
         mainContact: record.main_contact === true,
-        answeringUnit: record.answering_unit,
+        // The record names the unit by id — AN-A1 — and the plan calls
+        // the same box "A1 IndoorView". Showing the id would put a
+        // device in the Residents tab that appears nowhere else in the
+        // product, so it is resolved to the name everything else uses.
+        answeringUnit: answeringUnitName(layer, record.answering_unit),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The unit's name as the rest of the product says it.
+ *
+ * An id that names no device is left as it is rather than blanked: a
+ * reference to something that is not there is worth seeing.
+ */
+function answeringUnitName(
+  layer: VisualLayer,
+  id: string | null,
+): string | null {
+  if (id === null) return null;
+  return layer.file.devices.find((d) => d.id === id)?.name ?? id;
 }
 
 /** Everybody who works here rather than living here. */
@@ -228,8 +247,10 @@ export interface BuildingDevice {
   name: string;
   /** The product, as the catalogue names it. */
   type: string;
-  /** The space it is in, or null while nothing has placed it. */
+  /** The space it is in or the one it guards, or null while unplaced. */
   placement: string | null;
+  /** The storey, once it is on one. */
+  floor: string | null;
   status: "ok" | "offline" | "not_verified";
 }
 
@@ -244,27 +265,38 @@ export function productName(deviceType: string): string {
 }
 
 /**
- * Every device the building has, and where it is before there is a plan.
+ * Every device the building has, and where it is.
+ *
+ * Where it is comes from `placeOf` and `placedOn` — the same two the
+ * plan's own device panel uses — so the Devices tab and the floor plan
+ * cannot tell different stories about the same box. They used to: this
+ * read the host room itself and only for answering units, which left
+ * every reader showing an em dash in the tab while the plan drew it on
+ * a door with a name and a storey.
  *
  * An answering unit is the flat's, so it is placed from the day the flat
- * exists. A reader or an intercom is on a door, and until the building has
- * been drawn there are no doors to put one on — so it is unplaced, and
- * placing it is one of the things the floor plan is for.
+ * exists. A reader or an intercom is on a door, and until the building
+ * has been drawn there are no doors to put one on — so before the plan
+ * it is genuinely unplaced, and placing it is one of the things the
+ * floor plan is for.
  */
-export function buildingDevices(layer: VisualLayer): BuildingDevice[] {
+export function buildingDevices(
+  layer: VisualLayer,
+  hasPlan = false,
+): BuildingDevice[] {
   return layer.file.devices
     .map((device) => {
-      const room =
-        device.device_type === "answering_unit" && device.host_id
-          ? layer.rooms.get(device.host_id)
-          : undefined;
-      const group = room?.group_id ? layer.groups.get(room.group_id) : undefined;
-
+      // The fixture is the drawn building, so the doors exist in it
+      // whether or not the customer has drawn them yet. Which question
+      // is being asked has to be said, and this is where it is said:
+      // before the plan, a device on a door has nowhere to be.
+      const placed = hasPlan || device.host_kind !== "door";
       return {
         id: device.id,
         name: device.name,
         type: productName(device.device_type),
-        placement: group?.name ?? null,
+        placement: placed ? placeOf(layer, device) : null,
+        floor: placed ? placedOn(layer, device) : null,
         status: device.status as BuildingDevice["status"],
       };
     })

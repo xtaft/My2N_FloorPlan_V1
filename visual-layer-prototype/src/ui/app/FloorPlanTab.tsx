@@ -52,7 +52,10 @@ export function FloorPlanTab({
     <Paper
       variant="outlined"
       sx={{
-        minHeight: 520,
+        // The card is the page, not a box sitting on it: it takes the
+        // whole area the tabs leave, as the design draws it.
+        height: "100%",
+        minHeight: 420,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

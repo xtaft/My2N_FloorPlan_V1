@@ -69,3 +69,16 @@ export const theme = createTheme({
 
 /** The canvas sits on the design's page background, not on paper. */
 export const CANVAS_BACKGROUND = "#eeeeee";
+
+/**
+ * Three surfaces, sampled from the design rather than guessed at.
+ *
+ * The page is #eeeeee and a card on it is white, which the palette above
+ * already says. Between them the design uses two more: the band holding
+ * the breadcrumb, the building and the tabs is a shade lighter than the
+ * page, and the navigation tree and the mode drawers are a shade darker
+ * than a card. Leaving either of them to inherit — the band showing page
+ * grey, the tree showing card white — is what made the header read wrong.
+ */
+export const HEADER_BACKGROUND = "#f5f5f5";
+export const PANEL_BACKGROUND = "#fafafa";
