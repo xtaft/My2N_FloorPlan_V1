@@ -297,12 +297,14 @@ describe("devices", () => {
     }
   });
 
-  it("draws a reader inside the room it guards", () => {
+  it("draws a reader on the side access is verified from", () => {
     // The sign of the wall normal is the thing to get wrong here, and getting
     // it wrong puts every reader consistently on the far side of its door —
     // visible, but easy to read as a rendering bug rather than a convention
-    // error. So assert it against the room's own extracted shape.
-    const misplaced: string[] = [];
+    // error. So assert both halves against the rooms' own extracted shapes:
+    // out of the room the reader protects, and into the one you approach from.
+    const insideGuarded: string[] = [];
+    const notInApproach: string[] = [];
     for (const dv of file.devices) {
       if (dv.host_kind !== "door" || dv.guards.length === 0) continue;
       const door = layer.doors.get(dv.host_id!)!;
@@ -311,12 +313,19 @@ describe("devices", () => {
       const anchor = deviceAnchor(layer, dv);
       expect(anchor).not.toBeNull();
 
+      const pair = roomsOf(layer, door);
       const guarded = dv.guards[0];
-      if (guarded === EXTERIOR) continue;
-      const rings = ringsByRoom.get(guarded)!;
-      if (!insideRings(anchor!, rings)) misplaced.push(dv.id);
+      const approach = pair[0] === guarded ? pair[1] : pair[0];
+
+      if (guarded !== EXTERIOR && insideRings(anchor!, ringsByRoom.get(guarded)!)) {
+        insideGuarded.push(dv.id);
+      }
+      if (approach !== EXTERIOR && !insideRings(anchor!, ringsByRoom.get(approach)!)) {
+        notInApproach.push(dv.id);
+      }
     }
-    expect(misplaced).toEqual([]);
+    expect(insideGuarded).toEqual([]);
+    expect(notInApproach).toEqual([]);
   });
 
   it("puts a room-hosted device inside its own room", () => {

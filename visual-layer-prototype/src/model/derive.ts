@@ -227,9 +227,13 @@ export function groupEntrances(layer: VisualLayer, groupId: string): Door[] {
 }
 
 /**
- * A device's side of a door follows from `guards`, never stored. A reader
- * guarding `room_a` draws on the `room_a` side — physically where it is. A
- * stored side would go stale the moment a wall's room pair changed.
+ * Which side of its door a device hangs on. Derived from `guards`, never
+ * stored: a stored side would go stale the moment a wall's room pair changed.
+ *
+ * A reader is mounted on the side you verify access FROM, which is the side
+ * it does not guard. Guarding `room_a` means you stand in `room_b` and
+ * present your card to get in, so the reader is on the `room_b` face. A
+ * reader inside the room it protects would protect nothing.
  */
 export function deviceSide(
   layer: VisualLayer,
@@ -239,7 +243,7 @@ export function deviceSide(
   const door = layer.doors.get(device.host_id);
   if (!door) return null;
   const [a] = roomsOf(layer, door);
-  return device.guards.includes(a) ? "a" : "b";
+  return device.guards.includes(a) ? "b" : "a";
 }
 
 /** How far off the wall a reader glyph sits, in canvas units. */
@@ -249,9 +253,8 @@ export const DEVICE_OFFSET = 16;
  * Where to draw a device.
  *
  * A room-hosted device carries its own position. A door-hosted one is placed
- * off the door, on the side it guards — physically where the reader is. The
- * side comes from `guards` against the wall's room pair, so it cannot go stale
- * the way a stored side would.
+ * off the door, on the side `deviceSide` puts it — the side access is
+ * verified from, which is the one it does not guard.
  */
 export function deviceAnchor(
   layer: VisualLayer,

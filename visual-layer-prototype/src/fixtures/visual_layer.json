@@ -5068,7 +5068,7 @@
         "0:w17"
       ],
       "group_id": "0:gGL1",
-      "space_type": "room",
+      "space_type": null,
       "floor_id": "0:floor",
       "surfaced": true
     },
@@ -5082,7 +5082,7 @@
         "0:w28"
       ],
       "group_id": "0:gGL2",
-      "space_type": "room",
+      "space_type": null,
       "floor_id": "0:floor",
       "surfaced": true
     },
@@ -8841,7 +8841,7 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "offline"
     },
     {
       "id": "AC-3-d7",
@@ -9165,7 +9165,7 @@
         "0:GL2"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "not_verified"
     },
     {
       "id": "AC-U2",
@@ -9178,7 +9178,7 @@
         "0:GL1"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "not_verified"
     },
     {
       "id": "AC-1-dA7",

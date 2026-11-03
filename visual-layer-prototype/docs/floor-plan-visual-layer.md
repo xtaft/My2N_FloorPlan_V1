@@ -413,12 +413,16 @@ not by the drawing.
 ```python
 def device_side(device, door, wall):
     a, b = rooms_of(door, wall)
-    return "a" if a in device.guards else "b"
+    # the side access is verified FROM: the one the reader does not guard
+    return "b" if a in device.guards else "a"
 ```
 
-A reader guarding `room_a` draws on the `room_a` side — physically where it is.
-A stored side would go stale the moment a wall's room pair changed; `guards`
-holds room ids, which is what traversal reads anyway.
+A reader sits on the side access is **verified from**, which is the side it does
+not guard. Guarding `room_a` means you stand in `room_b` and present your
+credential to get in, so the reader hangs on the `room_b` face. A reader inside
+the room it protects would protect nothing. A stored side would go stale the
+moment a wall's room pair changed; `guards` holds room ids, which is what
+traversal reads anyway.
 
 **Slit walls** (`room_a == room_b`) have no meaningful side and carry no doors —
 a cut through a door is rejected. Just guard the renderer against a zero normal.

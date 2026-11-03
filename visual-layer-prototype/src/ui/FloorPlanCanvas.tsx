@@ -38,6 +38,7 @@ import {
   type WallHit,
 } from "../model";
 import { roomAccessState } from "../model";
+import { DeviceMarker } from "./DeviceMarker";
 
 const WALL_COLOR = "#2E3338";
 const DOOR_COLOR = "#5A646E";
@@ -111,14 +112,7 @@ interface DeviceGlyph {
   device: Device;
   x: number;
   y: number;
-  label: string;
 }
-
-const DEVICE_LABEL: Record<string, string> = {
-  access_unit: "AC",
-  intercom: "IC",
-  answering_unit: "AN",
-};
 
 export function FloorPlanCanvas({
   layer,
@@ -145,6 +139,12 @@ export function FloorPlanCanvas({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hover, setHover] = useState<WallHit | null>(null);
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
+  const [hoverDevice, setHoverDevice] = useState<string | null>(null);
+  /**
+   * Plan units per CSS pixel, right now. Devices hold a constant size on
+   * screen, so they need this to undo the plan's scale.
+   */
+  const [unitScale, setUnitScale] = useState(1);
 
   /**
    * What the pointer is lighting up. A flat whose rooms are folded away
@@ -198,17 +198,12 @@ export function FloorPlanCanvas({
     const glyphs: DeviceGlyph[] = [];
     for (const device of layer.file.devices) {
       if (device.floor_id !== floorId) continue;
-      // deviceAnchor puts a reader on the side it guards, derived from
-      // `guards` against the wall's room pair. A virtual door returns null:
-      // it has no wall, so there is nowhere on the map to draw it.
+      // deviceAnchor puts a reader on the side access is verified from,
+      // derived from `guards` against the wall's room pair. A virtual door
+      // returns null: it has no wall, so there is nowhere to draw it.
       const at = deviceAnchor(layer, device);
       if (!at) continue;
-      glyphs.push({
-        device,
-        x: at.x,
-        y: at.y,
-        label: DEVICE_LABEL[device.device_type] ?? "?",
-      });
+      glyphs.push({ device, x: at.x, y: at.y });
     }
 
     return {
@@ -221,6 +216,37 @@ export function FloorPlanCanvas({
       }`,
     };
   }, [layer, floorId]);
+
+  /**
+   * The screen CTM already folds in everything that scales the plan — how the
+   * viewBox fits the element, and the pan/zoom transform on top of it — so one
+   * number off it beats tracking the two separately. Deriving it from the
+   * layout box instead reads a size the browser has not settled yet.
+   */
+  const measureScale = useCallback(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const ctm = svg.getScreenCTM();
+    if (!ctm || !ctm.a) return;
+    const next = 1 / ctm.a;
+    // Guarded so a measurement that lands on the same value does not spin.
+    setUnitScale((prev) => (Math.abs(prev - next) < 1e-4 ? prev : next));
+  }, []);
+
+  // A frame late on purpose: a resize callback that reads the CTM straight
+  // away gets the layout as it was before the resize.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const tick = () => requestAnimationFrame(measureScale);
+    const frame = tick();
+    const observer = new ResizeObserver(tick);
+    observer.observe(svg);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [measureScale, scene.viewBox]);
 
   /** Screen pixels to the SVG's own user units, whatever the zoom and pan. */
   const toSvgPoint = useCallback((clientX: number, clientY: number): Point | null => {
@@ -256,6 +282,9 @@ export function FloorPlanCanvas({
       // While the door tool is armed a drag must not pan the map, or every
       // attempt to place a door slides the plan instead.
       panning={{ disabled: placing }}
+      // Panning leaves the scale alone, so the guard in measureScale keeps
+      // a drag from re-rendering the markers frame by frame.
+      onTransform={measureScale}
     >
       {(utils) => (
       <>
@@ -457,29 +486,28 @@ export function FloorPlanCanvas({
             </g>
           )}
 
-          {/* Devices. A reader sits on the side it guards. */}
-          {scene.glyphs.map((glyph) => (
-            <g key={glyph.device.id} pointerEvents="none">
-              <circle
-                cx={glyph.x}
-                cy={glyph.y}
-                r={13}
-                fill="#FFFFFF"
-                stroke="#17406B"
-                strokeWidth={3}
-              />
-              <text
+          {/* Devices. A reader sits on the side access is verified from.
+              The hovered one is drawn last so its name is not buried under a
+              neighbour. */}
+          {[...scene.glyphs]
+            .sort((a, b) =>
+              Number(a.device.id === hoverDevice) -
+              Number(b.device.id === hoverDevice),
+            )
+            .map((glyph) => (
+              <DeviceMarker
+                key={glyph.device.id}
+                id={glyph.device.id}
+                name={glyph.device.name}
+                deviceType={glyph.device.device_type}
+                status={glyph.device.status}
                 x={glyph.x}
-                y={glyph.y + 4}
-                textAnchor="middle"
-                fontSize={11}
-                fontWeight={700}
-                fill="#17406B"
-              >
-                {glyph.label}
-              </text>
-            </g>
-          ))}
+                y={glyph.y}
+                unitScale={unitScale}
+                hovered={glyph.device.id === hoverDevice}
+                onHover={setHoverDevice}
+              />
+            ))}
 
           {/* Labels: the room when it is visible, otherwise its envelope. */}
           <Labels
