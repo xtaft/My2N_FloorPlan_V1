@@ -14,11 +14,11 @@ import ListItemText from "@mui/material/ListItemText";
 import ListSubheader from "@mui/material/ListSubheader";
 import Typography from "@mui/material/Typography";
 import {
+  floorEnvelopes,
   groupAccessState,
   roomAccessState,
   roomColor,
   spaceTypeName,
-  topGroups,
   type Group,
   type Reachability,
   type VisualLayer,
@@ -58,9 +58,10 @@ export function NavigationDrawer({
     const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
     const children = layer.childGroups.get(group.id) ?? [];
     const expandable = rooms.length > 0 || children.length > 0;
-    // The floor's own envelope starts open; its children do not, or the tree
-    // would arrive as one long list of every room in the building.
-    const isOpen = open[group.id] ?? depth === 0;
+    // Everything starts closed: floorEnvelopes already skips the floor's
+    // pass-through group, so these are the real envelopes and opening them
+    // all would arrive as one long list of every room on the floor.
+    const isOpen = open[group.id] ?? false;
     const state = reach ? groupAccessState(layer, reach, group.id) : null;
 
     return (
@@ -165,7 +166,7 @@ export function NavigationDrawer({
           </ListSubheader>
         }
       >
-        {topGroups(layer, floorId).map((group) => renderGroup(group, 0))}
+        {floorEnvelopes(layer, floorId).map((group) => renderGroup(group, 0))}
       </List>
 
       <Box sx={{ px: 2, pb: 2 }}>

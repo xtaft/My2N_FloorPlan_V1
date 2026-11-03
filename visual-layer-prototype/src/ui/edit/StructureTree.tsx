@@ -6,6 +6,12 @@
  * The building level is display only. The model has no building entity: a
  * floor is the top of the containment tree, because geometry does not cross
  * floors and nothing derived reads above one.
+ *
+ * Expansion is one flat map keyed by row id, so every row opens and closes on
+ * its own: expanding one leaves the others as they were, and the arrow that
+ * opened a row closes it again. Which floor the canvas shows is a separate
+ * thing from which floor rows are open — tying them together meant opening a
+ * floor collapsed the last one, and an open floor could not be folded at all.
  */
 import { Fragment, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
@@ -18,7 +24,6 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import ApartmentOutlined from "@mui/icons-material/ApartmentOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
@@ -30,8 +35,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import {
+  floorEnvelopes,
   roomColor,
-  topGroups,
   type Group,
   type Room,
   type VisualLayer,
@@ -40,6 +45,7 @@ import {
 export interface StructureTreeProps {
   layer: VisualLayer;
   buildingName: string;
+  /** The floor the canvas is showing — not the same as which rows are open. */
   floorId: string;
   onFloorChange: (floorId: string) => void;
   selectedRoomId: string | null;
@@ -55,21 +61,30 @@ export function StructureTree({
   onSelectRoom,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  // Absent means closed. The floor on screen when the tree first mounts
+  // starts open so there is something to look at.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => ({
+    [floorId]: true,
+  }));
+
+  const isExpanded = (id: string) => expanded[id] === true;
+  const toggle = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  const open = (id: string) =>
+    setExpanded((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return null;
     return new Set(
       layer.file.rooms
-        .filter((r) => r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q))
+        .filter(
+          (r) =>
+            r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q),
+        )
         .map((r) => r.id),
     );
   }, [query, layer]);
-
-  const isOpen = (id: string, fallback: boolean) => !(closed[id] ?? !fallback);
-  const toggle = (id: string, fallback: boolean) =>
-    setClosed((prev) => ({ ...prev, [id]: isOpen(id, fallback) }));
 
   const row = (
     key: string,
@@ -79,7 +94,7 @@ export function StructureTree({
     opts: {
       secondary?: string;
       expandable?: boolean;
-      open?: boolean;
+      expanded?: boolean;
       onToggle?: () => void;
       onClick?: () => void;
       selected?: boolean;
@@ -93,8 +108,16 @@ export function StructureTree({
       onClick={opts.onClick}
       sx={{ pl: 1 + depth * 2, pr: 1, minHeight: 48 }}
     >
+      {/* The arrow is its own hit target: it toggles this row and does
+          nothing else, so the row's main action stays separate. */}
       <Box
-        sx={{ width: 28, display: "flex", alignItems: "center", flexShrink: 0 }}
+        sx={{
+          width: 28,
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          cursor: opts.expandable ? "pointer" : "default",
+        }}
         onClick={(e) => {
           if (!opts.expandable) return;
           e.stopPropagation();
@@ -102,7 +125,7 @@ export function StructureTree({
         }}
       >
         {opts.expandable ? (
-          opts.open ? (
+          opts.expanded ? (
             <ExpandMore sx={{ fontSize: 20 }} />
           ) : (
             <ChevronRight sx={{ fontSize: 20 }} />
@@ -151,55 +174,68 @@ export function StructureTree({
 
   const renderRoom = (room: Room, depth: number) => {
     if (matches && !matches.has(room.id)) return null;
-    return row(room.id, depth, <MeetingRoomOutlined sx={{ fontSize: 20 }} />, room.name, {
-      secondary: room.surfaced ? "shown separately" : undefined,
-      selected: room.id === selectedRoomId,
-      onClick: () => onSelectRoom(room.id),
-      swatch: roomColor(layer, room),
-    });
+    return row(
+      room.id,
+      depth,
+      <MeetingRoomOutlined sx={{ fontSize: 20 }} />,
+      room.name,
+      {
+        secondary: room.surfaced ? "shown separately" : undefined,
+        selected: room.id === selectedRoomId,
+        onClick: () => onSelectRoom(room.id),
+        swatch: roomColor(layer, room),
+      },
+    );
   };
 
   const renderGroup = (group: Group, depth: number): React.ReactNode => {
     const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
     const children = layer.childGroups.get(group.id) ?? [];
-    const open = isOpen(group.id, depth === 0);
     const expandable = rooms.length > 0 || children.length > 0;
 
-    const body = open ? (
-      <>
-        {children.map((c) => renderGroup(c, depth + 1))}
-        {rooms.map((r) => renderRoom(r, depth + 1))}
-      </>
-    ) : null;
-
-    // While searching, a group only appears if something under it matched.
+    // A search forces every branch that contains a hit open, and hides the
+    // rest; it does not disturb what the user had expanded.
     if (matches) {
-      const hasMatch = rooms.some((r) => matches.has(r.id));
       const kids = children.map((c) => renderGroup(c, depth + 1));
-      const kidsHave = kids.some(Boolean);
-      if (!hasMatch && !kidsHave) return null;
+      const hits = rooms.filter((r) => matches.has(r.id));
+      if (hits.length === 0 && !kids.some(Boolean)) return null;
       return (
         <Fragment key={group.id}>
-          {row(group.id, depth, <WidgetsOutlined sx={{ fontSize: 20 }} />, group.name, {
-            expandable: true,
-            open: true,
-            onToggle: () => toggle(group.id, true),
-          })}
+          {row(
+            group.id,
+            depth,
+            <WidgetsOutlined sx={{ fontSize: 20 }} />,
+            group.name,
+            { expandable: true, expanded: true, onToggle: () => toggle(group.id) },
+          )}
           {kids}
-          {rooms.filter((r) => matches.has(r.id)).map((r) => renderRoom(r, depth + 1))}
+          {hits.map((r) => renderRoom(r, depth + 1))}
         </Fragment>
       );
     }
 
+    const isOpen = isExpanded(group.id);
     return (
       <Fragment key={group.id}>
-        {row(group.id, depth, <WidgetsOutlined sx={{ fontSize: 20 }} />, group.name, {
-          secondary: group.domain_ref ?? undefined,
-          expandable,
-          open,
-          onToggle: () => toggle(group.id, depth === 0),
-        })}
-        {body}
+        {row(
+          group.id,
+          depth,
+          <WidgetsOutlined sx={{ fontSize: 20 }} />,
+          group.name,
+          {
+            secondary: group.domain_ref ?? undefined,
+            expandable,
+            expanded: isOpen,
+            onToggle: () => toggle(group.id),
+            onClick: () => expandable && toggle(group.id),
+          },
+        )}
+        {isOpen && (
+          <>
+            {children.map((c) => renderGroup(c, depth + 1))}
+            {rooms.map((r) => renderRoom(r, depth + 1))}
+          </>
+        )}
       </Fragment>
     );
   };
@@ -232,7 +268,7 @@ export function StructureTree({
           }}
         />
         <Tooltip title="Collapse all">
-          <IconButton size="small" onClick={() => setClosed({})}>
+          <IconButton size="small" onClick={() => setExpanded({})}>
             <UnfoldLess sx={{ fontSize: 20 }} />
           </IconButton>
         </Tooltip>
@@ -242,11 +278,15 @@ export function StructureTree({
       <Box sx={{ flex: 1, overflowY: "auto" }}>
         <List dense disablePadding>
           {/* Display-only building root — the model's tree starts at a floor. */}
-          {row("building", 0, <ApartmentOutlined sx={{ fontSize: 20 }} />, buildingName, {
-            bold: true,
-          })}
+          {row(
+            "building",
+            0,
+            <ApartmentOutlined sx={{ fontSize: 20 }} />,
+            buildingName,
+            { bold: true },
+          )}
           {layer.floors.map((floor) => {
-            const open = floor.id === floorId;
+            const isOpen = isExpanded(floor.id);
             return (
               <Fragment key={floor.id}>
                 {row(
@@ -256,17 +296,25 @@ export function StructureTree({
                   floor.name,
                   {
                     // `level` is shown because drawer order and storey are
-                    // independent: an order of 3, 5, 4 is legal.
+                    // independent: an order of 3, 5, 4 is legal and should
+                    // not look like a bug.
                     secondary: `level ${floor.level}`,
                     expandable: true,
-                    open,
-                    onToggle: () => onFloorChange(floor.id),
-                    onClick: () => onFloorChange(floor.id),
-                    selected: open,
+                    expanded: isOpen,
+                    onToggle: () => toggle(floor.id),
+                    // Clicking the row takes the canvas to this floor and
+                    // opens it; it never closes another floor.
+                    onClick: () => {
+                      onFloorChange(floor.id);
+                      open(floor.id);
+                    },
+                    selected: floor.id === floorId,
                   },
                 )}
-                {open &&
-                  topGroups(layer, floor.id).map((g) => renderGroup(g, 2))}
+                {/* floorEnvelopes skips the pass-through group that would
+                    otherwise name the floor a second time. */}
+                {isOpen &&
+                  floorEnvelopes(layer, floor.id).map((g) => renderGroup(g, 2))}
               </Fragment>
             );
           })}
@@ -277,13 +325,18 @@ export function StructureTree({
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 3 }}>
         <Tooltip title="Not built: a new space needs the divide operation">
           <span style={{ width: "100%" }}>
-            <Button fullWidth variant="outlined" color="inherit" endIcon={<AddIcon />} disabled>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="inherit"
+              endIcon={<AddIcon />}
+              disabled
+            >
               New space
             </Button>
           </span>
         </Tooltip>
       </Box>
-      <Typography sx={{ display: "none" }}>{layer.file.rooms.length}</Typography>
     </Box>
   );
 }

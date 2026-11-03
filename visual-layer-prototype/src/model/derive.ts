@@ -2,13 +2,14 @@
  * The rest of the "What is deliberately absent" table: everything a consumer
  * might reach for that the fixture refuses to store.
  */
-import { must, type VisualLayer } from "./load";
+import { must, topGroups, type VisualLayer } from "./load";
 import { accessType, roomsOf } from "./access";
 import { add, doorGeometry, negate, normal, unit } from "./geometry";
 import {
   EXTERIOR,
   type Device,
   type Door,
+  type Group,
   type Point,
   type Room,
   type Wall,
@@ -35,6 +36,28 @@ export function neighboursOf(layer: VisualLayer, room: Room): Set<string> {
     for (const other of [w.room_a, w.room_b]) {
       if (other !== room.id && other !== EXTERIOR) out.add(other);
     }
+  }
+  return out;
+}
+
+/**
+ * The envelopes to show directly under a floor.
+ *
+ * Every floor in this fixture wraps its envelopes in a single top-level group
+ * — `0:floorgroup`, named "Floor 0" — that holds no rooms of its own. Drawing
+ * it puts a second floor row underneath the first, naming the same floor
+ * twice. It is a pass-through, so its children take its place.
+ *
+ * The test is whether the group holds rooms, not what it is called: a
+ * top-level group that does own rooms is a real envelope and stays.
+ */
+export function floorEnvelopes(layer: VisualLayer, floorId: string): Group[] {
+  const out: Group[] = [];
+  for (const group of topGroups(layer, floorId)) {
+    const holdsRooms = layer.file.rooms.some((r) => r.group_id === group.id);
+    const children = layer.childGroups.get(group.id) ?? [];
+    if (!holdsRooms && children.length > 0) out.push(...children);
+    else out.push(group);
   }
   return out;
 }

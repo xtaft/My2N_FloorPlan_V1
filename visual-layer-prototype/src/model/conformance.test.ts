@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import {
   EXTERIOR,
   accessType,
+  floorEnvelopes,
   visualLayer as layer,
 } from "./index";
 
@@ -338,6 +339,43 @@ describe("the one rule: nothing derivable is stored", () => {
         ...new Set(p.devices.flatMap((id) => guardsOf.get(id) ?? [])),
       ].sort();
       expect([...p.rooms].sort()).toEqual(derived);
+    }
+  });
+});
+
+describe("the tree under a floor", () => {
+  it("names each floor once, not twice", () => {
+    // Every floor's single top-level group holds no rooms and exists only to
+    // parent the real envelopes, so showing it repeats the floor row.
+    for (const floor of layer.floors) {
+      const envelopes = floorEnvelopes(layer, floor.id);
+      expect(envelopes.length).toBeGreaterThan(1);
+      expect(envelopes.map((g) => g.id)).not.toContain(`${floorOf(floor.id)}:floorgroup`);
+    }
+  });
+
+  it("keeps a top-level group that does own rooms", () => {
+    // The rule is "holds no rooms", not "is called floorgroup".
+    for (const floor of layer.floors) {
+      for (const group of floorEnvelopes(layer, floor.id)) {
+        const holdsRooms = file.rooms.some((r) => r.group_id === group.id);
+        const children = layer.childGroups.get(group.id) ?? [];
+        expect(holdsRooms || children.length > 0).toBe(true);
+      }
+    }
+  });
+
+  it("reaches every room on the floor through what it returns", () => {
+    for (const floor of layer.floors) {
+      const reached = new Set<string>();
+      const walk = (groupId: string) => {
+        for (const r of file.rooms) if (r.group_id === groupId) reached.add(r.id);
+        for (const c of layer.childGroups.get(groupId) ?? []) walk(c.id);
+      };
+      for (const g of floorEnvelopes(layer, floor.id)) walk(g.id);
+
+      const onFloor = (layer.roomsByFloor.get(floor.id) ?? []).map((r) => r.id);
+      expect([...reached].sort()).toEqual([...onFloor].sort());
     }
   });
 });
