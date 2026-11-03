@@ -38,7 +38,10 @@ import {
   type WallHit,
 } from "../model";
 import { roomAccessState } from "../model";
-import { DeviceMarker } from "./DeviceMarker";
+import { DEVICE_PX, DeviceMarker } from "./DeviceMarker";
+
+/** However far out the plan goes, a marker stays readable. */
+const MIN_DEVICE_PX = 20;
 
 const WALL_COLOR = "#2E3338";
 const DOOR_COLOR = "#5A646E";
@@ -141,10 +144,18 @@ export function FloorPlanCanvas({
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [hoverDevice, setHoverDevice] = useState<string | null>(null);
   /**
-   * Plan units per CSS pixel, right now. Devices hold a constant size on
-   * screen, so they need this to undo the plan's scale.
+   * Plan units per CSS pixel with the plan unzoomed — the viewBox against the
+   * element's layout box. A CSS transform does not touch the layout box, so
+   * this moves only on a resize or a change of floor.
    */
-  const [unitScale, setUnitScale] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
+  /** The pan/zoom scale on top of that, straight from the wrapper. */
+  const [zoom, setZoom] = useState(1);
+  /**
+   * What the two above actually came out as on screen, measured. Only ever
+   * used as a floor — see unitScale.
+   */
+  const [measuredPxScale, setMeasuredPxScale] = useState(0);
 
   /**
    * What the pointer is lighting up. A flat whose rooms are folded away
@@ -218,27 +229,39 @@ export function FloorPlanCanvas({
   }, [layer, floorId]);
 
   /**
-   * The screen CTM already folds in everything that scales the plan — how the
-   * viewBox fits the element, and the pan/zoom transform on top of it — so one
-   * number off it beats tracking the two separately. Deriving it from the
-   * layout box instead reads a size the browser has not settled yet.
+   * Reading the CTM is the obvious way to learn the plan's scale and the
+   * wrong one: the wrapper calls back before the browser has applied the
+   * transform, so every zoom step measures the step before it. Markers then
+   * shrank as the plan grew. The two factors are known exactly without
+   * touching the DOM — the viewBox fit, which only layout changes, and the
+   * wrapper's own scale — so compose them instead.
    */
-  const measureScale = useCallback(() => {
+  const measure = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const ctm = svg.getScreenCTM();
-    if (!ctm || !ctm.a) return;
-    const next = 1 / ctm.a;
-    // Guarded so a measurement that lands on the same value does not spin.
-    setUnitScale((prev) => (Math.abs(prev - next) < 1e-4 ? prev : next));
-  }, []);
+    const [, , vbW, vbH] = scene.viewBox.split(" ").map(Number);
+    const w = svg.clientWidth;
+    const h = svg.clientHeight;
+    if (!w || !h || !vbW || !vbH) return;
+    // `meet` fits the whole viewBox in, so the binding side is the one that
+    // has to shrink most.
+    const fit = Math.max(vbW / w, vbH / h);
+    setFitScale((prev) => (Math.abs(prev - fit) < 1e-6 ? prev : fit));
 
-  // A frame late on purpose: a resize callback that reads the CTM straight
-  // away gets the layout as it was before the resize.
+    const ctm = svg.getScreenCTM();
+    if (ctm?.a) {
+      setMeasuredPxScale((prev) =>
+        Math.abs(prev - ctm.a) < 1e-4 ? prev : ctm.a,
+      );
+    }
+  }, [scene.viewBox]);
+
+  // A frame late on purpose: a resize callback that measures straight away
+  // reads the layout as it was before the resize.
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const tick = () => requestAnimationFrame(measureScale);
+    const tick = () => requestAnimationFrame(measure);
     const frame = tick();
     const observer = new ResizeObserver(tick);
     observer.observe(svg);
@@ -246,7 +269,20 @@ export function FloorPlanCanvas({
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [measureScale, scene.viewBox]);
+  }, [measure]);
+
+  /**
+   * Plan units per CSS pixel, now. The composed value is exact and never a
+   * step behind; the measured one is slower but truthful, and serves as a
+   * floor so that a layout measurement which has not caught up can shrink a
+   * marker no further than MIN_DEVICE_PX.
+   */
+  const unitScale = Math.max(
+    fitScale / zoom,
+    measuredPxScale
+      ? MIN_DEVICE_PX / (DEVICE_PX * measuredPxScale)
+      : 0,
+  );
 
   /** Screen pixels to the SVG's own user units, whatever the zoom and pan. */
   const toSvgPoint = useCallback((clientX: number, clientY: number): Point | null => {
@@ -282,9 +318,14 @@ export function FloorPlanCanvas({
       // While the door tool is armed a drag must not pan the map, or every
       // attempt to place a door slides the plan instead.
       panning={{ disabled: placing }}
-      // Panning leaves the scale alone, so the guard in measureScale keeps
-      // a drag from re-rendering the markers frame by frame.
-      onTransform={measureScale}
+      // Panning leaves the scale alone, so the equality guards keep a drag
+      // from re-rendering the markers frame by frame.
+      onTransform={(_ref, state) => {
+        setZoom((prev) =>
+          Math.abs(prev - state.scale) < 1e-6 ? prev : state.scale,
+        );
+        requestAnimationFrame(measure);
+      }}
     >
       {(utils) => (
       <>
@@ -515,6 +556,7 @@ export function FloorPlanCanvas({
             floorId={floorId}
             rings={rings}
             showAllRooms={revealAll}
+            unitScale={unitScale}
           />
 
           {/* The door the pointer would place, and whether it would be let. */}
@@ -636,16 +678,37 @@ function Labels({
   floorId,
   rings,
   showAllRooms,
+  unitScale,
 }: {
   layer: VisualLayer;
   floorId: string;
   rings: RingCache;
   showAllRooms: boolean;
+  /** Plan units per screen pixel, for clearing the constant-size markers. */
+  unitScale: number;
 }) {
   const labels = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
-    const out: Array<{ key: string; x: number; y: number; text: string; bold: boolean }> =
-      [];
+    const out: Array<{
+      key: string;
+      x: number;
+      y: number;
+      text: string;
+      bold: boolean;
+      /** Sits under a device marker, so it has to drop below it. */
+      shifted: boolean;
+    }> = [];
+
+    // An envelope's name and its room-hosted device are placed by the same
+    // rule, so they land on the same spot and the marker wins. The flats all
+    // have an answering unit, which is to say every flat on the floor would
+    // go unnamed.
+    const occupied = new Set(
+      layer.file.devices
+        .filter((d) => d.floor_id === floorId && d.host_kind === "room")
+        .map((d) => layer.rooms.get(d.host_id ?? "")?.group_id)
+        .filter((g): g is string => Boolean(g)),
+    );
 
     const grouped = new Map<string, typeof rooms>();
     for (const room of rooms) {
@@ -659,6 +722,7 @@ function Labels({
             y: pt.y,
             text: room.name,
             bold: false,
+            shifted: false,
           });
         }
         continue;
@@ -694,6 +758,7 @@ function Labels({
           y: pt.y,
           text: group.name,
           bold: true,
+          shifted: occupied.has(groupId),
         });
       }
     }
@@ -707,7 +772,13 @@ function Labels({
         <text
           key={l.key}
           x={l.x}
-          y={l.y}
+          // The marker holds its size in pixels while the text scales with
+          // the plan, so the clearance has to be converted, not guessed.
+          y={
+            l.shifted
+              ? l.y + (DEVICE_PX / 2) * unitScale + (l.bold ? 18 : 14)
+              : l.y
+          }
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={l.bold ? 24 : 18}

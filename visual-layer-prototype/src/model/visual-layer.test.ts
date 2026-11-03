@@ -11,6 +11,7 @@ import {
   defaultStartRoom,
   deviceAnchor,
   deviceSide,
+  groupCenter,
   doorGeometry,
   doorSpan,
   doorsOfRoom,
@@ -328,15 +329,43 @@ describe("devices", () => {
     expect(notInApproach).toEqual([]);
   });
 
-  it("puts a room-hosted device inside its own room", () => {
+  it("puts a room-hosted device in the middle of its envelope", () => {
+    // Not inside its host room: an answering unit belongs to the flat, whose
+    // rooms are folded away by default, so it is drawn where the flat's own
+    // name is. Assert it lands in some room of that envelope — the centre of
+    // an L-shaped set of rooms is otherwise free to fall in the courtyard.
     const misplaced: string[] = [];
+    const offCentre: string[] = [];
     for (const dv of file.devices) {
       if (dv.host_kind !== "room" || dv.host_id === null) continue;
       const anchor = deviceAnchor(layer, dv)!;
-      const rings = ringsByRoom.get(dv.host_id)!;
-      if (!insideRings(anchor, rings)) misplaced.push(dv.id);
+      const host = layer.rooms.get(dv.host_id)!;
+
+      if (host.group_id) {
+        const middle = groupCenter(layer, host.group_id)!;
+        if (anchor.x !== middle.x || anchor.y !== middle.y) offCentre.push(dv.id);
+        const members = roomsInGroup(layer, host.group_id);
+        if (!members.some((r) => insideRings(anchor, ringsByRoom.get(r.id)!))) {
+          misplaced.push(dv.id);
+        }
+      } else if (!insideRings(anchor, ringsByRoom.get(dv.host_id)!)) {
+        misplaced.push(dv.id);
+      }
     }
+    expect(offCentre).toEqual([]);
     expect(misplaced).toEqual([]);
+  });
+
+  it("centres every apartment's answering unit on the flat, not a bedroom", () => {
+    // The fixture still stores a position for each one. It is a fallback now,
+    // and the point of the change is that it is no longer what gets drawn, so
+    // at least one unit must have moved off it.
+    const moved = file.devices.filter((dv) => {
+      if (dv.host_kind !== "room" || !dv.position) return false;
+      const anchor = deviceAnchor(layer, dv)!;
+      return anchor.x !== dv.position[0] || anchor.y !== dv.position[1];
+    });
+    expect(moved.length).toBeGreaterThan(0);
   });
 
   it("leaves nothing unplaced in this fixture", () => {

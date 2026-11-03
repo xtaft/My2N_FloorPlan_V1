@@ -17,7 +17,10 @@ import { memo } from "react";
 
 /** Figma: grey/500 — the avatar ground. */
 const CIRCLE = "#9e9e9e";
-const AVATAR_R = 20;
+
+/** The avatar's drawn size in screen pixels, which the caller's scale undoes. */
+export const DEVICE_PX = 40;
+const AVATAR_R = DEVICE_PX / 2;
 
 /**
  * Figma places the badge with MUI's circular overlap, which puts its centre on

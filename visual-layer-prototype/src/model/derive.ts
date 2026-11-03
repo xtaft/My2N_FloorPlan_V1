@@ -5,6 +5,7 @@
 import { must, topGroups, type VisualLayer } from "./load";
 import { accessType, roomsInGroup, roomsOf } from "./access";
 import { add, doorGeometry, negate, normal, unit } from "./geometry";
+import { labelPoint, roomRings, signedArea } from "./rings";
 import {
   EXTERIOR,
   type Device,
@@ -250,11 +251,45 @@ export function deviceSide(
 export const DEVICE_OFFSET = 16;
 
 /**
+ * The middle of an envelope — the same point its name is written at, so a
+ * folded flat reads as one thing.
+ *
+ * An envelope is a set of rooms, not a shape, and the union of several rooms
+ * has no centre worth the name: an L of three rooms would put it in the
+ * courtyard. Taking the largest room and finding the point furthest from its
+ * walls lands somewhere that is both inside the envelope and has room around
+ * it, which is what "in the middle" is wanted for.
+ */
+export function groupCenter(layer: VisualLayer, groupId: string): Point | null {
+  const members = roomsInGroup(layer, groupId);
+  if (members.length === 0) return null;
+
+  let best = members[0];
+  let bestArea = -1;
+  let bestRings = roomRings(layer, best);
+  for (const room of members) {
+    const rings = roomRings(layer, room);
+    const area = rings.reduce((acc, r) => acc + Math.abs(signedArea(r)), 0);
+    if (area > bestArea) {
+      bestArea = area;
+      best = room;
+      bestRings = rings;
+    }
+  }
+  return labelPoint(bestRings);
+}
+
+/**
  * Where to draw a device.
  *
- * A room-hosted device carries its own position. A door-hosted one is placed
- * off the door, on the side `deviceSide` puts it — the side access is
- * verified from, which is the one it does not guard.
+ * A room-hosted device sits in the middle of the envelope it belongs to. An
+ * answering unit is the flat's, not the corner of whichever room it happens
+ * to hang in, and its rooms are usually folded away — a marker off in one
+ * bedroom would point at nothing the viewer can see. A room outside any
+ * envelope falls back to the stored position.
+ *
+ * A door-hosted device is placed off the door, on the side `deviceSide` puts
+ * it — the side access is verified from, which is the one it does not guard.
  */
 export function deviceAnchor(
   layer: VisualLayer,
@@ -263,6 +298,11 @@ export function deviceAnchor(
   if (device.host_id === null) return null;
 
   if (device.host_kind === "room") {
+    const room = layer.rooms.get(device.host_id);
+    if (room?.group_id) {
+      const middle = groupCenter(layer, room.group_id);
+      if (middle) return middle;
+    }
     return device.position
       ? { x: device.position[0], y: device.position[1] }
       : null;
