@@ -26,7 +26,6 @@ export interface FloorPlanTabProps {
    * first.
    */
   onCreate: (method: "pdf" | "manual") => void;
-  onOpen: () => void;
 }
 
 export function FloorPlanTab({
@@ -36,7 +35,6 @@ export function FloorPlanTab({
   onClearSelection,
   hasPlan,
   onCreate,
-  onOpen,
 }: FloorPlanTabProps) {
   // Once the plan exists this tab *is* the plan — not a card inviting
   // you to open one somewhere else.
@@ -47,7 +45,6 @@ export function FloorPlanTab({
         floorId={floorId}
         selectedGroupId={selectedGroupId}
         onClearSelection={onClearSelection}
-        onEdit={onOpen}
       />
     );
   }

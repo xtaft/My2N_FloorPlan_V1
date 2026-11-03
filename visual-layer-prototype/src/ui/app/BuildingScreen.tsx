@@ -24,6 +24,7 @@ import AddCircleOutline from "@mui/icons-material/AddCircle";
 import ApartmentOutlined from "@mui/icons-material/ApartmentOutlined";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import ChevronRight from "@mui/icons-material/ChevronRight";
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import BadgeOutlined from "@mui/icons-material/BadgeOutlined";
 import FactCheckOutlined from "@mui/icons-material/FactCheckOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
@@ -112,16 +113,24 @@ export function BuildingScreen({
     [layer, hasPlan],
   );
 
-  // The button at the top right is whatever the tab under it is about.
-  const action =
+  /**
+   * The button at the top right is whatever the tab under it is
+   * about. On the plan that is making one, and once one exists it is
+   * editing it — the primary thing you can do to a floor plan you are
+   * looking at, which belongs beside the building's name rather than
+   * tucked in among the filters.
+   */
+  const action: { label: string; onClick?: () => void } | null =
     tab === "devices"
-      ? "Add device"
+      ? { label: "Add device" }
       : tab === "residents"
-        ? "Add resident"
+        ? { label: "Add resident" }
         : tab === "operators"
-          ? "Add operator"
-          : tab === "plan" && !hasPlan
-            ? "Create Floor Plan"
+          ? { label: "Add operator" }
+          : tab === "plan"
+            ? hasPlan
+              ? { label: "Edit floor plan", onClick: onOpenPlan }
+              : { label: "Create Floor Plan", onClick: onCreatePlan }
             : null;
 
   return (
@@ -222,10 +231,12 @@ export function BuildingScreen({
               {action && (
                 <Button
                   variant="contained"
-                  endIcon={<AddCircleOutline />}
-                  onClick={tab === "plan" ? onCreatePlan : undefined}
+                  endIcon={
+                    planFills ? <EditOutlined /> : <AddCircleOutline />
+                  }
+                  onClick={action.onClick}
                 >
-                  {action}
+                  {action.label}
                 </Button>
               )}
               <IconButton>
@@ -282,7 +293,6 @@ export function BuildingScreen({
                 onClearSelection={() => setSpaceId(null)}
                 hasPlan={hasPlan}
                 onCreate={onCreatePlanWith}
-                onOpen={onOpenPlan}
               />
             )}
           </Box>

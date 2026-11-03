@@ -116,6 +116,14 @@ export interface Device {
   guards: string[];
   floor_id: string | null;
   status: string;
+  /**
+   * What the box itself reports, which the detail card shows and
+   * nothing derives. Mock values, like the device names around them:
+   * the firmware is pinned to the status so a device that is behind is
+   * the one somebody has to go and look at.
+   */
+  firmware: string;
+  ip_address: string;
 }
 
 export interface Floor {

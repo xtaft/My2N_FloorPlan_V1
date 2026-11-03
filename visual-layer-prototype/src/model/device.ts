@@ -10,7 +10,7 @@
 import { commit, OperationRejected, type EditState } from "./edit";
 import { deviceSide } from "./derive";
 import { roomsOf } from "./access";
-import type { VisualLayer } from "./load";
+import { isExterior, type VisualLayer } from "./load";
 import type { Device } from "./types";
 
 /** The devices are stored as a list, so a lookup is a find. */
@@ -119,6 +119,25 @@ export function deviceRows(layer: VisualLayer): DeviceRow[] {
       type: device.device_type,
     }))
     .sort((a, b) => a.device.name.localeCompare(b.device.name));
+}
+
+/**
+ * Whether this device watches a way in from the street.
+ *
+ * True for an intercom on a door with the outside on one side of it.
+ * Both halves are read off the plan: the product is the one with a
+ * lens, and the door is one the building is entered through. So a
+ * second entrance intercom would answer true the day it is placed,
+ * and this one would stop if its door stopped leading outside.
+ */
+export function facesExterior(layer: VisualLayer, device: Device): boolean {
+  if (device.device_type !== "intercom") return false;
+  if (device.host_kind !== "door" || device.host_id === null) return false;
+  const door = layer.doors.get(device.host_id);
+  if (!door?.wall_id) return false;
+  const wall = layer.walls.get(door.wall_id);
+  if (!wall) return false;
+  return isExterior(wall.room_a) || isExterior(wall.room_b);
 }
 
 export function placedOn(layer: VisualLayer, device: Device): string | null {

@@ -8396,7 +8396,9 @@
         "0:GM"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.20"
     },
     {
       "id": "AC-0-d9",
@@ -8409,7 +8411,9 @@
         "0:CM1"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.21"
     },
     {
       "id": "IC-0-d10",
@@ -8422,7 +8426,9 @@
         "0:L"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.22"
     },
     {
       "id": "AC-0-d11",
@@ -8435,7 +8441,9 @@
         "0:CM2"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.23"
     },
     {
       "id": "RD-0-d3",
@@ -8448,7 +8456,9 @@
         "0:TECH"
       ],
       "floor_id": "0:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.24"
     },
     {
       "id": "AN-A1",
@@ -8462,7 +8472,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.25"
     },
     {
       "id": "AC-1-d11",
@@ -8475,7 +8487,9 @@
         "1:L1"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.26"
     },
     {
       "id": "AN-A2",
@@ -8489,7 +8503,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.27"
     },
     {
       "id": "AC-1-d7",
@@ -8502,7 +8518,9 @@
         "1:L2"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.28"
     },
     {
       "id": "AN-A3",
@@ -8516,7 +8534,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.29"
     },
     {
       "id": "AC-1-d12",
@@ -8529,7 +8549,9 @@
         "1:L3"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.30"
     },
     {
       "id": "AN-A4",
@@ -8543,7 +8565,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.31"
     },
     {
       "id": "AC-1-d8",
@@ -8556,7 +8580,9 @@
         "1:L4"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.32"
     },
     {
       "id": "AN-A5",
@@ -8570,7 +8596,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.33"
     },
     {
       "id": "AC-1-d13",
@@ -8583,7 +8611,9 @@
         "1:L5"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.34"
     },
     {
       "id": "AN-A6",
@@ -8597,7 +8627,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.35"
     },
     {
       "id": "AC-1-d9",
@@ -8610,7 +8642,9 @@
         "1:L6"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.36"
     },
     {
       "id": "AN-A7",
@@ -8624,7 +8658,9 @@
       ],
       "guards": [],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.37"
     },
     {
       "id": "AN-A21",
@@ -8638,7 +8674,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.38"
     },
     {
       "id": "AC-2-d11",
@@ -8651,7 +8689,9 @@
         "2:L21"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.39"
     },
     {
       "id": "AN-A22",
@@ -8665,7 +8705,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.40"
     },
     {
       "id": "AC-2-d7",
@@ -8678,7 +8720,9 @@
         "2:L22"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.41"
     },
     {
       "id": "AN-A23",
@@ -8692,7 +8736,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.42"
     },
     {
       "id": "AC-2-d12",
@@ -8705,7 +8751,9 @@
         "2:L23"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.43"
     },
     {
       "id": "AN-A24",
@@ -8719,7 +8767,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.44"
     },
     {
       "id": "AC-2-d8",
@@ -8732,7 +8782,9 @@
         "2:L24"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.45"
     },
     {
       "id": "AN-A25",
@@ -8746,7 +8798,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.46"
     },
     {
       "id": "AC-2-d13",
@@ -8759,7 +8813,9 @@
         "2:L25"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.47"
     },
     {
       "id": "AN-A26",
@@ -8773,7 +8829,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.48"
     },
     {
       "id": "AC-2-d9",
@@ -8786,7 +8844,9 @@
         "2:L26"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.49"
     },
     {
       "id": "AN-A27",
@@ -8800,7 +8860,9 @@
       ],
       "guards": [],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.50"
     },
     {
       "id": "AN-A31",
@@ -8814,7 +8876,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.51"
     },
     {
       "id": "AC-3-d11",
@@ -8827,7 +8891,9 @@
         "3:L31"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.52"
     },
     {
       "id": "AN-A32",
@@ -8841,7 +8907,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "offline"
+      "status": "offline",
+      "firmware": "2.41.0",
+      "ip_address": "10.0.12.53"
     },
     {
       "id": "AC-3-d7",
@@ -8854,7 +8922,9 @@
         "3:L32"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.54"
     },
     {
       "id": "AN-A33",
@@ -8868,7 +8938,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.55"
     },
     {
       "id": "AC-3-d12",
@@ -8881,7 +8953,9 @@
         "3:L33"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.56"
     },
     {
       "id": "AN-A34",
@@ -8895,7 +8969,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.57"
     },
     {
       "id": "AC-3-d8",
@@ -8908,7 +8984,9 @@
         "3:L34"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.58"
     },
     {
       "id": "AN-A35",
@@ -8922,7 +9000,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.59"
     },
     {
       "id": "AC-3-d13",
@@ -8935,7 +9015,9 @@
         "3:L35"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.60"
     },
     {
       "id": "AN-A36",
@@ -8949,7 +9031,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.61"
     },
     {
       "id": "AC-3-d9",
@@ -8962,7 +9046,9 @@
         "3:L36"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.62"
     },
     {
       "id": "AN-A37",
@@ -8976,7 +9062,9 @@
       ],
       "guards": [],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.63"
     },
     {
       "id": "AN-A41",
@@ -8990,7 +9078,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.64"
     },
     {
       "id": "AC-4-d11",
@@ -9003,7 +9093,9 @@
         "4:L41"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.65"
     },
     {
       "id": "AN-A42",
@@ -9017,7 +9109,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.66"
     },
     {
       "id": "AC-4-d7",
@@ -9030,7 +9124,9 @@
         "4:L42"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.67"
     },
     {
       "id": "AN-A43",
@@ -9044,7 +9140,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.68"
     },
     {
       "id": "AC-4-d12",
@@ -9057,7 +9155,9 @@
         "4:L43"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.69"
     },
     {
       "id": "AN-A44",
@@ -9071,7 +9171,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.70"
     },
     {
       "id": "AC-4-d8",
@@ -9084,7 +9186,9 @@
         "4:L44"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.71"
     },
     {
       "id": "AN-A45",
@@ -9098,7 +9202,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.72"
     },
     {
       "id": "AC-4-d13",
@@ -9111,7 +9217,9 @@
         "4:L45"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.73"
     },
     {
       "id": "AN-A46",
@@ -9125,7 +9233,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.74"
     },
     {
       "id": "AC-4-d9",
@@ -9138,7 +9248,9 @@
         "4:L46"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.75"
     },
     {
       "id": "AN-A47",
@@ -9152,7 +9264,9 @@
       ],
       "guards": [],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.76"
     },
     {
       "id": "AC-U1",
@@ -9163,7 +9277,9 @@
       "position": null,
       "guards": [],
       "floor_id": null,
-      "status": "not_verified"
+      "status": "not_verified",
+      "firmware": "2.46.3",
+      "ip_address": "10.0.12.77"
     },
     {
       "id": "AC-U2",
@@ -9174,7 +9290,9 @@
       "position": null,
       "guards": [],
       "floor_id": null,
-      "status": "not_verified"
+      "status": "not_verified",
+      "firmware": "2.46.3",
+      "ip_address": "10.0.12.78"
     },
     {
       "id": "AC-1-dA7",
@@ -9187,7 +9305,9 @@
         "1:L7"
       ],
       "floor_id": "1:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.79"
     },
     {
       "id": "AC-2-dA7",
@@ -9200,7 +9320,9 @@
         "2:L27"
       ],
       "floor_id": "2:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.80"
     },
     {
       "id": "AC-3-dA7",
@@ -9213,7 +9335,9 @@
         "3:L37"
       ],
       "floor_id": "3:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.81"
     },
     {
       "id": "AC-4-dA7",
@@ -9226,7 +9350,9 @@
         "4:L47"
       ],
       "floor_id": "4:floor",
-      "status": "ok"
+      "status": "ok",
+      "firmware": "2.48.1",
+      "ip_address": "10.0.12.82"
     }
   ],
   "profiles": [

@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import { fixture } from "./load";
 import {
   OperationRejected,
+  EXTERIOR,
   deviceAnchor,
+  facesExterior,
   doorSides,
   freeDoorSides,
   goesOnDoors,
@@ -314,5 +316,37 @@ describe("placing a device in a space", () => {
     expect(undo(placeDeviceInSpace(before, UNIT, "1:L1")).file).toEqual(
       before.file,
     );
+  });
+});
+
+describe("facesExterior", () => {
+  it("is the intercom on a door to the street, and nothing else", () => {
+    const layer = state().layer;
+    // The camera on the detail card hangs off this, so it is worth
+    // pinning: one device qualifies, and it qualifies for two reasons
+    // that are both read off the plan rather than stored.
+    const yes = layer.file.devices.filter((d) => facesExterior(layer, d));
+    expect(yes.map((d) => d.id)).toEqual(["IC-0-d10"]);
+
+    const intercom = yes[0];
+    expect(intercom.device_type).toBe("intercom");
+    const door = layer.doors.get(intercom.host_id!)!;
+    const wall = layer.walls.get(door.wall_id!)!;
+    expect([wall.room_a, wall.room_b]).toContain(EXTERIOR);
+  });
+
+  it("says no to a reader on the same kind of door", () => {
+    const layer = state().layer;
+    // The gym and the shops are entered from the street too, and the
+    // readers on them have no lens — the product is half the rule.
+    const gym = layer.file.devices.find((d) => d.name === "Gym Entrance")!;
+    expect(gym.device_type).not.toBe("intercom");
+    expect(facesExterior(layer, gym)).toBe(false);
+  });
+
+  it("says no to a device with no door under it", () => {
+    const layer = state().layer;
+    const unit = layer.file.devices.find((d) => d.id === "AN-A1")!;
+    expect(facesExterior(layer, unit)).toBe(false);
   });
 });

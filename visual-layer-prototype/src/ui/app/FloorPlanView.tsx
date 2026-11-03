@@ -26,7 +26,6 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import Close from "@mui/icons-material/Close";
-import EditOutlined from "@mui/icons-material/EditOutlined";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import SearchIcon from "@mui/icons-material/Search";
 import { Fragment } from "react";
@@ -36,11 +35,13 @@ import { AccessDrawer } from "../edit/AccessDrawer";
 import { AccessDeviceMenu } from "../edit/AccessDeviceMenu";
 import { PersonMenu } from "../edit/PersonMenu";
 import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
+import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
   accessPaint,
   accessShading,
   deviceRows,
   devicesHeldBy,
+  facesExterior,
   roomsInGroup,
   spaceCategories,
   type VisualLayer,
@@ -59,7 +60,6 @@ export interface FloorPlanViewProps {
    */
   selectedGroupId: string | null;
   onClearSelection: () => void;
-  onEdit: () => void;
 }
 
 export function FloorPlanView({
@@ -67,13 +67,17 @@ export function FloorPlanView({
   floorId,
   selectedGroupId,
   onClearSelection,
-  onEdit,
 }: FloorPlanViewProps) {
   const [mode, setMode] = useState<PlanMode>("access");
   const [query, setQuery] = useState("");
 
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [personId, setPersonId] = useState<string | null>(null);
+  /** The device whose card is open, and where it was clicked. */
+  const [detail, setDetail] = useState<{
+    deviceId: string;
+    at: { top: number; left: number };
+  } | null>(null);
   const [accessMenu, setAccessMenu] = useState<{
     el: HTMLElement | null;
     at?: { top: number; left: number };
@@ -88,6 +92,11 @@ export function FloorPlanView({
   const allowed = useMemo(
     () => (personId ? new Set(devicesHeldBy(layer, personId)) : picked),
     [layer, personId, picked],
+  );
+  const detailDevice = useMemo(
+    () =>
+      detail ? (layer.file.devices.find((d) => d.id === detail.deviceId) ?? null) : null,
+    [layer, detail],
   );
   const shading = useMemo(
     () =>
@@ -174,16 +183,6 @@ export function FloorPlanView({
           spacing={1.5}
           sx={{ flexShrink: 0, pl: 1.5 }}
         >
-          <Button
-            variant="outlined"
-            color="inherit"
-            size="small"
-            startIcon={<EditOutlined sx={{ fontSize: 16 }} />}
-            onClick={onEdit}
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Edit floor plan
-          </Button>
           <TextField
             select
             size="small"
@@ -213,14 +212,13 @@ export function FloorPlanView({
             // looked somewhere else the question has been answered.
             onSelectRoom={() => onClearSelection()}
             showDeviceStatus={mode === "devices"}
-            showDevices={mode !== "structure"}
+            // The devices are on the plan whichever question is being
+            // asked of it. This screen is for looking, and a reader
+            // that vanishes when you switch to Structure is a reader
+            // you then have to switch back to find.
+            showDevices
             paint={shading ? accessPaint(shading) : undefined}
-            onDeviceMenu={
-              mode === "access"
-                ? (deviceId, at) =>
-                    setAccessMenu({ el: null, at, deviceId, bulk: false })
-                : undefined
-            }
+            onDeviceMenu={(deviceId, at) => setDetail({ deviceId, at })}
           />
         </Box>
 
@@ -249,6 +247,12 @@ export function FloorPlanView({
         )}
       </Box>
 
+      <DeviceDetailCard
+        device={detailDevice}
+        withCamera={detailDevice ? facesExterior(layer, detailDevice) : false}
+        at={detail?.at ?? null}
+        onClose={() => setDetail(null)}
+      />
       <AccessDeviceMenu
         open={Boolean(accessMenu)}
         anchorEl={accessMenu?.el ?? null}
