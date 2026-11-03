@@ -899,6 +899,20 @@ into, so a floor is marked when it holds one of those.
 in their own right, so it never appears in the groups list; the four
 that do are the ones a manager administers.
 
+**In access mode the devices are the only thing on the plan that answers
+a click**, and a space answers nothing: the spaces are the answer, so
+clicking one asks nothing. A device's menu here is not the one it has
+in devices mode — there it is rename and unassign, here it is what this
+credential is doing to the answer on screen. The "path" is the
+selection: Show in path adds the device to it, Remove from path takes
+it out, which is the same act as the checkbox and is offered on the map
+because there is no checkbox out there to reach.
+
+With several devices ticked, a row's menu offers the bulk acts
+instead — you are acting on the selection, not on the row the pointer
+happens to be over, and making a group out of a selection is the thing
+that only means anything for more than one.
+
 **People never appear on the plan.** A person is not somewhere, they are
 allowed somewhere, and the colours are what says so.
 

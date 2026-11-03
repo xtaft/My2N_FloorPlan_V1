@@ -30,6 +30,7 @@ import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { DeviceMenu } from "./DeviceMenu";
+import { AccessDeviceMenu } from "./AccessDeviceMenu";
 import { AccessDrawer } from "./AccessDrawer";
 import { DevicesDrawer } from "./DevicesDrawer";
 import { PersonMenu } from "./PersonMenu";
@@ -158,6 +159,13 @@ export function EditModeScreen({
    *  choosing one clears the other. */
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [personId, setPersonId] = useState<string | null>(null);
+  const [accessMenu, setAccessMenu] = useState<{
+    el: HTMLElement | null;
+    at?: { top: number; left: number };
+    deviceId: string;
+    /** Opened on a multi-device selection, so it offers the bulk acts. */
+    bulk: boolean;
+  } | null>(null);
   const [personMenu, setPersonMenu] = useState<{
     el: HTMLElement;
     personId: string;
@@ -524,8 +532,10 @@ export function EditModeScreen({
             reach={null}
             selectedRoomId={selectedRoomId}
             selectedGroupId={selectedGroupId}
-            onSelectRoom={selectRoom}
-            onSelectGroup={selectGroup}
+            // In access mode the spaces are the answer, not the
+            // question: clicking one asks nothing, so it does nothing.
+            onSelectRoom={mode === "access" ? () => {} : selectRoom}
+            onSelectGroup={mode === "access" ? undefined : selectGroup}
             // The unbuilt tools leave the map selecting; the four that do
             // something drive it.
             tool={
@@ -605,13 +615,22 @@ export function EditModeScreen({
               setDraggingDevice(null);
               run(() => placeDeviceInSpace(state, deviceId, roomId));
             }}
+            // Access mode makes the devices the only thing on the
+            // plan that answers a click, for the same reason devices
+            // mode does: they are what the screen is about. The menu
+            // differs — there it is rename and unassign, here it is
+            // what this credential is doing to the answer on screen.
             onDeviceMenu={
-              mode === "devices"
-                ? (deviceId, at) => {
+              mode === "structure"
+                ? undefined
+                : (deviceId, at) => {
                     setSelectedDeviceId(deviceId);
-                    setDeviceMenu({ el: null, at, deviceId });
+                    if (mode === "access") {
+                      setAccessMenu({ el: null, at, deviceId, bulk: false });
+                    } else {
+                      setDeviceMenu({ el: null, at, deviceId });
+                    }
                   }
-                : undefined
             }
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
@@ -634,7 +653,15 @@ export function EditModeScreen({
               setPersonId(id);
               if (id) setPicked(new Set());
             }}
-            onDeviceMenu={(el, deviceId) => setDeviceMenu({ el, deviceId })}
+            onDeviceMenu={(el, deviceId) =>
+              setAccessMenu({
+                el,
+                deviceId,
+                // Several ticked and you are acting on the selection,
+                // not on the row the pointer happens to be over.
+                bulk: picked.size > 1,
+              })
+            }
             onPersonMenu={(el, id) => setPersonMenu({ el, personId: id })}
             width={drawerWidth}
             onWidthChange={setDrawerWidth}
@@ -797,6 +824,26 @@ export function EditModeScreen({
         onUnassign={() =>
           deviceMenu && run(() => unassignDevice(state, deviceMenu.deviceId))
         }
+      />
+
+      <AccessDeviceMenu
+        open={Boolean(accessMenu)}
+        anchorEl={accessMenu?.el ?? null}
+        at={accessMenu?.at ?? null}
+        count={accessMenu?.bulk ? picked.size : 1}
+        inPath={accessMenu ? picked.has(accessMenu.deviceId) : false}
+        onClose={() => setAccessMenu(null)}
+        onShowInPath={() => {
+          if (!accessMenu) return;
+          setPersonId(null);
+          setPicked(new Set([...picked, accessMenu.deviceId]));
+        }}
+        onRemoveFromPath={() => {
+          if (!accessMenu) return;
+          const next = new Set(picked);
+          next.delete(accessMenu.deviceId);
+          setPicked(next);
+        }}
       />
 
       <PersonMenu

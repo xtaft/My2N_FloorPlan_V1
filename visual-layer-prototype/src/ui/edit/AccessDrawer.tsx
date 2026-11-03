@@ -27,6 +27,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import AccountCircleOutlined from "@mui/icons-material/AccountCircleOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
+import Close from "@mui/icons-material/Close";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
@@ -254,6 +255,27 @@ export function AccessDrawer({
           <ToggleButton value="people">People</ToggleButton>
         </ToggleButtonGroup>
       </Box>
+      {/* Under the tabs rather than in the footer: it belongs with
+          the thing it undoes, and the footer is a long scroll away
+          once the list is open. */}
+      {(picked.size > 0 || personId) && (
+        <Button
+          size="small"
+          startIcon={<Close sx={{ fontSize: 16 }} />}
+          onClick={() => {
+            onPicked(new Set());
+            onPerson(null);
+          }}
+          sx={{
+            alignSelf: "flex-start",
+            ml: 0.5,
+            mb: 0.5,
+            color: "text.secondary",
+          }}
+        >
+          Clear selection
+        </Button>
+      )}
       <Divider />
 
       <Box sx={{ flex: 1, overflowY: "auto" }}>
@@ -354,17 +376,7 @@ export function AccessDrawer({
               ? `${picked.size} device${picked.size === 1 ? "" : "s"} selected`
               : "Select a group, a device or a person"}
         </Typography>
-        {(picked.size > 0 || personId) && (
-          <Button
-            size="small"
-            onClick={() => {
-              onPicked(new Set());
-              onPerson(null);
-            }}
-          >
-            Clear
-          </Button>
-        )}
+
       </Box>
     </Box>
   );
