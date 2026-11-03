@@ -60,10 +60,18 @@ export interface FloorPlanCanvasProps {
    * is what the map offers.
    */
   onSelectGroup?: (groupId: string | null) => void;
-  /** "door" arms wall-click placement; anything else leaves the map inert. */
-  tool?: "select" | "door";
+  /**
+   * The armed tool. "door" places doors on walls; "show" reveals the rooms
+   * folded inside their envelopes and offers them for showing; "hide" folds
+   * a shown room back. "select" leaves the map to selection.
+   */
+  tool?: "select" | "door" | "show" | "hide";
   /** Called with the wall and side under the pointer when it is clicked. */
   onPlaceDoor?: (hit: WallHit) => void;
+  /** Clicked a folded room with the show tool armed. */
+  onShowRoom?: (roomId: string) => void;
+  /** Clicked a shown room with the hide tool armed. */
+  onHideRoom?: (roomId: string) => void;
   /** Why a door could not go where the pointer is, for the ghost's colour. */
   placementError?: (hit: WallHit) => string | null;
   /**
@@ -123,9 +131,16 @@ export function FloorPlanCanvas({
   onSelectGroup,
   tool = "select",
   onPlaceDoor,
+  onShowRoom,
+  onHideRoom,
   placementError,
   onControls,
 }: FloorPlanCanvasProps) {
+  const revealing = tool === "show";
+  const hiding = tool === "hide";
+  // The show tool is what makes a folded room visible at all, and the door
+  // tool needs every wall on screen to aim at.
+  const revealAll = showAllRooms || revealing || tool === "door";
   const rings = useMemo(() => new RingCache(layer), [layer]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hover, setHover] = useState<WallHit | null>(null);
@@ -141,7 +156,7 @@ export function FloorPlanCanvas({
     if (!room) return null;
     // While the view toggle reveals every room, each is its own target.
     const rooms = new Set(
-      showAllRooms ? [hoverRoom] : highlightTargets(layer, hoverRoom),
+      revealAll ? [hoverRoom] : highlightTargets(layer, hoverRoom),
     );
     // Outline the envelope when the whole flat is lit, the room's own ring
     // when it is not. groupOuterWalls gives the envelope's outline directly:
@@ -151,7 +166,7 @@ export function FloorPlanCanvas({
         ? groupOuterWalls(layer, room.group_id)
         : [];
     return { rooms, outline, single: rooms.size === 1 };
-  }, [layer, hoverRoom, showAllRooms]);
+  }, [layer, hoverRoom, revealAll]);
 
   const scene = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
@@ -304,16 +319,40 @@ export function FloorPlanCanvas({
                   onClick={(e) => {
                     if (placing) return; // the svg handler places the door
                     e.stopPropagation();
-                    // A hidden room cannot be clicked or acted on. While its
-                    // flat is folded the envelope is what the map offers;
-                    // the view toggle is how you reach the room itself.
-                    if (!showAllRooms && !isRoomListed(layer, room)) {
+
+                    // The show tool is the only thing that puts a folded
+                    // room on the map, and clicking one there shows it.
+                    if (revealing) {
+                      if (!isRoomListed(layer, room)) onShowRoom?.(room.id);
+                      return;
+                    }
+                    if (hiding) {
+                      if (isRoomListed(layer, room)) onHideRoom?.(room.id);
+                      return;
+                    }
+
+                    // Otherwise a hidden room cannot be clicked: while its
+                    // flat is folded the envelope is what the map offers.
+                    if (!isRoomListed(layer, room)) {
                       onSelectGroup?.(room.group_id);
                       return;
                     }
                     onSelectRoom(room.id);
                   }}
                 />
+                {revealing && !isRoomListed(layer, room) && (
+                  /* A folded room, drawn only because the show tool is
+                     armed: dashed, to say it is not on the map yet. */
+                  <path
+                    d={ringsToPath(interior)}
+                    fill="none"
+                    fillRule="evenodd"
+                    stroke="#2196f3"
+                    strokeWidth={4}
+                    strokeDasharray="10 8"
+                    pointerEvents="none"
+                  />
+                )}
                 {highlight?.rooms.has(room.id) && (
                   /* The lit area. Rooms in one flat share undrawn walls, so
                      filling each of them reads as a single shape. */
@@ -346,7 +385,7 @@ export function FloorPlanCanvas({
               which are drawn: the two rooms are in different envelopes, or
               either room is surfaced. */}
           {scene.walls.map((wall) => {
-            if (!isWallVisible(layer, wall, showAllRooms)) return null;
+            if (!isWallVisible(layer, wall, revealAll)) return null;
             const [a, b] = wallEnds(layer, wall);
             return (
               <g key={wall.id}>
@@ -376,7 +415,7 @@ export function FloorPlanCanvas({
               key={door.id}
               layer={layer}
               door={door}
-              showAllRooms={showAllRooms}
+              showAllRooms={revealAll}
             />
           ))}
 
@@ -447,7 +486,7 @@ export function FloorPlanCanvas({
             layer={layer}
             floorId={floorId}
             rings={rings}
-            showAllRooms={showAllRooms}
+            showAllRooms={revealAll}
           />
 
           {/* The door the pointer would place, and whether it would be let. */}

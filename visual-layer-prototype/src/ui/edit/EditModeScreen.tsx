@@ -15,7 +15,6 @@ import { FloorPlanActionBar, type EditModeName, type EditTool } from "./FloorPla
 import { StructureTree } from "./StructureTree";
 import {
   OperationRejected,
-  hiddenRoomsIn,
   addDoor,
   addSpaceType,
   canRedo,
@@ -58,8 +57,6 @@ export function EditModeScreen({
   const [mode, setMode] = useState<EditModeName>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  // A view, not an edit: nothing is stored and Esc reverts it.
-  const [showAllRooms, setShowAllRooms] = useState(false);
   const [toast, setToast] = useState<{ text: string; kind: "ok" | "bad" } | null>(
     null,
   );
@@ -70,13 +67,12 @@ export function EditModeScreen({
   }, []);
 
   const { layer } = state;
-  const selected = selectedRoomId ? layer.rooms.get(selectedRoomId) : undefined;
 
   // Esc reverts the view toggle, as the doc specifies, and clears selection.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      setShowAllRooms(false);
+      setTool("select");
       setSelectedRoomId(null);
       setSelectedGroupId(null);
     };
@@ -132,25 +128,19 @@ export function EditModeScreen({
   const undoLabel = state.undo[state.undo.length - 1]?.label ?? null;
   const redoLabel = state.redo[state.redo.length - 1]?.label ?? null;
 
-  // Show is offered for a hidden room, Hide for a surfaced one. Whether Hide
-  // will be allowed is the operation's business — it refuses with a reason.
-  const canShowRoom = Boolean(selected && !selected.surfaced);
-  const canHideRoom = Boolean(selected && selected.surfaced);
-
-  // With an envelope selected — which is what clicking a flat on the map
-  // gives, since a hidden room cannot be clicked — Show room offers the
-  // rooms folded inside it.
-  const hiddenInSelection = useMemo(
-    () => (selectedGroupId ? hiddenRoomsIn(layer, selectedGroupId) : []),
-    [layer, selectedGroupId],
-  );
-
   const showRoomById = useCallback(
     (roomId: string) => {
       run(() => setRoomSurfaced(state, roomId, true));
       selectRoom(roomId);
     },
     [run, state, selectRoom],
+  );
+
+  const hideRoomById = useCallback(
+    (roomId: string) => {
+      run(() => setRoomSurfaced(state, roomId, false));
+    },
+    [run, state],
   );
 
   const newCategoryName = useMemo(() => {
@@ -184,22 +174,6 @@ export function EditModeScreen({
         onToolChange={setTool}
         mode={mode}
         onModeChange={setMode}
-        canShowRoom={canShowRoom}
-        canHideRoom={canHideRoom}
-        selectionLabel={selected?.name ?? null}
-        showAllRooms={showAllRooms}
-        onToggleShowAllRooms={() => setShowAllRooms((v) => !v)}
-        hiddenInSelection={hiddenInSelection}
-        onShowRoomById={showRoomById}
-        selectedGroupName={
-          selectedGroupId ? (layer.groups.get(selectedGroupId)?.name ?? null) : null
-        }
-        onShowRoom={() =>
-          selectedRoomId && run(() => setRoomSurfaced(state, selectedRoomId, true))
-        }
-        onHideRoom={() =>
-          selectedRoomId && run(() => setRoomSurfaced(state, selectedRoomId, false))
-        }
       />
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
@@ -210,23 +184,28 @@ export function EditModeScreen({
           onFloorChange={onFloorChange}
           selectedRoomId={selectedRoomId}
           onSelectRoom={selectRoom}
-          onShowRoom={showRoomById}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
           <FloorPlanCanvas
             layer={layer}
             floorId={floorId}
-            // The door tool needs every wall clickable, so it reveals the
-            // rooms for as long as it is armed.
-            showAllRooms={showAllRooms || tool === "door"}
+            showAllRooms={false}
             reach={null}
             selectedRoomId={selectedRoomId}
             selectedGroupId={selectedGroupId}
             onSelectRoom={selectRoom}
             onSelectGroup={selectGroup}
-            tool={tool === "door" ? "door" : "select"}
+            // The unbuilt tools leave the map selecting; the three that do
+            // something drive it.
+            tool={
+              tool === "door" || tool === "show" || tool === "hide"
+                ? tool
+                : "select"
+            }
             onPlaceDoor={handlePlaceDoor}
+            onShowRoom={showRoomById}
+            onHideRoom={hideRoomById}
             placementError={placementError}
             onControls={handleControls}
           />
@@ -241,7 +220,6 @@ export function EditModeScreen({
             if (room && room.floor_id !== floorId) onFloorChange(room.floor_id);
           }}
           onRename={(id, name) => run(() => renameSpaceType(state, id, name))}
-          onShowRoom={showRoomById}
           onRecolor={(id, color) => run(() => recolorSpaceType(state, id, color))}
           onNewCategory={() =>
             run(() =>

@@ -15,6 +15,7 @@ import {
   canUndo,
   doorsOfRoom,
   fixture,
+  hiddenRoomsIn,
   highlightTargets,
   initEditState,
   isRoomListed,
@@ -339,6 +340,23 @@ describe("what the lists name, and what a hover lights up", () => {
 
   it("lights a listed room on its own without any surfacing", () => {
     expect(highlightTargets(state.layer, "0:GM")).toEqual(["0:GM"]);
+  });
+
+  it("knows what is folded inside an envelope, for the show tool", () => {
+    // What the show tool draws dashed and offers for clicking.
+    expect(hiddenRoomsIn(state.layer, "1:A1").map((r) => r.id).sort()).toEqual([
+      "1:B1",
+      "1:L1",
+      "1:T1",
+    ]);
+    // Nothing is folded inside the gym — its rooms are all on the map.
+    expect(hiddenRoomsIn(state.layer, "0:GYM")).toEqual([]);
+
+    const next = setRoomSurfaced(state, "1:B1", true);
+    expect(hiddenRoomsIn(next.layer, "1:A1").map((r) => r.id).sort()).toEqual([
+      "1:L1",
+      "1:T1",
+    ]);
   });
 });
 
