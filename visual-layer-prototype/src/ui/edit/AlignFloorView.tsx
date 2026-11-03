@@ -59,6 +59,8 @@ export interface AlignFloorViewProps {
   onTransformChange: (t: Transform) => void;
   onApply: () => void;
   onCancel: () => void;
+  /** Align against this floor instead of the storey below. */
+  referenceFloorId?: string;
 }
 
 /** SVG applies these right to left, which is scale, then turn, then slide. */
@@ -72,6 +74,7 @@ export function AlignFloorView({
   floorId,
   transform,
   onTransformChange,
+  referenceFloorId,
   onApply,
   onCancel,
 }: AlignFloorViewProps) {
@@ -79,7 +82,12 @@ export function AlignFloorView({
   const drag = useRef<{ from: Point; at: Transform } | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const below = referenceFloor(layer, floorId);
+  // Normally the storey underneath. The check screen says otherwise: it
+  // aligns against the floor the user looked at last, because that is the
+  // one they have just decided is right.
+  const below = referenceFloorId
+    ? (layer.floors.find((f) => f.id === referenceFloorId) ?? null)
+    : referenceFloor(layer, floorId);
 
   const scene = useMemo(() => {
     const belowT = below ? floorTransform(below) : null;

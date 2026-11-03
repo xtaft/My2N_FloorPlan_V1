@@ -4,6 +4,7 @@
  * reader positions from `guards`. Nothing is read out of the fixture that the
  * fixture does not store.
  */
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   TransformComponent,
@@ -127,6 +128,12 @@ export interface FloorPlanCanvasProps {
    * is the colour of the thing it is asking about.
    */
   paint?: (room: Room) => string | null;
+  /**
+   * Drawn over the plan in the plan's own coordinates — a guide rather
+   * than part of the building. The check screen puts the floor below's
+   * shafts here so the misalignment is visible without opening a tool.
+   */
+  overlay?: ReactNode;
   /** Clicked a folded room with the show tool armed. */
   onShowRoom?: (roomId: string) => void;
   /** Clicked a shown room with the hide tool armed. */
@@ -195,6 +202,7 @@ export function FloorPlanCanvas({
   showDeviceStatus = true,
   showDevices = true,
   paint,
+  overlay,
   onShowRoom,
   onHideRoom,
   placementError,
@@ -812,6 +820,8 @@ export function FloorPlanCanvas({
                   })}
             </g>
           )}
+
+          {overlay}
 
           {/* Devices. A reader sits on the side access is verified from.
               The hovered one is drawn last so its name is not buried under a

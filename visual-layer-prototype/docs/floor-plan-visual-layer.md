@@ -649,7 +649,12 @@ views of that list, and none of them owns it.
 1. **How.** Upload PDFs, or draw manually. Asked only when the way in did
    not already say: the empty state's two buttons each name a method, so
    they skip this.
-2. **What.** Pages, in order, highest on top. The PDF path wants vector
+2. **What.** Pages, in order, highest on top. However many arrive, the
+   list settles on the building's five storeys: fewer and there would be
+   storeys with nothing to check, more and there would be pages with no
+   floor behind them. Padding goes underneath and the ground floor moves
+   with it, or one uploaded page would sit at ground level with four
+   basements below it. In the product this is however many were uploaded. The PDF path wants vector
    plans to detect from; the manual path takes any image to draw over, adds
    blank floors, and will go on with nothing at all. One floor is the
    ground floor — exactly one, reasserted after every add and remove,
@@ -681,6 +686,21 @@ A floor is checked by being looked at. Opening it marks it, and the plan
 cannot be saved until all of them have been — asking for a second click to
 confirm you looked would be asking twice, and letting it save with floors
 unread would make the step decorative.
+
+**A floor lines up with the one checked before it**, not with the storey
+underneath. The previous floor is the one the user has just decided is
+right, so it is the only thing worth lining up with; walk the list from
+the bottom and the two coincide, jump about and the previous one is still
+the right answer.
+
+Its lift shafts and stairs are outlined on the plan the whole time, not
+only inside the align tool — "this floor should line up with the one
+below" is a thing to notice rather than a thing to go looking for. The
+outlines are carried into this floor's own coordinates, out of the other
+floor's transform and back through this one, so where they sit is exactly
+how far out the fit is. Floor 1 of the fixture is stored a little off
+centre, because a step that is always already correct demonstrates
+nothing.
 
 Moving and aligning are the same tool, because moving a floor over the one
 below *is* aligning it. A floor detection found nothing on is not an error:

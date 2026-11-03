@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   addBlankFloor,
   addFloors,
+  fitToBuilding,
+  BUILDING_FLOORS,
   allChecked,
   markChecked,
   moveFloor,
@@ -192,5 +194,62 @@ describe("checking floors", () => {
     let floors = three();
     for (const f of floors) floors = markChecked(floors, f.id);
     expect(nextUnchecked(floors, null)).toBeNull();
+  });
+});
+
+describe("settling on the building's storeys", () => {
+  it("pads a short list with floors of its own", () => {
+    const after = fitToBuilding(addFloors([], pdfs("a.pdf", "b.pdf")));
+    expect(after).toHaveLength(BUILDING_FLOORS);
+    expect(after.map((f) => f.name)).toEqual([
+      "a.pdf",
+      "b.pdf",
+      "Floor 3",
+      "Floor 4",
+      "Floor 5",
+    ]);
+  });
+
+  it("keeps the pages that came first when there are too many", () => {
+    const many = addFloors([], pdfs("1", "2", "3", "4", "5", "6", "7"));
+    expect(fitToBuilding(many).map((f) => f.name)).toEqual([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+    ]);
+  });
+
+  it("leaves a list that is already the right length alone", () => {
+    const five = addFloors([], pdfs("1", "2", "3", "4", "5"));
+    expect(fitToBuilding(five)).toBe(five);
+  });
+
+  it("pads with floors the check screen can check", () => {
+    // A padded floor stands for a page, so it is read like a page rather
+    // than turning up as one nothing could be detected on.
+    for (const f of fitToBuilding(addFloors([], pdfs("a.pdf")))) {
+      expect(f.segmented).toBe(true);
+      expect(f.checked).toBe(false);
+    }
+  });
+
+  it("still ends up with exactly one ground floor", () => {
+    const one = (l: FloorList) => l.filter((f) => f.ground).length;
+    expect(one(fitToBuilding(addFloors([], pdfs("a.pdf"))))).toBe(1);
+    expect(one(fitToBuilding(addFloors([], pdfs("1", "2", "3", "4", "5", "6"))))).toBe(1);
+    expect(fitToBuilding([])).toHaveLength(BUILDING_FLOORS);
+  });
+
+  it("makes every floor a storey with a name", () => {
+    const floors = fitToBuilding(addFloors([], pdfs("a.pdf")));
+    const levels = storeyLevels(floors);
+    expect([...levels.values()].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+    expect(storeyName(levels.get(floors[0].id)!)).toBe("floor 4");
+    // The page that was uploaded keeps its place; the padding went under
+    // it, so the bottom of the list is the ground floor.
+    expect(floors[0].name).toBe("a.pdf");
+    expect(floors.at(-1)!.ground).toBe(true);
   });
 });

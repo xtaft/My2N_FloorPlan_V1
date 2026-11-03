@@ -44,6 +44,52 @@ export interface PendingFloor {
 /** Floors are held highest-first, the way the list is read and drawn. */
 export type FloorList = PendingFloor[];
 
+/**
+ * How many storeys the plan ends up with.
+ *
+ * The building behind this prototype has five, and the check screen shows
+ * a real drawn floor for each one. So however many pages are dropped in,
+ * the wizard settles on five: fewer and there would be storeys with
+ * nothing to check, more and there would be pages with no floor behind
+ * them. In the product this is however many pages were uploaded.
+ */
+export const BUILDING_FLOORS = 5;
+
+/**
+ * Bring the list to the building's storey count.
+ *
+ * Short lists are padded with floors of their own, named in sequence;
+ * long ones keep the pages that came first. The ground floor is settled
+ * afterwards, since padding changes which row is at the bottom.
+ */
+export function fitToBuilding(
+  floors: FloorList,
+  count = BUILDING_FLOORS,
+): FloorList {
+  if (floors.length === count) return floors;
+  if (floors.length > count) return withOneGround(floors.slice(0, count));
+
+  let out = floors;
+  while (out.length < count) {
+    out = [
+      ...out,
+      {
+        id: freeId(out),
+        name: `Floor ${out.length + 1}`,
+        // Padded floors stand for pages, so they are checked like pages.
+        source: "pdf" as const,
+        segmented: true,
+        ground: false,
+        checked: false,
+      },
+    ];
+  }
+  // Padding adds rows underneath, so the bottom of the list has moved and
+  // the ground floor moves with it. Without this, uploading one page
+  // leaves that page at ground level with four basements below it.
+  return setGroundFloor(out, out[out.length - 1].id);
+}
+
 function freeId(taken: FloorList): string {
   const used = new Set(taken.map((f) => f.id));
   for (let n = 1; ; n += 1) {

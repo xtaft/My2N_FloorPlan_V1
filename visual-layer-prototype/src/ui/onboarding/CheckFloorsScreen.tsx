@@ -48,16 +48,20 @@ import { AlignFloorView } from "../edit/AlignFloorView";
 import { FloorPlanCanvas } from "../FloorPlanCanvas";
 import {
   IDENTITY,
+  applyTransform,
   OperationRejected,
   alignFloor,
   allChecked,
   canRedo,
   canUndo,
+  floorShaftRings,
   floorTransform,
+  invertTransform,
   landingsFor,
   markChecked,
   moveFloor,
   redo,
+  ringsToPath,
   setGroupSpaceType,
   setRoomSpaceType,
   storeyLevels,
@@ -129,6 +133,16 @@ export function CheckFloorsScreen({
     at: { top: number; left: number };
   } | null>(null);
   const [draft, setDraft] = useState<Transform | null>(null);
+  /**
+   * The floors in the order they were first opened.
+   *
+   * A floor is aligned against the one checked before it, not against the
+   * storey underneath: the previous floor is the one the user has just
+   * decided is right, so it is the only thing they have to line up with.
+   * Walk the list from the bottom and the two coincide; jump about and
+   * they do not, and the previous one is still the right answer.
+   */
+  const [order, setOrder] = useState<string[]>([]);
 
   const index = Math.max(0, floors.findIndex((f) => f.id === atId));
   const floor = floors[index];
@@ -160,8 +174,71 @@ export function CheckFloorsScreen({
   const here = floor?.id;
   const read = floor?.checked;
   useEffect(() => {
-    if (here && !read) onFloors(markChecked(floors, here));
+    if (!here) return;
+    setOrder((was) => (was.includes(here) ? was : [...was, here]));
+    if (!read) onFloors(markChecked(floors, here));
   }, [here, read, floors, onFloors]);
+
+  /** The model floor standing for a page, by position in the list. */
+  const modelFloorOf = useCallback(
+    (pendingId: string | undefined) => {
+      if (!pendingId) return undefined;
+      const i = floors.findIndex((f) => f.id === pendingId);
+      if (i < 0) return undefined;
+      return layer.floors[i % layer.floors.length]?.id;
+    },
+    [floors, layer],
+  );
+
+  const previousId = useMemo(() => {
+    const at = order.indexOf(here ?? "");
+    const before = at > 0 ? order[at - 1] : at === -1 ? order.at(-1) : undefined;
+    return modelFloorOf(before);
+  }, [order, here, modelFloorOf]);
+
+  /**
+   * The previous floor's shafts, drawn over this one.
+   *
+   * Visible without opening a tool, because "this floor should line up
+   * with the one below" is a thing to notice rather than a thing to go
+   * looking for. The rings are carried into this floor's own coordinates
+   * — out of the other floor's transform and back through this one — so
+   * where they sit on screen is exactly how far out the fit is.
+   */
+  const shaftGuide = useMemo(() => {
+    if (!previousId || previousId === floorId) return null;
+    const from = layer.floors.find((f) => f.id === previousId);
+    const onto = layer.floors.find((f) => f.id === floorId);
+    if (!from || !onto) return null;
+
+    const fromT = floorTransform(from);
+    const ontoT = floorTransform(onto);
+    const shafts = floorShaftRings(layer, previousId);
+    if (shafts.length === 0) return null;
+
+    return (
+      <g pointerEvents="none">
+        {shafts.map((shaft) => (
+          <path
+            key={shaft.groupId}
+            d={ringsToPath(
+              shaft.rings.map((ring) =>
+                ring.map((v) => ({
+                  ...invertTransform(ontoT, applyTransform(fromT, v)),
+                  id: v.id,
+                })),
+              ),
+            )}
+            fill="none"
+            stroke="#2196f3"
+            strokeWidth={4}
+            strokeDasharray="12 8"
+            fillRule="evenodd"
+          />
+        ))}
+      </g>
+    );
+  }, [layer, previousId, floorId]);
 
   const run = (op: () => EditState) => {
     try {
@@ -424,6 +501,7 @@ export function CheckFloorsScreen({
               onTransformChange={setDraft}
               onApply={applyAlign}
               onCancel={() => setDraft(null)}
+              referenceFloorId={previousId}
             />
           ) : (
             <FloorPlanCanvas
@@ -438,6 +516,7 @@ export function CheckFloorsScreen({
               onSpaceMenu={(target, at) => setMenu({ target, at })}
               showDevices={false}
               paint={paintForReview}
+              overlay={shaftGuide}
             />
           )}
         </Box>
@@ -500,7 +579,11 @@ export function CheckFloorsScreen({
                 <Step
                   n={3}
                   title="Check the floor orientation"
-                  body="This floor should line up with the one below. Use the toolbar to move it so the lift shafts and stairs sit over each other."
+                  body={
+                    previousId
+                      ? `This floor should line up with ${layer.floors.find((f) => f.id === previousId)?.name ?? "the floor below"}, which you checked last. The dashed outlines are its lift shafts and stairs — use Align floor to move this one until they sit over each other.`
+                      : "This is the first floor you have looked at, so there is nothing yet to line it up with. The floors you check after it will line up with this one."
+                  }
                 />
               </>
             )}

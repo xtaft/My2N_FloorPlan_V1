@@ -29,6 +29,7 @@ import { theme } from "./ui/theme";
 import {
   buildAdjacency,
   defaultStartRoom,
+  fitToBuilding,
   fixture,
   initEditState,
   reachable,
@@ -164,7 +165,10 @@ export default function App() {
           onFloors={setPending}
           onBack={() => setStep("how")}
           onCancel={() => setStep("none")}
-          onNext={() => setStep("creating")}
+          onNext={() => {
+            setPending(fitToBuilding(pending));
+            setStep("creating");
+          }}
         />
         <CreatingDialog
           open={step === "creating"}
