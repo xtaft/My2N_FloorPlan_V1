@@ -463,6 +463,9 @@ export function EditModeScreen({
             divideError={divideError}
             onDeleteWall={handleDeleteWall}
             deleteWallError={deleteWallError}
+            onDropSpace={(spaceId, roomId) =>
+              run(() => placeSpace(state, spaceId, roomId))
+            }
             placingSpace={placing !== null}
             onPlaceSpace={(roomId) => {
               const spaceId = placing;

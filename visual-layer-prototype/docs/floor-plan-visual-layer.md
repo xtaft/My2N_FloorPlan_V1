@@ -552,9 +552,14 @@ beside the rooms exactly as an orphaned device sits beside the placed ones,
 and the tree lists them under their floor so the import is visible somewhere.
 
 **Placing one is step 1 done by hand.** A space waiting on the list is
-armed from its row and given the next space clicked on the plan: that room
-takes its name, category and note, and the space leaves the list. It refuses
-a room on another storey, since a row that named a floor meant it.
+dragged from its row onto a space on the plan, or armed from its menu and
+given the next one clicked: that room takes its name, category and note,
+and the space leaves the list. It refuses a room on another storey, since a
+row that named a floor meant it.
+
+Rooms are the only thing that can receive one. An envelope is a set of
+spaces rather than one, and a door is not a space at all, so neither has a
+shape to give.
 
 Setting a room's category is the same act however it is reached — the menu,
 an imported list, or placing a space onto it — so it carries the same

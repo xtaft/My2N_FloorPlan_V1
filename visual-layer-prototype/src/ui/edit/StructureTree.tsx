@@ -38,6 +38,7 @@ import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { RowTarget } from "./StructureRowMenu";
 import { InlineRename } from "./InlineRename";
 import { ResizeHandle } from "./ResizeHandle";
+import { SPACE_MIME } from "./spaceDrag";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -165,12 +166,23 @@ export function StructureTree({
       tint?: string;
       /** Named in the structure but not drawn: nothing to select. */
       muted?: boolean;
+      /** A space with no shape can be dragged onto one on the plan. */
+      dragSpaceId?: string;
       onMenu?: (el: HTMLElement) => void;
     } = {},
   ) => (
     <ListItemButton
       key={key}
       selected={opts.selected}
+      draggable={opts.dragSpaceId !== undefined}
+      onDragStart={(e) => {
+        if (opts.dragSpaceId === undefined) return;
+        e.dataTransfer.setData(SPACE_MIME, opts.dragSpaceId);
+        // Some targets read only text/plain, and a stray paste of the id is
+        // less bad than a drag that silently does nothing.
+        e.dataTransfer.setData("text/plain", opts.dragSpaceId);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       onClick={opts.onClick}
       sx={{
         pl: 1 + depth * 2,
@@ -446,6 +458,7 @@ export function StructureTree({
                           space.name,
                           {
                             muted: true,
+                            dragSpaceId: space.id,
                             onMenu: (el) => onUnplacedMenu(el, space.id),
                           },
                         ),

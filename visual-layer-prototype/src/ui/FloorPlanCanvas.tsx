@@ -44,6 +44,7 @@ import {
 } from "../model";
 import { roomAccessState } from "../model";
 import { DEVICE_PX, DeviceMarker } from "./DeviceMarker";
+import { SPACE_MIME } from "./edit/spaceDrag";
 
 /** However far out the plan goes, a marker stays readable. */
 const MIN_DEVICE_PX = 20;
@@ -102,6 +103,12 @@ export interface FloorPlanCanvasProps {
    */
   placingSpace?: boolean;
   onPlaceSpace?: (roomId: string) => void;
+  /**
+   * A space from the list dropped onto a room. Rooms only: an envelope is
+   * a set of spaces rather than one, and a door is not a space at all, so
+   * neither has a shape to give.
+   */
+  onDropSpace?: (spaceId: string, roomId: string) => void;
   /**
    * Device status badges. Off while editing: the editor is for changing the
    * plan, and whether a reader is reachable today is not part of that.
@@ -171,6 +178,7 @@ export function FloorPlanCanvas({
   onDoorMenu,
   placingSpace = false,
   onPlaceSpace,
+  onDropSpace,
   showDeviceStatus = true,
   onShowRoom,
   onHideRoom,
@@ -562,6 +570,24 @@ export function FloorPlanCanvas({
                   stroke={selected ? "#17406B" : "none"}
                   strokeWidth={selected ? 6 : 0}
                   style={{ cursor: aiming ? "crosshair" : "pointer" }}
+                  // Rooms are the only drop target. The highlight that
+                  // follows the pointer is the whole of the feedback: it
+                  // says which space would take the name.
+                  onDragOver={(e) => {
+                    if (!onDropSpace) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setHoverRoom(room.id);
+                  }}
+                  onDrop={(e) => {
+                    if (!onDropSpace) return;
+                    e.preventDefault();
+                    const spaceId =
+                      e.dataTransfer.getData(SPACE_MIME) ||
+                      e.dataTransfer.getData("text/plain");
+                    if (spaceId) onDropSpace(spaceId, room.id);
+                    setHoverRoom(null);
+                  }}
                   onMouseEnter={() => !placing && setHoverRoom(room.id)}
                   onMouseLeave={() =>
                     setHoverRoom((cur) => (cur === room.id ? null : cur))
