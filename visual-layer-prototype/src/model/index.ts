@@ -8,3 +8,4 @@ export * from "./edit";
 export * from "./divide";
 export * from "./merge";
 export * from "./shaft";
+export * from "./align";

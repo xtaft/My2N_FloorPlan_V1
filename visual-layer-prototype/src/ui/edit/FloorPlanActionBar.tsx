@@ -17,6 +17,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
+import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import LayersClearOutlined from "@mui/icons-material/LayersClearOutlined";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
@@ -28,12 +29,15 @@ export type EditTool =
   | "hide"
   | "wall"
   | "remove_wall"
-  | "door";
+  | "door"
+  | "align";
 export type EditModeName = "structure" | "devices";
 
 export interface FloorPlanActionBarProps {
   tool: EditTool;
   onToolChange: (tool: EditTool) => void;
+  /** False on the lowest storey, which is what everything else fits onto. */
+  canAlign: boolean;
   mode: EditModeName;
   onModeChange: (mode: EditModeName) => void;
 }
@@ -43,6 +47,7 @@ const toolSx = { height: 30 } as const;
 export function FloorPlanActionBar({
   tool,
   onToolChange,
+  canAlign,
   mode,
   onModeChange,
 }: FloorPlanActionBarProps) {
@@ -119,6 +124,15 @@ export function FloorPlanActionBar({
           "Door",
           <DoorFrontOutlined sx={{ fontSize: 16 }} />,
           "Click a wall to put a door in it",
+        )}
+        {toolButton(
+          "align",
+          "Align",
+          <LayersOutlined sx={{ fontSize: 16 }} />,
+          canAlign
+            ? "Fit this floor onto the one below, and say which shaft is which"
+            : "The lowest storey is the reference every other floor is fitted to",
+          canAlign,
         )}
       </Stack>
 

@@ -13,7 +13,7 @@
  * actually breaks rather than saying something vague about structure.
  */
 import { commit, OperationRejected, type EditState } from "./edit";
-import { must, type VisualLayer } from "./load";
+import { indexVisualLayer, must, type VisualLayer } from "./load";
 import type { Door, Group, VisualLayerFile } from "./types";
 
 /** The categories that make a space part of the vertical circulation. */
@@ -91,13 +91,56 @@ function verticalDoors(file: VisualLayerFile, layer: VisualLayer, shaftId: strin
   return out;
 }
 
-/** Whether a door is one of this shaft's vertical links. */
-function isLinkOf(
-  door: Door,
-  shaftRoomIds: ReadonlySet<string>,
-): boolean {
-  if (door.kind !== "virtual" || !door.rooms) return false;
-  return shaftRoomIds.has(door.rooms[0]) && shaftRoomIds.has(door.rooms[1]);
+/**
+ * Regenerate every shaft's vertical links from the membership.
+ *
+ * All of them at once, rather than one shaft surgically: a link that has
+ * gone stale belongs to a shaft nobody is looking at — the storey that left
+ * is no longer a member, so asking "which of this shaft's links are wrong"
+ * cannot find it. Rebuilding the lot has no such blind spot, and virtual
+ * doors exist for nothing else, so there is nothing to preserve.
+ *
+ * A pair that is still linked keeps the door it had, id and all. The ids
+ * are what devices and the undo log point at, and renumbering them on an
+ * unrelated edit would be a change nobody asked for.
+ */
+export function rebuildVerticalDoors(file: VisualLayerFile): VisualLayerFile {
+  const layer = indexVisualLayer(file);
+
+  const key = (rooms: readonly string[]) => [...rooms].sort().join("|");
+  const existing = new Map<string, Door>();
+  for (const d of file.doors) {
+    if (d.kind === "virtual" && d.rooms) existing.set(key(d.rooms), d);
+  }
+
+  const shafts = new Set(
+    file.groups.map((g) => g.shaft_id).filter((id): id is string => Boolean(id)),
+  );
+  const wanted = new Map<string, Door>();
+  for (const shaftId of shafts) {
+    for (const door of verticalDoors(file, layer, shaftId)) {
+      wanted.set(key(door.rooms!), door);
+    }
+  }
+
+  // Walk the original order so an edit that changes nothing reorders nothing.
+  const out: Door[] = [];
+  const placed = new Set<string>();
+  for (const d of file.doors) {
+    if (d.kind !== "virtual" || !d.rooms) {
+      out.push(d);
+      continue;
+    }
+    const k = key(d.rooms);
+    if (!wanted.has(k)) continue; // this link is no longer called for
+    out.push(d);
+    placed.add(k);
+  }
+  for (const [k, door] of wanted) {
+    if (!placed.has(k)) out.push(door);
+  }
+
+  return { ...file, doors: out };
 }
 
 export interface ShaftImpact {
@@ -209,22 +252,10 @@ export function setRoomSpaceType(
     g.id === room.group_id ? { ...g, shaft_id: null } : g,
   );
 
-  const shaftRoomIds = new Set(
-    shaftStoreys(layer, impact.shaftId).flatMap((g) =>
-      file.rooms.filter((r) => r.group_id === g.id).map((r) => r.id),
-    ),
+  return commit(
+    state,
+    "set_space_type",
+    "Change category",
+    rebuildVerticalDoors({ ...file, rooms, groups }),
   );
-  const kept = file.doors.filter((d) => !isLinkOf(d, shaftRoomIds));
-
-  const next: VisualLayerFile = { ...file, rooms, groups, doors: kept };
-  const rebuilt = verticalDoors(
-    next,
-    { ...layer, file: next, groups: new Map(groups.map((g) => [g.id, g])) },
-    impact.shaftId,
-  );
-
-  return commit(state, "set_space_type", "Change category", {
-    ...next,
-    doors: [...kept, ...rebuilt],
-  });
 }

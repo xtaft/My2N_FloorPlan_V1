@@ -176,6 +176,24 @@ scale outside 0.5–2.0 →  flag for review (probably matched the wrong shaft)
 ```
 
 Then shift and rotate so the shafts line up. Stored as a per-floor
+**Align** fits a floor onto the one below and, in the same gesture, records
+which shaft is which — overlap at the moment of the drag is the pairing, so a
+shaft that lands on nothing simply has no partner and its links stop there.
+Two decisions the gesture leaves open, settled here:
+
+- **The proposed scale is what to apply, not what was measured.** The ratio
+  between the two shaft baselines is a measurement; a floor drawn 1.5x the
+  reference has to come back to 0.667 to fit. The readout says "scaled to
+  112%", which has to mean the floor is drawn at 112% — so the proposal is
+  the reciprocal of the ratio, and a test asserts that applying it actually
+  makes the two baselines agree.
+- **The single-floor map does not apply the transform.** It shows one floor,
+  whose transform the viewBox normalises away for everything except rotation,
+  and every tool's hit-testing works in floor coordinates. A floor aligned at
+  an angle therefore draws square on the map and correct in align mode. Worth
+  fixing when a view shows two floors at once; not worth inverting every
+  pointer conversion before then.
+
 `transform (dx, dy, rotation, scale)` — never baked into vertices, so alignment
 stays adjustable and errors do not accumulate. Uniform scale only; independent
 x/y scaling would make walls non-perpendicular.

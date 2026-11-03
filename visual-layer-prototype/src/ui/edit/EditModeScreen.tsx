@@ -14,6 +14,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
+import { AlignFloorView } from "./AlignFloorView";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { EditAppBar } from "./EditAppBar";
@@ -22,8 +23,14 @@ import { StructureTree } from "./StructureTree";
 import {
   OperationRejected,
   addDoor,
+  IDENTITY,
+  alignFloor,
   deleteWall,
   divideRoom,
+  floorTransform,
+  landingsFor,
+  referenceFloor,
+  type Transform,
   setRoomSpaceType,
   shaftImpact,
   previewDeleteWall,
@@ -191,6 +198,32 @@ export function EditModeScreen({
     impact: ReturnType<typeof shaftImpact>;
   } | null>(null);
 
+  /**
+   * The transform being tried, kept here while align mode is open so the
+   * floor's stored one is only touched on Apply — backing out has to leave
+   * the building exactly as it was.
+   */
+  const [draftTransform, setDraftTransform] = useState<Transform | null>(null);
+  const aligning = tool === "align" && draftTransform !== null;
+
+  const startAlign = useCallback(() => {
+    const floor = layer.floors.find((f) => f.id === floorId);
+    setDraftTransform(floor ? floorTransform(floor) : IDENTITY);
+  }, [layer, floorId]);
+
+  const applyAlign = useCallback(() => {
+    if (!draftTransform) return;
+    run(() =>
+      alignFloor(state, {
+        floorId,
+        transform: draftTransform,
+        landings: landingsFor(layer, floorId, draftTransform),
+      }),
+    );
+    setDraftTransform(null);
+    setTool("select");
+  }, [draftTransform, floorId, layer, run, state]);
+
   const assignCategory = useCallback(
     (roomId: string, typeId: string | null) => {
       const impact = shaftImpact(layer, roomId, typeId);
@@ -249,7 +282,12 @@ export function EditModeScreen({
 
       <FloorPlanActionBar
         tool={tool}
-        onToolChange={setTool}
+        canAlign={referenceFloor(layer, floorId) !== null}
+        onToolChange={(next) => {
+          setTool(next);
+          if (next === "align") startAlign();
+          else setDraftTransform(null);
+        }}
         mode={mode}
         onModeChange={setMode}
       />
@@ -265,6 +303,19 @@ export function EditModeScreen({
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
+          {aligning ? (
+            <AlignFloorView
+              layer={layer}
+              floorId={floorId}
+              transform={draftTransform}
+              onTransformChange={setDraftTransform}
+              onApply={applyAlign}
+              onCancel={() => {
+                setDraftTransform(null);
+                setTool("select");
+              }}
+            />
+          ) : (
           <FloorPlanCanvas
             layer={layer}
             floorId={floorId}
@@ -298,6 +349,7 @@ export function EditModeScreen({
             placementError={placementError}
             onControls={handleControls}
           />
+          )}
         </Box>
 
         <CategoriesDrawer
