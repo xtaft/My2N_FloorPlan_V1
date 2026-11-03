@@ -15,7 +15,6 @@ import {
   accessType,
   doorsOfRoom,
   envelopeChain,
-  isUnidentified,
   neighboursOf,
   roomsOf,
   routeTo,
@@ -89,11 +88,7 @@ export function AccessPanel({
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.5 }}>
             Reaches <strong>{reach.seen.size - 1}</strong> of{" "}
-            {/* Areas nobody has identified are not part of the count. They
-                are off the access graph on purpose, so counting them would
-                report every one of them as somewhere nobody can reach. */}
-            {layer.file.rooms.filter((r) => !isUnidentified(r)).length} rooms.
-            Turned away at{" "}
+            {layer.file.rooms.length} rooms. Turned away at{" "}
             <strong>{reach.blocked.size}</strong>{" "}
             {reach.blocked.size === 1 ? "door" : "doors"}.
           </Typography>

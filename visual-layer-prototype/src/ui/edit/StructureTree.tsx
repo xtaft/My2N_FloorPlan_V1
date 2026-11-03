@@ -42,7 +42,6 @@ import {
   floorEnvelopes,
   groupAccessType,
   isRoomListed,
-  isUnidentified,
   passThroughRoom,
   roomColor,
   type Group,
@@ -424,18 +423,11 @@ export function StructureTree({
                       )
                       .map((g) => renderGroup(g, 2))}
                     {/* Spaces in no envelope sit under the storey itself.
-                        An area nobody has identified is not one of them: it
-                        belongs to its storey and is drawn there, but the
-                        tree is the building's structure and an unclaimed
-                        region is the absence of structure. The space that
-                        used to be there is in the drawer, unplaced. */}
+                        A space unassigned from the map has left its flat
+                        but is still a space someone has to deal with, and
+                        a row nobody can reach is not a to-do list. */}
                     {(layer.roomsByFloor.get(floor.id) ?? [])
-                      .filter(
-                        (r) =>
-                          r.group_id === null &&
-                          isRoomListed(layer, r) &&
-                          !isUnidentified(r),
-                      )
+                      .filter((r) => r.group_id === null && isRoomListed(layer, r))
                       .map((r) => renderRoom(r, 2))}
                   </>
                 )}

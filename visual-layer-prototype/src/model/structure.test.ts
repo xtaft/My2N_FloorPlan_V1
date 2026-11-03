@@ -12,7 +12,6 @@ import {
   dissolveGroup,
   hideRoomRefusal,
   initEditState,
-  isUnidentified,
   placeSpace,
   reachable,
   renameGroup,
@@ -274,50 +273,38 @@ describe("deleteRoom", () => {
 });
 
 describe("unassignRoom", () => {
-  /** The anonymous room left behind, which is a new record. */
-  const shapeOf = (before: EditState, after: EditState) =>
-    after.file.rooms.find((r) => !before.layer.rooms.has(r.id))!;
-
-  it("leaves the shape on the plan as a space nobody has identified", () => {
+  it("keeps the room, stripped of everything that said what it was", () => {
     const before = state();
     const was = before.layer.rooms.get("1:B1")!;
     const after = unassignRoom(before, "1:B1");
-    const shape = shapeOf(before, after);
+    const room = after.layer.rooms.get("1:B1")!;
 
-    expect(shape.walls).toEqual(was.walls);
-    expect(shape.name).toMatch(/^Unnamed \d+$/);
-    // Nothing of its own and no envelope to inherit from, which is what
-    // makes it an area nobody has claimed rather than a space.
-    expect(shape.space_type).toBeNull();
-    expect(shape.group_id).toBeNull();
-    expect(accessType(after.layer, shape)).toBeNull();
-    expect(isUnidentified(shape)).toBe(true);
-    // On the map in its own right — named there, clickable, droppable —
-    // while being in neither list, which is what unidentified buys.
-    expect(shape.surfaced).toBe(true);
-    expect(shape.floor_id).toBe(was.floor_id);
+    // Same record, same shape: it is the identity that left, not the room.
+    expect(room.walls).toEqual(was.walls);
+    expect(room.floor_id).toBe(was.floor_id);
+    expect(room.name).toMatch(/^Unnamed \d+$/);
+    expect(room.space_type).toBeNull();
+    expect(room.group_id).toBeNull();
+    expect(accessType(after.layer, room)).toBeNull();
+    // Listed in its own right, having left the flat that spoke for it.
+    expect(room.surfaced).toBe(true);
   });
 
-  it("keeps the floor tiled: the walls now bound the new space", () => {
+  it("rewrites no wall, door or guard, because nothing moved", () => {
     const before = state();
-    const after = unassignRoom(before, "1:B1");
-    const shape = shapeOf(before, after);
+    const after = unassignRoom(before, "1:L1");
 
-    expect(after.file.walls.length).toBe(before.file.walls.length);
+    expect(after.file.walls).toEqual(before.file.walls);
+    expect(after.file.doors).toEqual(before.file.doors);
     expect(after.file.vertices).toEqual(before.file.vertices);
-    expect(after.layer.rooms.has("1:B1")).toBe(false);
-    for (const w of after.file.walls) {
-      expect(w.room_a).not.toBe("1:B1");
-      expect(w.room_b).not.toBe("1:B1");
-    }
-    // Every wall the old room had, the new one has.
-    for (const id of shape.walls) {
-      const w = after.layer.walls.get(id)!;
-      expect([w.room_a, w.room_b]).toContain(shape.id);
+    for (const d of after.file.devices) {
+      expect(d.guards).toEqual(
+        before.file.devices.find((x) => x.id === d.id)!.guards,
+      );
     }
   });
 
-  it("takes the identity off the plan, still itself", () => {
+  it("takes the identity off the plan as a space with no shape", () => {
     const before = state();
     const was = before.layer.rooms.get("1:B1")!;
     const after = unassignRoom(before, "1:B1");
@@ -327,16 +314,36 @@ describe("unassignRoom", () => {
     expect(space.floor_id).toBe(was.floor_id);
     // What it read as, not the null it stored: it waits under Apartment.
     expect(space.space_type).toBe("apartment");
+    // No walls at all — that is the half that stayed behind.
+    expect(space).not.toHaveProperty("walls");
   });
 
-  it("waits in the category it had, not in Unknown", () => {
+  it("waits in the category it had, while the room goes to Unknown", () => {
     const after = unassignRoom(state(), "1:B1");
-    const cats = spaceCategories(after.layer);
-    expect(
-      cats.find((c) => c.id === "apartment")!.rooms.map((r) => r.id),
-    ).not.toContain("1:B1");
     expect(categoryTally(after.layer, "apartment").unplaced).toBe(1);
     expect(categoryTally(after.layer, null).unplaced).toBe(0);
+
+    const unknown = spaceCategories(after.layer).find((c) => c.id === null)!;
+    expect(unknown.rooms.map((r) => r.id)).toContain("1:B1");
+  });
+
+  it("leaves a category holding as many spaces as before", () => {
+    // Technical is one envelope of one room. Unassign that room and the
+    // envelope empties, so what is left of the category is the space
+    // waiting to be placed: still one space, now an unplaced one.
+    const before = state();
+    const held = (st: EditState, id: string | null) => {
+      const c = spaceCategories(st.layer).find((x) => x.id === id);
+      const placed = c ? c.groups.length + c.rooms.length : 0;
+      return placed + categoryTally(st.layer, id).unplaced;
+    };
+    expect(held(before, "technical")).toBe(1);
+
+    const after = unassignRoom(before, "0:TECH");
+    expect(held(after, "technical")).toBe(1);
+    expect(categoryTally(after.layer, "technical").unplaced).toBe(1);
+    // And the room it left behind is a space of its own, under Unknown.
+    expect(held(after, null)).toBe(1);
   });
 
   it("brings the answering unit away with the space", () => {
@@ -349,42 +356,51 @@ describe("unassignRoom", () => {
     const after = unassignRoom(before, "1:L1");
     const unit = after.file.devices.find((d) => d.id === "AN-A1")!;
     expect(unit.host_id).toBeNull();
+    expect(after.file.unplaced_devices).toContain("AN-A1");
     expect(after.file.unplaced_spaces![0].devices).toEqual(["AN-A1"]);
   });
 
   it("leaves the reader on its door, now checking what is there", () => {
-    // A door is part of the shape, and the shape has not moved.
+    // A door is part of the room, and the room has not moved. The check
+    // still names 1:L1 — which is now an unnamed space, not a flat.
     const before = state();
     const reader = before.file.devices.find((d) => d.id === "AC-1-d11")!;
     expect(reader.guards).toEqual(["1:L1"]);
 
     const after = unassignRoom(before, "1:L1");
-    const shape = shapeOf(before, after);
     const now = after.file.devices.find((d) => d.id === "AC-1-d11")!;
     expect(now.host_id).toBe(reader.host_id);
-    expect(now.guards).toEqual([shape.id]);
+    expect(now.guards).toEqual(["1:L1"]);
   });
 
   it("rejoins when the space is placed back, unit and all", () => {
     const before = state();
     const after = unassignRoom(before, "1:L1");
-    const shape = shapeOf(before, after);
     const space = after.file.unplaced_spaces![0];
 
-    const back = placeSpace(after, space.id, shape.id);
-    const room = back.layer.rooms.get(shape.id)!;
+    const back = placeSpace(after, space.id, "1:L1");
+    const room = back.layer.rooms.get("1:L1")!;
     expect(room.name).toBe("Living room");
-    // Back on the plan under its own category, and standing alone: the
-    // flat it used to be part of is not rebuilt around it. Unassigning
-    // said the drawing was wrong about what is there, and placing the
-    // space back answers only where it is, not what it belongs to.
+    // Back under its own category, and standing alone: the flat it used
+    // to be part of is not rebuilt around it. Unassigning said the
+    // drawing was wrong about what is there, and placing the space back
+    // answers only where it is, not what it belongs to.
     expect(accessType(back.layer, room)).toBe("apartment");
     expect(room.group_id).toBeNull();
     expect(back.file.unplaced_spaces).toEqual([]);
     expect(back.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe(
-      shape.id,
+      "1:L1",
     );
     expect(back.file.unplaced_devices).not.toContain("AN-A1");
+  });
+
+  it("can be placed onto a different room than it came from", () => {
+    // The space is an identity now, so it goes wherever the shape is.
+    const after = unassignRoom(state(), "1:L1");
+    const space = after.file.unplaced_spaces![0];
+    const back = placeSpace(after, space.id, "1:B1");
+    expect(back.layer.rooms.get("1:B1")!.name).toBe("Living room");
+    expect(back.layer.rooms.get("1:L1")!.name).toMatch(/^Unnamed \d+$/);
   });
 
   it("loses no device along the way", () => {
@@ -463,15 +479,10 @@ describe("the categories panel shows loose spaces", () => {
     expect(find(cats, "technical").rooms.map((r) => r.id)).toContain("1:B1");
   });
 
-  it("leaves the shape out of every category", () => {
-    // The panel is for spaces somebody manages. An area the plan has left
-    // over is not one, not even an unknown one.
-    const before = state();
-    const after = unassignRoom(before, "1:B1");
-    const shape = after.file.rooms.find((r) => !before.layer.rooms.has(r.id))!;
-    for (const category of spaceCategories(after.layer)) {
-      expect(category.rooms.map((r) => r.id)).not.toContain(shape.id);
-    }
+  it("puts the room left behind in the Unknown bucket", () => {
+    const after = unassignRoom(state(), "1:B1");
+    const unknown = spaceCategories(after.layer).find((c) => c.id === null)!;
+    expect(unknown.rooms.map((r) => r.id)).toContain("1:B1");
   });
 
   it("leaves rooms inside an envelope out of it — the envelope stands for them", () => {
@@ -481,51 +492,24 @@ describe("the categories panel shows loose spaces", () => {
   });
 });
 
-describe("an unclaimed area is not on the access graph", () => {
+describe("an unnamed space is still a space the search walks", () => {
   const reach = (st: EditState, from: string) =>
     reachable(st.layer, from, {
       allowedDevices: new Set(st.file.devices.map((d) => d.id)),
     }).seen;
 
-  it("cannot be reached, even through its own doors", () => {
+  it("stays reachable through its own doors", () => {
+    // Losing its name does not brick up the doorway. Somebody can still
+    // walk in, so the check still has something to say about who.
     const before = state();
-    const after = unassignRoom(before, "1:B1");
-    const shape = after.file.rooms.find((r) => !before.layer.rooms.has(r.id))!;
-
     expect(reach(before, "1:L1").has("1:B1")).toBe(true);
-    expect(reach(after, "1:L1").has(shape.id)).toBe(false);
+    expect(reach(unassignRoom(before, "1:B1"), "1:L1").has("1:B1")).toBe(true);
   });
 
-  it("is not a way through to anywhere else", () => {
-    // Everything on floor 1 is reached through the hallway. Unassign it and
-    // the flats are not reachable that way, because nobody has said there
-    // is a space there to walk through.
-    const before = state();
-    expect(reach(before, "0:L").has("1:L1")).toBe(true);
-
-    const after = unassignRoom(before, "1:H");
-    expect(reach(after, "0:L").has("1:L1")).toBe(false);
-    // The storeys above are still linked by the shaft, so this is the
-    // hallway's doors going quiet rather than the whole floor vanishing.
-    expect(reach(after, "0:L").has("1:S")).toBe(true);
-  });
-
-  it("leaves every other room reachable as before", () => {
+  it("is still a way through to everywhere behind it", () => {
     const before = state();
     const was = reach(before, "0:L");
-    const after = unassignRoom(before, "4:B41");
-    const now = reach(after, "0:L");
-    for (const id of was) {
-      if (id === "4:B41") continue;
-      expect(now.has(id)).toBe(true);
-    }
-  });
-
-  it("knows a hidden room in a flat is not one of these", () => {
-    // Bedrooms are hidden by default and must still be checked.
-    const { layer } = state();
-    const bedroom = layer.rooms.get("1:B1")!;
-    expect(bedroom.surfaced).toBe(false);
-    expect(isUnidentified(bedroom)).toBe(false);
+    const now = reach(unassignRoom(before, "1:H"), "0:L");
+    for (const id of was) expect(now.has(id)).toBe(true);
   });
 });

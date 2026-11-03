@@ -3,7 +3,7 @@
  * might reach for that the fixture refuses to store.
  */
 import { must, topGroups, type VisualLayer } from "./load";
-import { accessType, isUnidentified, roomsInGroup, roomsOf } from "./access";
+import { accessType, roomsInGroup, roomsOf } from "./access";
 import { add, doorGeometry, negate, normal, unit } from "./geometry";
 import { labelPoint, roomRings, signedArea } from "./rings";
 import {
@@ -193,9 +193,6 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
   const looseByType = new Map<string | null, Room[]>();
   for (const room of layer.file.rooms) {
     if (room.group_id !== null) continue;
-    // An area nobody has claimed is not a space to list: it is what the
-    // plan has left over, and the panel is for spaces somebody manages.
-    if (isUnidentified(room)) continue;
     const key = accessType(layer, room);
     const list = looseByType.get(key);
     if (list) list.push(room);
