@@ -19,10 +19,12 @@ import {
   groupOuterWalls,
   highlightTargets,
   isRoomListed,
+  insideRings,
   isWallVisible,
   labelPoint,
   lerp,
   nearestWall,
+  nearestWallInRoom,
   ringsToPath,
   roomColor,
   roomsOf,
@@ -30,6 +32,7 @@ import {
   wallEnds,
   wallSolidSpans,
   type Device,
+  type DivideRoomRequest,
   type Door,
   type Point,
   type Reachability,
@@ -69,9 +72,18 @@ export interface FloorPlanCanvasProps {
    * folded inside their envelopes and offers them for showing; "hide" folds
    * a shown room back. "select" leaves the map to selection.
    */
-  tool?: "select" | "door" | "show" | "hide";
+  tool?: "select" | "door" | "show" | "hide" | "wall";
   /** Called with the wall and side under the pointer when it is clicked. */
   onPlaceDoor?: (hit: WallHit) => void;
+  /** Both ends of a finished cut, each already snapped to a wall. */
+  onDivideRoom?: (req: DivideRoomRequest) => void;
+  /** Why the cut being drawn would be refused, for the ghost's colour. */
+  divideError?: (req: DivideRoomRequest) => string | null;
+  /**
+   * Device status badges. Off while editing: the editor is for changing the
+   * plan, and whether a reader is reachable today is not part of that.
+   */
+  showDeviceStatus?: boolean;
   /** Clicked a folded room with the show tool armed. */
   onShowRoom?: (roomId: string) => void;
   /** Clicked a shown room with the hide tool armed. */
@@ -128,6 +140,9 @@ export function FloorPlanCanvas({
   onSelectGroup,
   tool = "select",
   onPlaceDoor,
+  onDivideRoom,
+  divideError,
+  showDeviceStatus = true,
   onShowRoom,
   onHideRoom,
   placementError,
@@ -143,6 +158,12 @@ export function FloorPlanCanvas({
   const [hover, setHover] = useState<WallHit | null>(null);
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [hoverDevice, setHoverDevice] = useState<string | null>(null);
+  /** The first end of a wall being drawn, already on one of the room's walls. */
+  const [cutFrom, setCutFrom] = useState<{ roomId: string; at: Point } | null>(
+    null,
+  );
+  /** Where the pointer is now, snapped to the same room's boundary. */
+  const [cutTo, setCutTo] = useState<Point | null>(null);
   /**
    * Plan units per CSS pixel with the plan unzoomed — the viewBox against the
    * element's layout box. A CSS transform does not touch the layout box, so
@@ -295,15 +316,62 @@ export function FloorPlanCanvas({
   }, []);
 
   const placing = tool === "door";
+  const drawing = tool === "wall";
+  /** Either tool aims at the plan, so neither may let a drag pan it. */
+  const aiming = placing || drawing;
+
+  /**
+   * The point on a room's boundary that the pointer is offering. Unbounded
+   * on purpose: a click in the middle of a room should still land somewhere,
+   * and the operation snaps to the same place, so the line the user sees is
+   * the line they get.
+   */
+  /**
+   * Which room the pointer is in, hit-tested rather than taken from the
+   * hover state. Hovering sets state, and a move handler reading that state
+   * sees the value from before the pointer entered the room — so the first
+   * move inside a room would snap to nothing.
+   */
+  const roomAt = useCallback(
+    (pt: Point) => {
+      for (const room of scene.rooms) {
+        if (insideRings(pt, rings.get(room))) return room.id;
+      }
+      return null;
+    },
+    [scene.rooms, rings],
+  );
+
+  const snapTo = useCallback(
+    (roomId: string, pt: Point) => {
+      const room = layer.rooms.get(roomId);
+      if (!room) return null;
+      return nearestWallInRoom(layer, room, pt, Infinity)?.at ?? null;
+    },
+    [layer],
+  );
+
+  const cutRequest: DivideRoomRequest | null =
+    cutFrom && cutTo
+      ? { roomId: cutFrom.roomId, from: cutFrom.at, to: cutTo }
+      : null;
+  const cutError = cutRequest && divideError ? divideError(cutRequest) : null;
 
   const handleMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!placing) return;
+      if (!aiming) return;
       const pt = toSvgPoint(e.clientX, e.clientY);
       if (!pt) return;
+      if (drawing) {
+        // Once a cut has started it stays in its own room: the second end
+        // has to be a wall of the room being divided.
+        const roomId = cutFrom?.roomId ?? roomAt(pt);
+        setCutTo(roomId ? snapTo(roomId, pt) : null);
+        return;
+      }
       setHover(nearestWall(layer, floorId, pt, 45));
     },
-    [placing, toSvgPoint, layer, floorId],
+    [aiming, drawing, cutFrom, roomAt, snapTo, toSvgPoint, layer, floorId],
   );
 
   const hoverError = hover && placementError ? placementError(hover) : null;
@@ -317,7 +385,7 @@ export function FloorPlanCanvas({
       wheel={{ step: 0.08 }}
       // While the door tool is armed a drag must not pan the map, or every
       // attempt to place a door slides the plan instead.
-      panning={{ disabled: placing }}
+      panning={{ disabled: aiming }}
       // Panning leaves the scale alone, so the equality guards keep a drag
       // from re-rendering the markers frame by frame.
       onTransform={(_ref, state) => {
@@ -341,11 +409,18 @@ export function FloorPlanCanvas({
             width: "100%",
             height: "100%",
             display: "block",
-            cursor: placing ? "crosshair" : "default",
+            cursor: aiming ? "crosshair" : "default",
           }}
           onClick={() => {
             if (placing) {
               if (hover && onPlaceDoor) onPlaceDoor(hover);
+              return;
+            }
+            // Clicking off the plan abandons a half-drawn wall rather than
+            // leaving it armed and invisible.
+            if (drawing) {
+              setCutFrom(null);
+              setCutTo(null);
               return;
             }
             onSelectRoom(null);
@@ -381,7 +456,7 @@ export function FloorPlanCanvas({
                   fillRule="evenodd"
                   stroke={selected ? "#17406B" : "none"}
                   strokeWidth={selected ? 6 : 0}
-                  style={{ cursor: placing ? "crosshair" : "pointer" }}
+                  style={{ cursor: aiming ? "crosshair" : "pointer" }}
                   onMouseEnter={() => !placing && setHoverRoom(room.id)}
                   onMouseLeave={() =>
                     setHoverRoom((cur) => (cur === room.id ? null : cur))
@@ -389,6 +464,36 @@ export function FloorPlanCanvas({
                   onClick={(e) => {
                     if (placing) return; // the svg handler places the door
                     e.stopPropagation();
+
+                    if (drawing) {
+                      // Snapped from this click's own position rather than
+                      // from what the last move left behind: a click that
+                      // arrives before any move in this room would otherwise
+                      // land nowhere.
+                      const pt = toSvgPoint(e.clientX, e.clientY);
+                      const at = pt && snapTo(room.id, pt);
+                      if (!at) return;
+
+                      // A click in another room starts again there, which is
+                      // friendlier than refusing and explaining why.
+                      if (!cutFrom || cutFrom.roomId !== room.id) {
+                        setCutFrom({ roomId: room.id, at });
+                        setCutTo(at);
+                        return;
+                      }
+                      // Sent even when the preview is already red, the way
+                      // the door tool does: the refusal names the reason,
+                      // and a click that silently does nothing leaves the
+                      // user guessing which rule they hit.
+                      onDivideRoom?.({
+                        roomId: room.id,
+                        from: cutFrom.at,
+                        to: at,
+                      });
+                      setCutFrom(null);
+                      setCutTo(null);
+                      return;
+                    }
 
                     // The show tool is the only thing that puts a folded
                     // room on the map, and clicking one there shows it.
@@ -545,6 +650,7 @@ export function FloorPlanCanvas({
                 x={glyph.x}
                 y={glyph.y}
                 unitScale={unitScale}
+                showStatus={showDeviceStatus}
                 hovered={glyph.device.id === hoverDevice}
                 onHover={setHoverDevice}
               />
@@ -562,6 +668,48 @@ export function FloorPlanCanvas({
           {/* The door the pointer would place, and whether it would be let. */}
           {placing && hover && (
             <DoorGhost layer={layer} hit={hover} error={hoverError} />
+          )}
+
+          {/* The wall being drawn. Both ends sit on the boundary already, so
+              what is shown is what the operation would build. */}
+          {drawing && (
+            <g pointerEvents="none">
+              {cutTo && !cutFrom && (
+                <circle
+                  cx={cutTo.x}
+                  cy={cutTo.y}
+                  r={7}
+                  fill="#ffffff"
+                  stroke={GHOST_OK}
+                  strokeWidth={3}
+                />
+              )}
+              {cutFrom && cutTo && (
+                <>
+                  <line
+                    x1={cutFrom.at.x}
+                    y1={cutFrom.at.y}
+                    x2={cutTo.x}
+                    y2={cutTo.y}
+                    stroke={cutError ? GHOST_BAD : GHOST_OK}
+                    strokeWidth={8}
+                    strokeLinecap="round"
+                    strokeDasharray="14 10"
+                  />
+                  {[cutFrom.at, cutTo].map((pt, i) => (
+                    <circle
+                      key={i}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={7}
+                      fill="#ffffff"
+                      stroke={cutError ? GHOST_BAD : GHOST_OK}
+                      strokeWidth={3}
+                    />
+                  ))}
+                </>
+              )}
+            </g>
           )}
         </svg>
       </TransformComponent>

@@ -34,8 +34,32 @@ function edgeKey(wallId: string, from: string, to: string): string {
  * splitting the room.
  */
 export function ringsOf(layer: VisualLayer, room: Room): Vertex[][] {
+  return faceWalks(layer, room.walls)
+    .filter((face) => face.length > 2)
+    .map((face) => face.map((e) => vertexOf(layer, e.from)));
+}
+
+/** One step of a face walk: the wall crossed, and in which direction. */
+export interface FaceEdge {
+  wallId: string;
+  from: string;
+  to: string;
+}
+
+/**
+ * The same walk as `ringsOf`, kept in wall terms.
+ *
+ * Dividing a room needs to know which walls fall on which side of a new one,
+ * and a list of vertices cannot say that. This is the one traversal; ringsOf
+ * is it with the walls dropped.
+ */
+export function faceWalks(
+  layer: VisualLayer,
+  wallIds: Iterable<string>,
+): FaceEdge[][] {
+  const ids = [...wallIds];
   const incident = new Map<string, Array<{ wallId: string; other: string }>>();
-  for (const wallId of room.walls) {
+  for (const wallId of ids) {
     const w = must(layer.walls, wallId, "wall");
     for (const [here, other] of [
       [w.v1, w.v2],
@@ -48,9 +72,9 @@ export function ringsOf(layer: VisualLayer, room: Room): Vertex[][] {
   }
 
   const used = new Set<string>();
-  const rings: Vertex[][] = [];
+  const faces: FaceEdge[][] = [];
 
-  for (const startWallId of room.walls) {
+  for (const startWallId of ids) {
     const sw = must(layer.walls, startWallId, "wall");
     for (const [from, to] of [
       [sw.v1, sw.v2],
@@ -58,12 +82,12 @@ export function ringsOf(layer: VisualLayer, room: Room): Vertex[][] {
     ] as const) {
       if (used.has(edgeKey(startWallId, from, to))) continue;
 
-      const ring: Vertex[] = [];
+      const face: FaceEdge[] = [];
       let cur = { wallId: startWallId, from, to };
 
       while (!used.has(edgeKey(cur.wallId, cur.from, cur.to))) {
         used.add(edgeKey(cur.wallId, cur.from, cur.to));
-        ring.push(vertexOf(layer, cur.from));
+        face.push({ ...cur });
 
         const here = vertexOf(layer, cur.to);
         const prev = vertexOf(layer, cur.from);
@@ -88,11 +112,11 @@ export function ringsOf(layer: VisualLayer, room: Room): Vertex[][] {
         cur = { wallId: best.wallId, from: cur.to, to: best.other };
       }
 
-      if (ring.length > 2) rings.push(ring);
+      if (face.length > 0) faces.push(face);
     }
   }
 
-  return rings;
+  return faces;
 }
 
 /**

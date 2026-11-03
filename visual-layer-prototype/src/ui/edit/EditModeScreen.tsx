@@ -16,6 +16,9 @@ import { StructureTree } from "./StructureTree";
 import {
   OperationRejected,
   addDoor,
+  divideRoom,
+  previewDivide,
+  type DivideRoomRequest,
   addSpaceType,
   canRedo,
   canUndo,
@@ -125,6 +128,19 @@ export function EditModeScreen({
     [run, state],
   );
 
+  const divideError = useCallback(
+    (req: DivideRoomRequest) => {
+      const preview = previewDivide(state, req);
+      return preview.ok ? null : preview.reason;
+    },
+    [state],
+  );
+
+  const handleDivideRoom = useCallback(
+    (req: DivideRoomRequest) => run(() => divideRoom(state, req)),
+    [run, state],
+  );
+
   const undoLabel = state.undo[state.undo.length - 1]?.label ?? null;
   const redoLabel = state.redo[state.redo.length - 1]?.label ?? null;
 
@@ -196,14 +212,22 @@ export function EditModeScreen({
             selectedGroupId={selectedGroupId}
             onSelectRoom={selectRoom}
             onSelectGroup={selectGroup}
-            // The unbuilt tools leave the map selecting; the three that do
+            // The unbuilt tools leave the map selecting; the four that do
             // something drive it.
             tool={
-              tool === "door" || tool === "show" || tool === "hide"
+              tool === "door" ||
+              tool === "wall" ||
+              tool === "show" ||
+              tool === "hide"
                 ? tool
                 : "select"
             }
+            // A device's status is about how the building is running, not
+            // about its shape, so it is not shown while editing the shape.
+            showDeviceStatus={false}
             onPlaceDoor={handlePlaceDoor}
+            onDivideRoom={handleDivideRoom}
+            divideError={divideError}
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
             placementError={placementError}

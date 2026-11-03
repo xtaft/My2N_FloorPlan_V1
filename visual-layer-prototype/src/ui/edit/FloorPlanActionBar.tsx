@@ -108,8 +108,7 @@ export function FloorPlanActionBar({
           "wall",
           "Wall",
           <VerticalSplitOutlined sx={{ fontSize: 16 }} />,
-          "Not built: adding a wall needs split_wall and the boundary walk",
-          false,
+          "Click one wall of a room, then another, to divide it in two",
         )}
         {toolButton(
           "door",

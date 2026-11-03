@@ -5,11 +5,11 @@
  * operation leaves the model untouched, and each one names the actual reason —
  * a generic failure leaves a manager with no way forward.
  *
- * Only the operations this pass implements are here: add door, the two
- * surfacing overrides, and the space-type edits the categories panel owns.
- * The geometry operations the doc specifies — split_wall, wall deletion and
- * the room merge it implies, group split and merge, collinear dissolve — are
- * not built.
+ * Here: add door, the two surfacing overrides, and the space-type edits the
+ * categories panel owns. Dividing a room — split_wall and the boundary walk
+ * — lives in divide.ts, which is the only operation that makes new geometry.
+ * Still unbuilt from the doc: wall deletion and the room merge it implies,
+ * group split and merge, collinear dissolve.
  */
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { dist, lerp, normal, unit, wallEnds, wallLength } from "./geometry";
@@ -39,6 +39,7 @@ export class OperationRejected extends Error {
 
 export type OperationKind =
   | "add_door"
+  | "divide"
   | "show_room"
   | "hide_room"
   | "add_space_type"
@@ -75,7 +76,7 @@ export function initEditState(file: VisualLayerFile): EditState {
   return { file, layer: indexVisualLayer(file), undo: [], redo: [] };
 }
 
-function commit(
+export function commit(
   state: EditState,
   kind: OperationKind,
   label: string,

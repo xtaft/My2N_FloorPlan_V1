@@ -125,6 +125,8 @@ export interface DeviceMarkerProps {
   y: number;
   /** Plan units per screen pixel at the current zoom. */
   unitScale: number;
+  /** Off while editing the plan, where a device's health is not the subject. */
+  showStatus?: boolean;
   hovered: boolean;
   onHover: (id: string | null) => void;
 }
@@ -137,11 +139,12 @@ export const DeviceMarker = memo(function DeviceMarker({
   x,
   y,
   unitScale,
+  showStatus = true,
   hovered,
   onHover,
 }: DeviceMarkerProps) {
   const look = STATUS[status] ?? UNKNOWN;
-  const text = `${name} — ${look.label}`;
+  const text = showStatus ? `${name} — ${look.label}` : name;
   // No text metrics inside an SVG without measuring, and measuring every
   // marker to draw a tooltip is not worth a layout pass: Roboto 11px runs
   // about 5.9px to the character, which is close enough for a chip.
@@ -166,14 +169,18 @@ export const DeviceMarker = memo(function DeviceMarker({
           <DeviceIcon deviceType={deviceType} />
         </g>
 
-        <circle
-          cx={BADGE_AT}
-          cy={-BADGE_AT}
-          r={BADGE_R + BADGE_RING}
-          fill="#ffffff"
-        />
-        <circle cx={BADGE_AT} cy={-BADGE_AT} r={BADGE_R} fill={look.color} />
-        {look.mark && (
+        {showStatus && (
+          <>
+            <circle
+              cx={BADGE_AT}
+              cy={-BADGE_AT}
+              r={BADGE_R + BADGE_RING}
+              fill="#ffffff"
+            />
+            <circle cx={BADGE_AT} cy={-BADGE_AT} r={BADGE_R} fill={look.color} />
+          </>
+        )}
+        {showStatus && look.mark && (
           <text
             x={BADGE_AT}
             y={-BADGE_AT}

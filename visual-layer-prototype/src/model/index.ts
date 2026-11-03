@@ -5,3 +5,4 @@ export * from "./rings";
 export * from "./access";
 export * from "./derive";
 export * from "./edit";
+export * from "./divide";
