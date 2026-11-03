@@ -97,6 +97,8 @@ export function BuildingScreen({
 }: BuildingScreenProps) {
   const [tab, setTab] = useState<BuildingTab>("plan");
   const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
+  /** What the tree is pointing at, for the plan to light up. */
+  const [spaceId, setSpaceId] = useState<string | null>(null);
 
   /** The one tab that is a screen rather than a card on the page. */
   const planFills = tab === "plan" && hasPlan;
@@ -141,8 +143,34 @@ export function BuildingScreen({
           // Flat until the plan says which storey each space is on.
           storeys={hasPlan ? storeys : null}
           width={280}
+          selectedSpaceId={hasPlan ? spaceId : null}
+          selectedFloorId={hasPlan ? floorId : null}
+          // Only once there is a plan is there anywhere for a click to
+          // go: before it, a space has no storey and nothing to light up.
+          onSelectSpace={
+            hasPlan
+              ? (id, floor) => {
+                  setSpaceId(id);
+                  if (floor) setFloorId(floor);
+                }
+              : undefined
+          }
+          onSelectFloor={
+            hasPlan
+              ? (id) => {
+                  setFloorId(id);
+                  setSpaceId(null);
+                }
+              : undefined
+          }
         />
 
+        {/*
+          The pane carries the header's surface, and the header itself
+          has no fill — it is a band of content, not a panel. The page
+          grey belongs to the area under the tabs, where the cards sit,
+          so that is where it is set.
+        */}
         <Box
           sx={{
             flex: 1,
@@ -150,16 +178,10 @@ export function BuildingScreen({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
+            bgcolor: HEADER_BACKGROUND,
           }}
         >
-          <Box
-            sx={{
-              px: 3,
-              pt: 1.5,
-              flexShrink: 0,
-              bgcolor: HEADER_BACKGROUND,
-            }}
-          >
+          <Box sx={{ px: 3, pt: 1.5, flexShrink: 0 }}>
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <HomeOutlined sx={{ fontSize: 16, color: "text.secondary" }} />
               <Crumb>{place}</Crumb>
@@ -233,7 +255,13 @@ export function BuildingScreen({
             sx={
               planFills
                 ? { flex: 1, minHeight: 0, display: "flex" }
-                : { flex: 1, minHeight: 0, overflowY: "auto", p: 3 }
+                : {
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    p: 3,
+                    bgcolor: "background.default",
+                  }
             }
           >
             {tab === "residents" && <ResidentsTable residents={people} />}
@@ -250,7 +278,8 @@ export function BuildingScreen({
               <FloorPlanTab
                 layer={layer}
                 floorId={floorId}
-                onFloorChange={setFloorId}
+                selectedGroupId={spaceId}
+                onClearSelection={() => setSpaceId(null)}
                 hasPlan={hasPlan}
                 onCreate={onCreatePlanWith}
                 onOpen={onOpenPlan}

@@ -311,6 +311,21 @@ export function FloorPlanCanvas({
       (w) => roomIds.has(w.room_a) || roomIds.has(w.room_b),
     );
 
+    const doors = layer.file.doors.filter(
+      (d) => d.wall_id !== null && walls.some((w) => w.id === d.wall_id),
+    );
+
+    const glyphs: DeviceGlyph[] = [];
+    for (const device of layer.file.devices) {
+      if (device.floor_id !== floorId) continue;
+      // deviceAnchor puts a reader on the side access is verified from,
+      // derived from `guards` against the wall's room pair. A virtual door
+      // returns null: it has no wall, so there is nowhere to draw it.
+      const at = deviceAnchor(layer, device);
+      if (!at) continue;
+      glyphs.push({ device, x: at.x, y: at.y });
+    }
+
     // viewBox from this floor's own geometry: floors have independent
     // coordinate systems, so a shared box would mis-frame all but one.
     let minX = Infinity;
@@ -325,20 +340,15 @@ export function FloorPlanCanvas({
         maxY = Math.max(maxY, v.y);
       }
     }
-
-    const doors = layer.file.doors.filter(
-      (d) => d.wall_id !== null && walls.some((w) => w.id === d.wall_id),
-    );
-
-    const glyphs: DeviceGlyph[] = [];
-    for (const device of layer.file.devices) {
-      if (device.floor_id !== floorId) continue;
-      // deviceAnchor puts a reader on the side access is verified from,
-      // derived from `guards` against the wall's room pair. A virtual door
-      // returns null: it has no wall, so there is nowhere to draw it.
-      const at = deviceAnchor(layer, device);
-      if (!at) continue;
-      glyphs.push({ device, x: at.x, y: at.y });
+    // The readers on the outside doors are drawn beyond the building's
+    // own outline — that is what reading from the street means — so a
+    // box taken from the walls alone cuts the ground floor's entrances
+    // off at the bottom. They are part of the floor; they frame with it.
+    for (const g of glyphs) {
+      minX = Math.min(minX, g.x);
+      minY = Math.min(minY, g.y);
+      maxX = Math.max(maxX, g.x);
+      maxY = Math.max(maxY, g.y);
     }
 
     return {

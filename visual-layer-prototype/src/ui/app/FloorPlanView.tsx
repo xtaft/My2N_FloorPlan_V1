@@ -22,8 +22,6 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ChevronRight from "@mui/icons-material/ChevronRight";
@@ -53,14 +51,22 @@ export type PlanMode = "structure" | "devices" | "access";
 export interface FloorPlanViewProps {
   layer: VisualLayer;
   floorId: string;
-  onFloorChange: (floorId: string) => void;
+  /**
+   * The space the tree is pointing at. There is no floor strip here:
+   * the tree on the left is the plan's navigation, so turning to a
+   * storey and pointing at a space are the same gesture, and a second
+   * row of floor tabs would be a second place to do it from.
+   */
+  selectedGroupId: string | null;
+  onClearSelection: () => void;
   onEdit: () => void;
 }
 
 export function FloorPlanView({
   layer,
   floorId,
-  onFloorChange,
+  selectedGroupId,
+  onClearSelection,
   onEdit,
 }: FloorPlanViewProps) {
   const [mode, setMode] = useState<PlanMode>("access");
@@ -105,80 +111,93 @@ export function FloorPlanView({
         overflow: "hidden",
       }}
     >
+      {/*
+        One row of 56, always. A toolbar that grows a second line on a
+        laptop takes that line off the plan, which is the thing worth
+        the space — so nothing wraps. Two groups: the filters give way
+        and clip when the window is narrow, and the two controls that
+        do something keep their width whatever happens.
+      */}
       <Stack
         direction="row"
         alignItems="center"
-        spacing={2}
-        sx={{ px: 2, py: 1.5, flexShrink: 0 }}
+        sx={{ px: 2, height: 56, flexShrink: 0, flexWrap: "nowrap" }}
       >
-        <TextField
-          size="small"
-          placeholder="Search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          sx={{ width: 300 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 20 }} />
-              </InputAdornment>
-            ),
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          sx={{
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflow: "hidden",
+            "& > *": { flexShrink: 0, whiteSpace: "nowrap" },
           }}
-        />
-        <Button variant="outlined" color="inherit" size="small" disabled>
-          Device type
-        </Button>
-        <Button variant="outlined" color="inherit" size="small" disabled>
-          Error
-        </Button>
-        <Button variant="outlined" color="inherit" size="small" disabled>
-          Warning
-        </Button>
-        <Button
-          size="small"
-          startIcon={<Close sx={{ fontSize: 16 }} />}
-          disabled={query === ""}
-          onClick={() => setQuery("")}
-          sx={{ color: "text.secondary" }}
         >
-          Clear filters
-        </Button>
+          <TextField
+            size="small"
+            placeholder="Search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            sx={{ width: 240, minWidth: 120, flexShrink: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: 20 }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button variant="outlined" color="inherit" size="small" disabled>
+            Device type
+          </Button>
+          <Button variant="outlined" color="inherit" size="small" disabled>
+            Error
+          </Button>
+          <Button variant="outlined" color="inherit" size="small" disabled>
+            Warning
+          </Button>
+          <Button
+            size="small"
+            startIcon={<Close sx={{ fontSize: 16 }} />}
+            disabled={query === ""}
+            onClick={() => setQuery("")}
+            sx={{ color: "text.secondary" }}
+          >
+            Clear filters
+          </Button>
+        </Stack>
 
-        <Box sx={{ flex: 1 }} />
-
-        <Button
-          variant="outlined"
-          color="inherit"
-          size="small"
-          startIcon={<EditOutlined sx={{ fontSize: 16 }} />}
-          onClick={onEdit}
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          sx={{ flexShrink: 0, pl: 1.5 }}
         >
-          Edit floor plan
-        </Button>
-        <TextField
-          select
-          size="small"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as PlanMode)}
-          sx={{ width: 240 }}
-        >
-          <MenuItem value="structure">Structure</MenuItem>
-          <MenuItem value="devices">Devices</MenuItem>
-          <MenuItem value="access">Access</MenuItem>
-        </TextField>
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            startIcon={<EditOutlined sx={{ fontSize: 16 }} />}
+            onClick={onEdit}
+            sx={{ whiteSpace: "nowrap" }}
+          >
+            Edit floor plan
+          </Button>
+          <TextField
+            select
+            size="small"
+            value={mode}
+            onChange={(e) => setMode(e.target.value as PlanMode)}
+            sx={{ width: 180 }}
+          >
+            <MenuItem value="structure">Structure</MenuItem>
+            <MenuItem value="devices">Devices</MenuItem>
+            <MenuItem value="access">Access</MenuItem>
+          </TextField>
+        </Stack>
       </Stack>
       <Divider />
-
-      <Tabs
-        value={floorId}
-        onChange={(_, v) => onFloorChange(v as string)}
-        variant="scrollable"
-        sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
-      >
-        {layer.floors.map((f) => (
-          <Tab key={f.id} value={f.id} label={f.name} />
-        ))}
-      </Tabs>
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
@@ -188,8 +207,11 @@ export function FloorPlanView({
             showAllRooms={false}
             reach={null}
             selectedRoomId={null}
-            selectedGroupId={null}
-            onSelectRoom={() => {}}
+            selectedGroupId={selectedGroupId}
+            // Clicking the plan itself lets go of what the tree picked:
+            // the highlight answers "where is A32", and once you have
+            // looked somewhere else the question has been answered.
+            onSelectRoom={() => onClearSelection()}
             showDeviceStatus={mode === "devices"}
             showDevices={mode !== "structure"}
             paint={shading ? accessPaint(shading) : undefined}

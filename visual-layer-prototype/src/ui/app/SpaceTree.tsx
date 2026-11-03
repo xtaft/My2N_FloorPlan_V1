@@ -53,6 +53,15 @@ export interface SpaceTreeProps {
    */
   storeys?: BuildingStorey[] | null;
   width: number;
+  /**
+   * The tree is the plan's navigation once there is a plan: picking a
+   * storey is how you turn to it, and picking a space is how you point
+   * at it. Both are the same click, because a space is on a storey.
+   */
+  selectedSpaceId?: string | null;
+  onSelectSpace?: (spaceId: string, floorId: string | null) => void;
+  selectedFloorId?: string | null;
+  onSelectFloor?: (floorId: string) => void;
 }
 
 export function SpaceTree({
@@ -60,6 +69,10 @@ export function SpaceTree({
   spaces,
   storeys = null,
   width,
+  selectedSpaceId = null,
+  onSelectSpace,
+  selectedFloorId = null,
+  onSelectFloor,
 }: SpaceTreeProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -91,7 +104,11 @@ export function SpaceTree({
    * An apartment never opens: the rooms in it are a consequence of the
    * floor plan, and a flat is the one thing the customer manages.
    */
-  const renderSpace = (space: BuildingSpace, depth: number) => {
+  const renderSpace = (
+    space: BuildingSpace,
+    depth: number,
+    floorId: string | null,
+  ) => {
     const expandable = !space.apartment && space.rooms.length > 1;
     const isOpen = open.has(space.id) || (matches && expandable);
     return (
@@ -109,6 +126,10 @@ export function SpaceTree({
           open={isOpen}
           expandable={expandable}
           onToggle={() => toggle(space.id)}
+          selected={space.id === selectedSpaceId}
+          onClick={
+            onSelectSpace ? () => onSelectSpace(space.id, floorId) : undefined
+          }
         />
         {isOpen &&
           space.rooms.map((room) => (
@@ -201,13 +222,30 @@ export function SpaceTree({
                       return next;
                     })
                   }
+                  selected={storey.id === selectedFloorId}
+                  onClick={
+                    onSelectFloor
+                      ? () => {
+                          onSelectFloor(storey.id);
+                          // Turning to a storey opens it: being shown a
+                          // floor and a shut row at the same time reads
+                          // as nothing having happened.
+                          setClosed((was) => {
+                            const next = new Set(was);
+                            next.delete(storey.id);
+                            return next;
+                          });
+                        }
+                      : undefined
+                  }
                 />
-                {isOpen && inside.map((space) => renderSpace(space, 2))}
+                {isOpen &&
+                  inside.map((space) => renderSpace(space, 2, storey.id))}
               </Fragment>
             );
           })}
 
-          {!storeys && visible.map((space) => renderSpace(space, 1))}
+          {!storeys && visible.map((space) => renderSpace(space, 1, null))}
         </List>
       </Box>
     </Box>
@@ -225,6 +263,8 @@ function Row({
   expandable,
   onToggle,
   menu = true,
+  selected = false,
+  onClick,
 }: {
   depth: number;
   icon: React.ReactNode;
@@ -234,20 +274,34 @@ function Row({
   expandable?: boolean;
   onToggle?: () => void;
   menu?: boolean;
+  selected?: boolean;
+  onClick?: () => void;
 }) {
+  // With somewhere to go, the row goes there and the chevron is left to
+  // fold. Without, the whole row folds — which is all it could ever do.
+  const folds = Boolean(expandable && onToggle);
   return (
     <ListItemButton
+      selected={selected}
       sx={{
         height: ROW,
         pl: `${PAD + Math.max(0, depth - 1) * RAIL}px`,
         pr: 1,
       }}
-      onClick={expandable ? onToggle : undefined}
+      onClick={onClick ?? (folds ? onToggle : undefined)}
     >
       {/* The chevron's place is held even when there is nothing to open,
           so every icon on a level lines up with the others. */}
       {depth > 0 && (
         <Box
+          onClick={
+            onClick && folds
+              ? (e) => {
+                  e.stopPropagation();
+                  onToggle?.();
+                }
+              : undefined
+          }
           sx={{
             width: CHEVRON,
             flexShrink: 0,

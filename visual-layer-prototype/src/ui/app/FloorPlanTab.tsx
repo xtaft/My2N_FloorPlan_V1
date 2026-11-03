@@ -16,7 +16,9 @@ import type { VisualLayer } from "../../model";
 export interface FloorPlanTabProps {
   layer: VisualLayer;
   floorId: string;
-  onFloorChange: (floorId: string) => void;
+  /** The space the tree is pointing at, drawn lit. */
+  selectedGroupId: string | null;
+  onClearSelection: () => void;
   hasPlan: boolean;
   /**
    * The empty state names the method, so it goes straight to that upload
@@ -30,7 +32,8 @@ export interface FloorPlanTabProps {
 export function FloorPlanTab({
   layer,
   floorId,
-  onFloorChange,
+  selectedGroupId,
+  onClearSelection,
   hasPlan,
   onCreate,
   onOpen,
@@ -42,7 +45,8 @@ export function FloorPlanTab({
       <FloorPlanView
         layer={layer}
         floorId={floorId}
-        onFloorChange={onFloorChange}
+        selectedGroupId={selectedGroupId}
+        onClearSelection={onClearSelection}
         onEdit={onOpen}
       />
     );
