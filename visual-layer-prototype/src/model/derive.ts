@@ -199,11 +199,17 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
     else looseByType.set(key, [room]);
   }
 
-  // A category is shown when it holds something — including a space that
-  // is only waiting for a place. Unassigning the last Technical room must
-  // not take the Technical category away with it: the space is still
-  // somebody's to deal with, and a category nobody can open is where it
-  // would go to be forgotten.
+  // A category is listed when it holds something — including a space that
+  // is only waiting for a place, so unassigning the last Technical room
+  // does not take the Technical category away while its space is still
+  // somebody's to deal with.
+  //
+  // One that holds nothing is a type used a level further in, if at all:
+  // `locker_room` is an override on rooms inside the gym, and those rooms
+  // belong under Gym rather than in a category of their own. A category
+  // the user has just made is the exception, and the drawer carries that
+  // itself — it knows which one was made in front of the user, and the
+  // file cannot tell an empty new category from an unused old one.
   const waiting = new Set(
     (layer.file.unplaced_spaces ?? []).map((s) => s.space_type ?? null),
   );

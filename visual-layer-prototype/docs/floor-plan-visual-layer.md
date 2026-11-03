@@ -580,6 +580,34 @@ not a fixed list. A template that offers Office and Retail unit is advice to
 whoever fills it in; what a space can actually be is whatever the types
 panel holds.
 
+### Making a category
+
+**New category** makes an empty one and puts the row straight into rename,
+with the placeholder name selected so the first keystroke replaces it. The
+name is the only thing the user came to the button to decide, and a row
+called "New category" is not an answer to it.
+
+Its colour is picked at random from the palette, skipping every colour the
+building already uses, so two categories made in a row are not born the
+same shade. Once the palette is exhausted it repeats rather than refusing:
+a duplicate colour is a smaller problem than not being able to make a
+category.
+
+**A category is listed while it holds something** — including a space that
+is only waiting to be placed, so unassigning the last Technical room does
+not take Technical away while its space is still somebody's to deal with.
+A category that holds nothing is a type used a level further in, if at
+all: `locker_room` is an override on rooms inside the gym, and those rooms
+belong under Gym rather than in a category of their own.
+
+A category just made is the exception, and the drawer carries it rather
+than the derivation. The file cannot tell an empty new category from an
+unused old one — both are a type nothing refers to — but the drawer knows
+which one appeared in front of the user a second ago, so it keeps that one
+on screen until something is in it. Nothing is stored for this, which is
+the trade: reload before filling it and the row is gone, though the
+category is still there to be found by anything that looks it up.
+
 ## Deleting a space — which removes a name, not an area
 
 A space cannot simply go. The floor is tiled, so its area would belong to

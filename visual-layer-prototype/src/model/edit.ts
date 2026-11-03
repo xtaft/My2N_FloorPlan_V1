@@ -321,6 +321,56 @@ export function setRoomSurfaced(
 // ------------------------------------------------------------- space types
 
 /**
+ * Colours a new category can be given.
+ *
+ * Muted and of similar weight, because a floor plan is read as a whole and
+ * one loud category would pull the eye to whichever spaces happen to be in
+ * it. They are far enough apart to tell two adjacent spaces apart.
+ */
+export const SPACE_TYPE_PALETTE = [
+  "#6B8FD4", // blue
+  "#D4A96B", // sand
+  "#7FC4A8", // green
+  "#C47F7F", // clay
+  "#A88FD4", // violet
+  "#D4C06B", // ochre
+  "#6BBFD4", // teal
+  "#D48FB4", // rose
+  "#8FD47F", // leaf
+  "#B0A8A0", // stone
+];
+
+/**
+ * A category the user has just asked for, before they have named it.
+ *
+ * The colour is picked at random from those the building is not already
+ * using, so two categories are not born the same shade and the user does
+ * not have to go and fix that before the panel is readable. Once every
+ * colour is in use it falls back to the whole palette — a repeat is better
+ * than refusing to make a category.
+ */
+export function newSpaceType(layer: VisualLayer): SpaceType {
+  const types = layer.file.space_types;
+
+  const taken = new Set(types.map((t) => t.id));
+  let id = "";
+  for (let n = 1; !id; n += 1) {
+    const candidate = `category_${n}`;
+    if (!taken.has(candidate)) id = candidate;
+  }
+
+  const used = new Set(types.map((t) => t.color.toUpperCase()));
+  const free = SPACE_TYPE_PALETTE.filter((c) => !used.has(c.toUpperCase()));
+  const from = free.length > 0 ? free : SPACE_TYPE_PALETTE;
+
+  return {
+    id,
+    name: "New category",
+    color: from[Math.floor(Math.random() * from.length)],
+  };
+}
+
+/**
  * Type is a field and colour comes from the type, so this panel owns rename
  * and recolour and every space of that type follows.
  */

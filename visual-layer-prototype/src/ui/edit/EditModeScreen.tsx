@@ -3,7 +3,7 @@
  * (36:4871) — app bar, floor-plan action bar, then the 256 / canvas / 320
  * three-column content.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -67,6 +67,7 @@ import {
   previewDivide,
   type DivideRoomRequest,
   addSpaceType,
+  newSpaceType,
   canRedo,
   canUndo,
   previewAddDoor,
@@ -363,13 +364,25 @@ export function EditModeScreen({
     [run, state],
   );
 
-  const newCategoryName = useMemo(() => {
-    const taken = new Set(layer.file.space_types.map((t) => t.id));
-    for (let n = 1; ; n += 1) {
-      const id = `category_${n}`;
-      if (!taken.has(id)) return id;
+  /**
+   * Make a category and hand its id back, so the drawer can put the row
+   * straight into rename — the name is the one thing the user came to the
+   * button to decide, and a row called "New category" is not an answer.
+   */
+  const newCategory = useCallback((): string | null => {
+    const type = newSpaceType(layer);
+    try {
+      onChange(addSpaceType(state, type));
+      setToast({ text: "New category — done", kind: "ok" });
+      return type.id;
+    } catch (e) {
+      if (e instanceof OperationRejected) {
+        setToast({ text: e.message, kind: "bad" });
+        return null;
+      }
+      throw e;
     }
-  }, [layer]);
+  }, [layer, onChange, state]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -517,15 +530,7 @@ export function EditModeScreen({
           onWidthChange={setDrawerWidth}
           onImportSpaces={() => setImporting(true)}
           onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
-          onNewCategory={() =>
-            run(() =>
-              addSpaceType(state, {
-                id: newCategoryName,
-                name: "New category",
-                color: "#9E9E9E",
-              }),
-            )
-          }
+          onNewCategory={newCategory}
         />
       </Box>
 

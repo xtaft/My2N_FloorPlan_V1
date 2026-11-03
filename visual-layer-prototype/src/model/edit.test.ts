@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   guardingDevice,
   OperationRejected,
+  SPACE_TYPE_PALETTE,
   UNDO_DEPTH,
   addDoor,
   addSpaceType,
@@ -22,10 +23,12 @@ import {
   isRoomListed,
   nearestWall,
   reachable,
+  newSpaceType,
   recolorSpaceType,
   renameSpaceType,
   roomsOf,
   setRoomSurfaced,
+  spaceCategories,
   standardDoorWidth,
   undo,
   redo,
@@ -416,6 +419,68 @@ describe("space types", () => {
     expect(() =>
       addSpaceType(state, { id: "gym", name: "Gym again", color: "#000000" }),
     ).toThrow(/already exists/);
+  });
+});
+
+describe("a category the user has just asked for", () => {
+  /** It picks at random, so a property is only tested by repeating it. */
+  const many = (n: number, f: () => void) => {
+    for (let i = 0; i < n; i += 1) f();
+  };
+
+  it("takes the first free id and the placeholder name", () => {
+    const first = newSpaceType(state.layer);
+    expect(first.id).toBe("category_1");
+    expect(first.name).toBe("New category");
+
+    const next = addSpaceType(state, first);
+    expect(newSpaceType(next.layer).id).toBe("category_2");
+  });
+
+  it("is given a colour the building is not already using", () => {
+    const used = new Set(
+      state.file.space_types.map((t) => t.color.toUpperCase()),
+    );
+    many(40, () => {
+      const made = newSpaceType(state.layer);
+      expect(SPACE_TYPE_PALETTE).toContain(made.color);
+      expect(used.has(made.color.toUpperCase())).toBe(false);
+    });
+  });
+
+  it("does not give two new categories the same colour", () => {
+    // The first is in use by the time the second is asked for, which is
+    // the whole reason the choice reads the file rather than a counter.
+    many(20, () => {
+      const one = newSpaceType(state.layer);
+      const two = newSpaceType(addSpaceType(state, one).layer);
+      expect(two.color).not.toBe(one.color);
+    });
+  });
+
+  it("repeats a colour rather than refusing once they are all taken", () => {
+    let st = state;
+    for (const color of SPACE_TYPE_PALETTE) {
+      st = addSpaceType(st, { id: "t" + color.slice(1), name: color, color });
+    }
+    many(10, () => {
+      expect(SPACE_TYPE_PALETTE).toContain(newSpaceType(st.layer).color);
+    });
+  });
+
+  it("is added empty, so no space changes hands", () => {
+    const next = addSpaceType(state, newSpaceType(state.layer));
+    expect(next.file.rooms).toEqual(state.file.rooms);
+    expect(next.file.groups).toEqual(state.file.groups);
+  });
+
+  it("is not in the categories panel on its own merits", () => {
+    // Nothing is in it, so the derivation leaves it out — the drawer is
+    // what keeps the one it just made on screen.
+    const next = addSpaceType(state, newSpaceType(state.layer));
+    expect(spaceCategories(next.layer).map((c) => c.id)).not.toContain(
+      "category_1",
+    );
   });
 });
 

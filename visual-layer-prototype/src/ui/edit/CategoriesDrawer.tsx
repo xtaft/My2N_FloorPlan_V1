@@ -103,7 +103,8 @@ export interface CategoriesDrawerProps {
   /** Move every space of one category into another, or out of all of them. */
   onReassign: (fromId: string, toId: string | null) => void;
   onDeleteCategory: (typeId: string) => void;
-  onNewCategory: () => void;
+  /** Makes one and returns its id, or null if it was refused. */
+  onNewCategory: () => string | null;
   /** Opens the space-list importer. */
   onImportSpaces: () => void;
   /** The menu on a space that has no shape yet. */
@@ -140,6 +141,18 @@ export function CategoriesDrawer({
     null,
   );
   const [renaming, setRenaming] = useState<string | null>(null);
+  /**
+   * Categories made from the button below, kept on screen while they are
+   * still empty.
+   *
+   * `spaceCategories` lists what holds something, which is right for the
+   * file's own unused types — they are overrides used a level further in,
+   * not categories of the building. It cannot tell those from one the user
+   * made a second ago, so the drawer remembers that here: a category you
+   * just made has to stay put, or there is nowhere to drag the first space
+   * to and nothing to rename.
+   */
+  const [created, setCreated] = useState<string[]>([]);
   const [reassigning, setReassigning] = useState(false);
   const [picking, setPicking] = useState(false);
   const [hex, setHex] = useState("");
@@ -149,7 +162,20 @@ export function CategoriesDrawer({
   const toggle = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const categories = useMemo(() => spaceCategories(layer), [layer]);
+  const categories = useMemo(() => {
+    const listed = spaceCategories(layer);
+    const already = new Set(listed.map((c) => c.id));
+    // Still-empty categories made here, each put back where it belongs:
+    // after the rest and before Unknown, which is always last.
+    const mine = created
+      .filter((id) => !already.has(id) && layer.spaceTypes.has(id))
+      .map((id) => {
+        const t = layer.spaceTypes.get(id)!;
+        return { id: t.id, name: t.name, color: t.color, groups: [], rooms: [] };
+      });
+    if (mine.length === 0) return listed;
+    return [...listed.slice(0, -1), ...mine, listed[listed.length - 1]];
+  }, [layer, created]);
 
 
   const matches = useMemo(() => {
@@ -436,6 +462,7 @@ export function CategoriesDrawer({
                       size="small"
                       autoFocus
                       value={draft}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setDraft(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       onBlur={() => {
@@ -516,7 +543,15 @@ export function CategoriesDrawer({
           variant="outlined"
           color="inherit"
           endIcon={<AddIcon />}
-          onClick={onNewCategory}
+          onClick={() => {
+            const id = onNewCategory();
+            if (!id) return;
+            setCreated((was) => [...was, id]);
+            // Straight into rename, with the placeholder name selected so
+            // the first keystroke replaces it.
+            setDraft("New category");
+            setRenaming(id);
+          }}
         >
           New category
         </Button>
