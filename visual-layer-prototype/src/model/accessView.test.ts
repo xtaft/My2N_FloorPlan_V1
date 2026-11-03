@@ -279,3 +279,51 @@ describe("marking the tree with where you can get", () => {
     ]);
   });
 });
+
+describe("a credential opens its own door, wherever that door is", () => {
+  const open = (devices: string[]) => {
+    const shade = accessShading(layer, new Set(devices));
+    return new Set(
+      [...shade.entries()]
+        .filter(([, v]) => v === "open")
+        .map(([id]) => layer.rooms.get(id)?.name ?? id),
+    );
+  };
+
+  it("lets maintenance into the technical room", () => {
+    // The Maintenance group holds one device, the reader on the
+    // technical room — and that room's only door is off the lobby. A
+    // walk that starts at the street never gets there, because the
+    // lobby needs the entrance intercom. But the reader is exactly
+    // what the technical door asks for, so holding it is enough.
+    const gained = open(["RD-0-d3"]);
+    expect(gained.has("Technical room")).toBe(true);
+  });
+
+  it("lets them back out of it, because the door only reads one way", () => {
+    // The reader checks the way *in*. Standing inside, the door opens,
+    // so the lobby and everything unguarded beyond it follows.
+    const gained = open(["RD-0-d3"]);
+    expect(gained.has("Lobby")).toBe(true);
+    expect(gained.has("Stairs")).toBe(true);
+  });
+
+  it("still does not let them into a flat", () => {
+    const gained = open(["RD-0-d3"]);
+    expect(gained.has("Living room")).toBe(false);
+  });
+
+  it("still keeps the shop staff in their unit", () => {
+    // Not because of where the walk starts, but because the unit has
+    // no inside door: its only other door is to the street.
+    const gained = open(["AC-0-d9"]);
+    expect(gained.has("Shop floor")).toBe(true);
+    expect(gained.has("Storage")).toBe(true);
+    expect(gained.has("Lobby")).toBe(false);
+    expect(gained.has("Technical room")).toBe(false);
+  });
+
+  it("opens nothing at all when nothing is held", () => {
+    expect(accessShading(layer, new Set(["nope"])).get("0:L")).toBe("closed");
+  });
+});

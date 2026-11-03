@@ -850,15 +850,26 @@ is grey. With a selection the walk says which spaces are behind a door
 it opens — green — and which are not — red. Every space is one or the
 other; there is no third state once a question has been asked.
 
-**The walk starts outside the building.** This is the whole of what
-makes the answer honest. A walk always reaches where it begins, so
-starting in the lobby would hand everybody the lobby before they had
-opened anything — and the shop and gym staff do not hold the entrance
-intercom. They come in from the street through their own door and
-cannot get into the rest of the building, which is only true on the
-plan if the street is where they start. A resident holds the intercom,
-so they get the lobby and every shared space beyond it, which is not
-guarded, and their own reader opens their flat.
+**A credential opens its own door, wherever that door is.** The walk
+begins at the street *and* at every room a selected device guards, and
+spreads from each until it meets a door asking for something not held.
+
+The street alone is not enough, and the technical room is the case that
+proves it: its single door is off the lobby, so somebody holding only
+the technical reader never reaches it from outside — even though that
+reader is precisely what the door asks for. Seeding the walk at the
+guarded room fixes it, and the reader still opens nothing else.
+
+The shop and gym staff stay in their units under this rule too, and for
+a better reason than the walk's starting point: their units have no
+inside door at all, only the one to the street. A resident holds the
+intercom, so they get the lobby and every shared space beyond it, which
+is unguarded, and their own reader opens their flat.
+
+A one-sided reader lets you back out. The technical room's reader
+checks the way *in*; standing inside, the door opens, so the lobby and
+the circulation beyond it follow. That is the building, not a gap in
+the model.
 
 **The lists are grouped by what things are.** Devices are one flat list:
 grouping them under the access groups would hide the ones no group

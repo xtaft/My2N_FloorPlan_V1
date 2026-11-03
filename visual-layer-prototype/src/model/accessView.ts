@@ -98,14 +98,32 @@ export function accessShading(
     return out;
   }
 
-  // The walk starts outside the building, not in the lobby.
+  // Where a credential puts you, and then wherever you can walk on.
   //
-  // Starting inside would hand everybody the lobby for free, because a
-  // walk always reaches where it begins — and the shop and gym staff do
-  // not hold the entrance intercom. They come in through their own door
-  // from the street and cannot get into the rest of the building, which
-  // is only true on the plan if the street is where they start.
-  const seen = reachable(layer, EXTERIOR, { allowedDevices: allowed }).seen;
+  // The street is one place to begin — most people arrive there — but
+  // not the only one. A credential admits you through *its own* door,
+  // wherever that door happens to be, and the technical room is the
+  // case that shows it: its single door is off the lobby, so somebody
+  // holding only the technical reader never reaches it from the street
+  // even though that reader is exactly what the door asks for.
+  //
+  // So every room a selected device guards is also a starting point,
+  // and the walk spreads from each until it meets a door asking for
+  // something not held. The shop and gym staff still stay put, not
+  // because the walk started outside but because their units have no
+  // inside door — only the one to the street.
+  const seeds = new Set<string>([EXTERIOR]);
+  for (const device of layer.file.devices) {
+    if (!allowed.has(device.id)) continue;
+    for (const roomId of device.guards) seeds.add(roomId);
+  }
+
+  const seen = new Set<string>();
+  for (const from of seeds) {
+    for (const id of reachable(layer, from, { allowedDevices: allowed }).seen) {
+      seen.add(id);
+    }
+  }
   for (const room of layer.file.rooms) {
     out.set(room.id, seen.has(room.id) ? "open" : "closed");
   }
