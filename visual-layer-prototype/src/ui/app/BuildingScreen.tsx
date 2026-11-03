@@ -41,7 +41,9 @@ import VideocamOutlined from "@mui/icons-material/VideocamOutlined";
 import logoUrl from "../../assets/2n-logo.svg";
 import { DevicesTable, OperatorsTable, ResidentsTable } from "./BuildingTabs";
 import { FloorPlanTab } from "./FloorPlanTab";
+import { OverviewTab } from "./OverviewTab";
 import { SpaceTree } from "./SpaceTree";
+import { StructureTab } from "./StructureTab";
 import {
   buildingDevices,
   buildingSpaces,
@@ -202,8 +204,12 @@ export function BuildingScreen({
             {tab === "residents" && <ResidentsTable residents={people} />}
             {tab === "devices" && <DevicesTable devices={devices} />}
             {tab === "operators" && <OperatorsTable operators={staff} />}
-            {tab === "overview" && <ComingSoon what="Overview" />}
-            {tab === "structure" && <ComingSoon what="Structure" />}
+            {tab === "overview" && (
+              <OverviewTab layer={layer} hasPlan={hasPlan} />
+            )}
+            {tab === "structure" && (
+              <StructureTab layer={layer} hasPlan={hasPlan} />
+            )}
             {tab === "logs" && <ComingSoon what="Logs & Events" />}
             {tab === "plan" && (
               <FloorPlanTab
