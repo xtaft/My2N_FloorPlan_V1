@@ -31,6 +31,7 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import InputBase from "@mui/material/InputBase";
+import { ResizeHandle } from "./ResizeHandle";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import Check from "@mui/icons-material/Check";
 import Clear from "@mui/icons-material/Clear";
@@ -62,6 +63,11 @@ import {
 const size = (category: SpaceCategory) =>
   category.groups.length + category.rooms.length;
 
+/** Wide enough for a category name and a count; wider if asked. */
+export const DRAWER_MIN = 240;
+export const DRAWER_MAX = 600;
+export const DRAWER_DEFAULT = 320;
+
 const menuItemSx = { minHeight: 36, py: 0.25 } as const;
 const menuIconSx = { minWidth: 0, mr: 2, color: "action.active" } as const;
 
@@ -75,6 +81,9 @@ export interface CategoriesDrawerProps {
   onReassign: (fromId: string, toId: string | null) => void;
   onDeleteCategory: (typeId: string) => void;
   onNewCategory: () => void;
+  /** Figma has it at 320; the user can have it wider. */
+  width: number;
+  onWidthChange: (width: number) => void;
   /**
    * Opens the space menu — the same one the tree and the plan open, since a
    * space offers the same things wherever it is reached from.
@@ -92,6 +101,8 @@ export function CategoriesDrawer({
   onDeleteCategory,
   onNewCategory,
   onRowMenu,
+  width,
+  onWidthChange,
 }: CategoriesDrawerProps) {
   const [query, setQuery] = useState("");
   // Absent means closed; every row opens and closes on its own.
@@ -257,7 +268,8 @@ export function CategoriesDrawer({
   return (
     <Box
       sx={{
-        width: 320,
+        width,
+        position: "relative",
         flexShrink: 0,
         borderLeft: 1,
         borderColor: "divider",
@@ -266,6 +278,13 @@ export function CategoriesDrawer({
         bgcolor: "background.paper",
       }}
     >
+      <ResizeHandle
+        edge="left"
+        width={width}
+        min={DRAWER_MIN}
+        max={DRAWER_MAX}
+        onChange={onWidthChange}
+      />
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 1, gap: 0.5 }}>
         <TextField
           size="small"

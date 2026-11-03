@@ -36,6 +36,7 @@ import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { RowTarget } from "./StructureRowMenu";
 import { InlineRename } from "./InlineRename";
+import { ResizeHandle } from "./ResizeHandle";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -57,6 +58,11 @@ import {
  */
 const HIDDEN_FROM_TREE = new Set(["circulation", "stairs", "elevator"]);
 
+/** Narrow enough to still read a room name, wide enough for a deep flat. */
+export const TREE_MIN = 200;
+export const TREE_MAX = 560;
+export const TREE_DEFAULT = 256;
+
 export interface StructureTreeProps {
   layer: VisualLayer;
   buildingName: string;
@@ -72,6 +78,9 @@ export interface StructureTreeProps {
   onRenameChange: (draft: string) => void;
   onRenameCommit: () => void;
   onRenameCancel: () => void;
+  /** Figma has it at 256; the user can have it wider. */
+  width: number;
+  onWidthChange: (width: number) => void;
 }
 
 export function StructureTree({
@@ -86,6 +95,8 @@ export function StructureTree({
   onRenameChange,
   onRenameCommit,
   onRenameCancel,
+  width,
+  onWidthChange,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
   // Absent means closed. The floor on screen when the tree first mounts
@@ -321,8 +332,9 @@ export function StructureTree({
   return (
     <Box
       sx={{
-        width: 256,
+        width,
         flexShrink: 0,
+        position: "relative",
         borderRight: 1,
         borderColor: "divider",
         display: "flex",
@@ -330,6 +342,13 @@ export function StructureTree({
         bgcolor: "background.paper",
       }}
     >
+      <ResizeHandle
+        edge="right"
+        width={width}
+        min={TREE_MIN}
+        max={TREE_MAX}
+        onChange={onWidthChange}
+      />
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 1, gap: 0.5 }}>
         <TextField
           size="small"

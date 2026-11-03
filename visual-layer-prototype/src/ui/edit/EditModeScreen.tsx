@@ -16,6 +16,8 @@ import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AlignFloorView } from "./AlignFloorView";
 import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
+import { TREE_DEFAULT } from "./StructureTree";
+import { DRAWER_DEFAULT } from "./CategoriesDrawer";
 import { DoorMenu } from "./DoorMenu";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
@@ -105,6 +107,8 @@ export function EditModeScreen({
   dirty,
 }: EditModeScreenProps) {
   const [tool, setTool] = useState<EditTool>("select");
+  const [treeWidth, setTreeWidth] = useState(TREE_DEFAULT);
+  const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -389,6 +393,8 @@ export function EditModeScreen({
           }
           onRenameCommit={commitRename}
           onRenameCancel={() => setRenaming(null)}
+          width={treeWidth}
+          onWidthChange={setTreeWidth}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
@@ -474,6 +480,8 @@ export function EditModeScreen({
             run(() => deleteSpaceType(state, typeId))
           }
           onRowMenu={(el, target) => setRowMenu({ el, target })}
+          width={drawerWidth}
+          onWidthChange={setDrawerWidth}
           onNewCategory={() =>
             run(() =>
               addSpaceType(state, {
