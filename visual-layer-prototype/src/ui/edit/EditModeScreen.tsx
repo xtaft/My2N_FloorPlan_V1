@@ -517,6 +517,7 @@ export function EditModeScreen({
           width={drawerWidth}
           onWidthChange={setDrawerWidth}
           onImportSpaces={() => setImporting(true)}
+          onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
           onNewCategory={() =>
             run(() =>
               addSpaceType(state, {

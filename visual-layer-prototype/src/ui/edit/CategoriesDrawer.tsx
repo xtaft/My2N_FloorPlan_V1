@@ -32,6 +32,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import InputBase from "@mui/material/InputBase";
 import { ResizeHandle } from "./ResizeHandle";
+import { SPACE_MIME } from "./spaceDrag";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import Check from "@mui/icons-material/Check";
 import Clear from "@mui/icons-material/Clear";
@@ -41,6 +42,7 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import MoveDownOutlined from "@mui/icons-material/MoveDownOutlined";
 import PaletteOutlined from "@mui/icons-material/PaletteOutlined";
 import SearchIcon from "@mui/icons-material/Search";
+import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import type { RowTarget } from "./StructureRowMenu";
 import {
@@ -52,6 +54,7 @@ import {
   spaceCategories,
   type Group,
   type SpaceCategory,
+  type UnplacedSpace,
   type Room,
   type VisualLayer,
 } from "../../model";
@@ -95,6 +98,8 @@ export interface CategoriesDrawerProps {
   onNewCategory: () => void;
   /** Opens the space-list importer. */
   onImportSpaces: () => void;
+  /** The menu on a space that has no shape yet. */
+  onUnplacedMenu: (el: HTMLElement, spaceId: string) => void;
   /** Figma has it at 320; the user can have it wider. */
   width: number;
   onWidthChange: (width: number) => void;
@@ -115,6 +120,7 @@ export function CategoriesDrawer({
   onDeleteCategory,
   onNewCategory,
   onImportSpaces,
+  onUnplacedMenu,
   onRowMenu,
   width,
   onWidthChange,
@@ -200,6 +206,59 @@ export function CategoriesDrawer({
         onClick={(e) => {
           e.stopPropagation();
           onRowMenu(e.currentTarget, { kind: "room", room });
+        }}
+      >
+        <MoreVert sx={{ fontSize: 20 }} />
+      </IconButton>
+    </ListItemButton>
+  );
+
+  /**
+   * A space the building has and the plan does not. It drags: that is the
+   * whole point of listing it, and a row that only said "not placed yet"
+   * would be a reminder rather than a way to deal with it.
+   */
+  const renderUnplaced = (space: UnplacedSpace) => (
+    <ListItemButton
+      key={space.id}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(SPACE_MIME, space.id);
+        // Some targets read only text/plain, and a stray paste of the id is
+        // less bad than a drag that silently does nothing.
+        e.dataTransfer.setData("text/plain", space.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      sx={{ pl: 4, pr: 1, minHeight: 68, opacity: 0.7, cursor: "grab" }}
+    >
+      <Box sx={{ width: 28, flexShrink: 0 }} />
+      <Box
+        sx={{
+          width: 20,
+          mr: 1.5,
+          flexShrink: 0,
+          display: "flex",
+          color: "action.active",
+        }}
+      >
+        <PlaceOutlined sx={{ fontSize: 20 }} />
+      </Box>
+      <ListItemText
+        primary={space.name}
+        secondary={
+          space.floor_id
+            ? `${floorName(space.floor_id)} · drag onto a space`
+            : "drag onto a space"
+        }
+        primaryTypographyProps={{ variant: "body1", noWrap: true }}
+        secondaryTypographyProps={{ variant: "body2" }}
+      />
+      <IconButton
+        size="small"
+        edge="end"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUnplacedMenu(e.currentTarget, space.id);
         }}
       >
         <MoreVert sx={{ fontSize: 20 }} />
@@ -420,6 +479,12 @@ export function CategoriesDrawer({
                     {category.rooms.map((r) =>
                       renderRoom(r, 1, floorName(r.floor_id)),
                     )}
+                    {/* Spaces with no shape yet, under the category they
+                        were imported as. Drag one onto a space on the plan
+                        to give it that shape. */}
+                    {(layer.file.unplaced_spaces ?? [])
+                      .filter((sp) => (sp.space_type ?? null) === category.id)
+                      .map((space) => renderUnplaced(space))}
                   </>
                 )}
               </Fragment>

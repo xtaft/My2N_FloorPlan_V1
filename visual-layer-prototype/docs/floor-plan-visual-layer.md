@@ -552,8 +552,9 @@ beside the rooms exactly as an orphaned device sits beside the placed ones,
 and the tree lists them under their floor so the import is visible somewhere.
 
 **Placing one is step 1 done by hand.** A space waiting on the list is
-dragged from its row onto a space on the plan, or armed from its menu and
-given the next one clicked: that room takes its name, category and note,
+dragged from the types panel, where it sits under the category it was
+imported as, onto a space on the plan — or armed from its menu and given
+the next one clicked: that room takes its name, category and note,
 and the space leaves the list. It refuses a room on another storey, since a
 row that named a floor meant it.
 
