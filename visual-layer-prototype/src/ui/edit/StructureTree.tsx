@@ -45,6 +45,7 @@ import {
   passThroughRoom,
   roomColor,
   type Group,
+  type AccessBadges,
   type Room,
   type VisualLayer,
 } from "../../model";
@@ -57,6 +58,23 @@ import {
  * in the access graph, and still in the categories drawer on the right.
  */
 const HIDDEN_FROM_TREE = new Set(["circulation", "stairs", "elevator"]);
+
+/** "You can get in here" — Figma 129:291629. */
+function AccessDot() {
+  return (
+    <Box
+      component="span"
+      sx={{
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        bgcolor: "#2E9E4F",
+        flexShrink: 0,
+        ml: 1,
+      }}
+    />
+  );
+}
 
 /** Narrow enough to still read a room name, wide enough for a deep flat. */
 export const TREE_MIN = 200;
@@ -79,6 +97,12 @@ export interface StructureTreeProps {
    * draws no button rather than one that opens an empty menu.
    */
   onRowMenu?: (el: HTMLElement, target: RowTarget) => void;
+  /**
+   * Rows the current access selection reaches. Access mode only — the
+   * map shows one storey at a time, so this is the only thing that can
+   * say where in the *building* somebody gets.
+   */
+  badges?: AccessBadges | null;
   /** The row being renamed in place, if any, and the text so far. */
   renaming: { id: string; draft: string } | null;
   onRenameChange: (draft: string) => void;
@@ -97,6 +121,7 @@ export function StructureTree({
   selectedRoomId,
   onSelectRoom,
   onRowMenu,
+  badges = null,
   renaming,
   onRenameChange,
   onRenameCommit,
@@ -237,6 +262,13 @@ export function StructureTree({
           }}
         />
       )}
+      {/* Every row carries the same mark, and the row's own id is
+          what decides: a floor, an envelope and a room are all just
+          keys the selection either reaches or does not. */}
+      {badges &&
+        (badges.rooms.has(key) ||
+          badges.groups.has(key) ||
+          badges.floors.has(key)) && <AccessDot />}
       {opts.onMenu && renaming?.id !== key && (
         <IconButton
           size="small"

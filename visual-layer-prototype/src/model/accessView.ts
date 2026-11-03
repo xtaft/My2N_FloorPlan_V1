@@ -10,7 +10,7 @@
  * and a person's reach is the union of the groups they are in.
  */
 import groupsFile from "../fixtures/access_groups.json";
-import { reachable } from "./access";
+import { accessType, reachable } from "./access";
 import type { VisualLayer } from "./load";
 import { allPeople } from "./building";
 import { EXTERIOR, type Room } from "./types";
@@ -125,4 +125,57 @@ export function accessPaint(
   shading: Map<string, AccessShade>,
 ): (room: Room) => string | null {
   return (room) => ACCESS_COLORS[shading.get(room.id) ?? "none"];
+}
+
+/**
+ * Where in the building a selection gets you, for the tree.
+ *
+ * The map shows one storey, so it cannot answer "everywhere in the
+ * building" — a key that opens every hallway looks the same on each
+ * floor as a key that opens one. The tree can answer it, with a mark on
+ * every row the selection reaches.
+ *
+ * Circulation, stairs and lifts are left out on purpose. They are not
+ * guarded, so they light up for anybody holding anything, and marking
+ * them would put a badge on every floor of the building and say
+ * nothing. What is worth knowing is which *rooms* somebody gets into —
+ * a flat, a shop, the technical room — so a floor is marked when it
+ * holds one of those.
+ */
+export interface AccessBadges {
+  rooms: Set<string>;
+  groups: Set<string>;
+  floors: Set<string>;
+}
+
+const NOT_WORTH_MARKING = new Set(["circulation", "stairs", "elevator"]);
+
+export function accessBadges(
+  layer: VisualLayer,
+  shading: Map<string, AccessShade> | null,
+): AccessBadges {
+  const out: AccessBadges = {
+    rooms: new Set(),
+    groups: new Set(),
+    floors: new Set(),
+  };
+  if (!shading) return out;
+
+  for (const room of layer.file.rooms) {
+    if (shading.get(room.id) !== "open") continue;
+    const type = accessType(layer, room);
+    if (type !== null && NOT_WORTH_MARKING.has(type)) continue;
+
+    out.rooms.add(room.id);
+    out.floors.add(room.floor_id);
+    // Every envelope it sits in, so a flat is marked by its rooms and
+    // a building-level group by whatever is inside it.
+    let groupId = room.group_id;
+    while (groupId) {
+      out.groups.add(groupId);
+      groupId = layer.groups.get(groupId)?.parent_group_id ?? null;
+    }
+  }
+
+  return out;
 }

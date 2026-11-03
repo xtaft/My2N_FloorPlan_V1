@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCESS_COLORS,
+  accessBadges,
   accessGroups,
   accessPaint,
   allPeople,
@@ -214,5 +215,67 @@ describe("who the building actually lets in where", () => {
     for (const group of accessGroups()) {
       for (const id of group.devices) expect(flatReaders.has(id)).toBe(false);
     }
+  });
+});
+
+describe("marking the tree with where you can get", () => {
+  const badgesFor = (personId: string) =>
+    accessBadges(layer, accessShading(layer, new Set(devicesHeldBy(layer, personId))));
+
+  it("marks nothing while nothing is selected", () => {
+    const none = accessBadges(layer, accessShading(layer, new Set()));
+    expect(none.rooms.size).toBe(0);
+    expect(none.floors.size).toBe(0);
+    expect(none.groups.size).toBe(0);
+  });
+
+  it("marks the rooms somebody gets into, and not the way there", () => {
+    // R001 can walk every hallway in the building, which is true of
+    // anybody who can get through the front door and so says nothing.
+    // What is worth marking is her flat.
+    const badges = badgesFor("R001");
+    const named = [...badges.rooms].map((id) => layer.rooms.get(id)!.name);
+    expect(named).toContain("Living room");
+    expect(named).not.toContain("Hallway");
+    expect(named).not.toContain("Stairs");
+    expect(named).not.toContain("Elevator");
+    expect(named).not.toContain("Lobby");
+  });
+
+  it("marks the flat a resident lives in, and no other", () => {
+    const badges = badgesFor("R001");
+    expect(badges.groups.has("1:A1")).toBe(true);
+    expect(badges.groups.has("1:A2")).toBe(false);
+  });
+
+  it("marks only the floors that hold such a room", () => {
+    // Her flat is on floor 1. The other storeys are hallway and stairs
+    // to her, so they carry nothing.
+    expect([...badgesFor("R001").floors]).toEqual(["1:floor"]);
+  });
+
+  it("marks the ground floor for somebody who only works there", () => {
+    const badges = badgesFor("S004");
+    expect([...badges.floors]).toEqual(["0:floor"]);
+    const named = [...badges.rooms].map((id) => layer.rooms.get(id)!.name);
+    expect(named).toContain("Shop floor");
+    expect(named).not.toContain("Lobby");
+  });
+
+  it("marks every floor for a key that opens a room on each", () => {
+    // Every apartment reader at once: a room on all four upper floors.
+    const readers = residents(layer).flatMap((r) =>
+      r.accessPoints.filter((d) => d !== "IC-0-d10"),
+    );
+    const badges = accessBadges(
+      layer,
+      accessShading(layer, new Set([...readers, "IC-0-d10"])),
+    );
+    expect([...badges.floors].sort()).toEqual([
+      "1:floor",
+      "2:floor",
+      "3:floor",
+      "4:floor",
+    ]);
   });
 });

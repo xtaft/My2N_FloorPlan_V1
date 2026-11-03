@@ -78,6 +78,7 @@ import {
   previewAddDoor,
   recolorSpaceType,
   redo,
+  accessBadges,
   accessPaint,
   accessShading,
   devicesHeldBy,
@@ -197,6 +198,12 @@ export function EditModeScreen({
   const shading = useMemo(
     () => (mode === "access" ? accessShading(layer, allowed) : null),
     [mode, layer, allowed],
+  );
+
+  /** The same answer, for the tree: the map only shows one storey. */
+  const badges = useMemo(
+    () => accessBadges(layer, shading),
+    [layer, shading],
   );
 
 
@@ -480,6 +487,7 @@ export function EditModeScreen({
               ? (el, target) => setRowMenu({ el, target })
               : undefined
           }
+          badges={badges}
           renaming={renaming}
           onRenameChange={(draft) =>
             setRenaming((cur) => (cur ? { ...cur, draft } : cur))

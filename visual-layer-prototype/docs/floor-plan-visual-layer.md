@@ -868,6 +868,17 @@ residents and operators for the same reason — somebody in two groups
 would be listed twice and somebody in none would vanish, which is most
 residents, because living somewhere is not a group.
 
+**The tree carries the answer the map cannot.** The map shows one
+storey, so a key that opens every hallway looks the same there as a key
+that opens one room. A green dot marks every tree row the selection
+reaches — the room, the envelope it is in, and its floor.
+
+Circulation, stairs and lifts are left out of that on purpose. They are
+not guarded, so they light up for anybody who can get through the front
+door, and marking them would put a dot on every floor of the building
+and say nothing. What is worth knowing is which *rooms* somebody gets
+into, so a floor is marked when it holds one of those.
+
 **An apartment door is a hidden group.** The resident holds its reader
 in their own right, so it never appears in the groups list; the four
 that do are the ones a manager administers.

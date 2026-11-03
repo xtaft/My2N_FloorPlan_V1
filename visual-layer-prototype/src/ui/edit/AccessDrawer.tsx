@@ -273,10 +273,22 @@ export function AccessDrawer({
               somewhere is not a group. */}
           {tab === "people" && (
             <>
-              <SubHeading label={count(people.residents.length, "resident")} depth={0} />
-              {people.residents.map((r) => personRow(r.id, 0))}
-              <SubHeading label={count(people.operators.length, "operator")} depth={0} />
-              {people.operators.map((o) => personRow(o.id, 0))}
+              <PeopleSection
+                id="residents"
+                label="Residents"
+                people={people.residents}
+                open={open.has("residents") || Boolean(q)}
+                onToggle={() => toggleOpen("residents")}
+                row={personRow}
+              />
+              <PeopleSection
+                id="operators"
+                label="Operators"
+                people={people.operators}
+                open={open.has("operators") || Boolean(q)}
+                onToggle={() => toggleOpen("operators")}
+                row={personRow}
+              />
             </>
           )}
 
@@ -361,6 +373,52 @@ export function AccessDrawer({
 /** "1 device", "3 devices" — a count nobody has to read twice. */
 function count(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * Residents and operators, each a row that opens.
+ *
+ * The two kinds of person are what somebody is looking for first — a
+ * resident or somebody who works here — and forty-four names under a
+ * caption is a wall. A row that opens says how many there are before
+ * it shows them.
+ */
+function PeopleSection({
+  id,
+  label,
+  people,
+  open,
+  onToggle,
+  row,
+}: {
+  id: string;
+  label: string;
+  people: { id: string }[];
+  open: boolean;
+  onToggle: () => void;
+  row: (personId: string, depth: number) => React.ReactNode;
+}) {
+  return (
+    <Fragment key={id}>
+      <ListItemButton sx={{ minHeight: 52, pl: 1, pr: 0.5 }} onClick={onToggle}>
+        <Box sx={{ width: 34 }} />
+        <Box sx={{ width: 24, display: "flex" }}>
+          {open ? (
+            <ExpandMore sx={{ fontSize: 18 }} />
+          ) : (
+            <ChevronRight sx={{ fontSize: 18 }} />
+          )}
+        </Box>
+        <ListItemText
+          primary={label}
+          secondary={count(people.length, "person", "people")}
+          primaryTypographyProps={{ variant: "body2", noWrap: true }}
+          secondaryTypographyProps={{ variant: "caption", noWrap: true }}
+        />
+      </ListItemButton>
+      {open && people.map((p) => row(p.id, 1))}
+    </Fragment>
+  );
 }
 
 function SubHeading({ label, depth }: { label: string; depth: number }) {
