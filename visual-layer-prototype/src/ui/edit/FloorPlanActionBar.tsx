@@ -174,9 +174,7 @@ export function FloorPlanActionBar({
         sx={{ width: 320 }}
       >
         <MenuItem value="structure">Structure</MenuItem>
-        <MenuItem value="devices" disabled>
-          Devices
-        </MenuItem>
+        <MenuItem value="devices">Devices</MenuItem>
       </TextField>
     </Box>
   );
