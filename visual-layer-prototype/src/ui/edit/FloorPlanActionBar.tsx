@@ -16,9 +16,7 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
-import ElevatorOutlined from "@mui/icons-material/ElevatorOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
-import StairsOutlined from "@mui/icons-material/StairsOutlined";
 import LayersClearOutlined from "@mui/icons-material/LayersClearOutlined";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
@@ -30,9 +28,7 @@ export type EditTool =
   | "hide"
   | "wall"
   | "remove_wall"
-  | "door"
-  | "stairs"
-  | "elevator";
+  | "door";
 export type EditModeName = "structure" | "devices";
 
 export interface FloorPlanActionBarProps {
@@ -123,20 +119,6 @@ export function FloorPlanActionBar({
           "Door",
           <DoorFrontOutlined sx={{ fontSize: 16 }} />,
           "Click a wall to put a door in it",
-        )}
-        {toolButton(
-          "stairs",
-          "Stairs",
-          <StairsOutlined sx={{ fontSize: 16 }} />,
-          "Not built: tagging a shaft regenerates the vertical doors",
-          false,
-        )}
-        {toolButton(
-          "elevator",
-          "Elevator",
-          <ElevatorOutlined sx={{ fontSize: 16 }} />,
-          "Not built: tagging a shaft regenerates the vertical doors",
-          false,
         )}
       </Stack>
 

@@ -6,6 +6,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { CANVAS_BACKGROUND } from "../theme";
@@ -18,6 +24,8 @@ import {
   addDoor,
   deleteWall,
   divideRoom,
+  setRoomSpaceType,
+  shaftImpact,
   previewDeleteWall,
   previewDivide,
   type DivideRoomRequest,
@@ -45,6 +53,20 @@ export interface EditModeScreenProps {
   onSave: () => void;
   /** True once anything has been edited since entering edit mode. */
   dirty: boolean;
+}
+
+/** "floors 0 to 4", or "floors 0 to 1 and 3 to 4" once a shaft is broken. */
+function describeRuns(runs: number[][]): string {
+  if (runs.length === 0) return "no floors";
+  const parts = runs.map((run) =>
+    run.length === 1 ? `${run[0]}` : `${run[0]} to ${run[run.length - 1]}`,
+  );
+  const joined =
+    parts.length === 1
+      ? parts[0]
+      : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  const total = runs.reduce((n, run) => n + run.length, 0);
+  return `${total === 1 ? "floor" : "floors"} ${joined}`;
 }
 
 export function EditModeScreen({
@@ -156,6 +178,31 @@ export function EditModeScreen({
     [run, state],
   );
 
+  /**
+   * Taking a space out of the stairs or lift category is not a recolour: it
+   * drops that storey out of the shaft, and the floors above it lose the
+   * only thing connecting them. Ask first, and say what actually breaks —
+   * which storeys stop being linked — rather than warning about "structure"
+   * in the abstract.
+   */
+  const [confirming, setConfirming] = useState<{
+    roomId: string;
+    typeId: string | null;
+    impact: ReturnType<typeof shaftImpact>;
+  } | null>(null);
+
+  const assignCategory = useCallback(
+    (roomId: string, typeId: string | null) => {
+      const impact = shaftImpact(layer, roomId, typeId);
+      if (impact) {
+        setConfirming({ roomId, typeId, impact });
+        return;
+      }
+      run(() => setRoomSpaceType(state, roomId, typeId));
+    },
+    [layer, run, state],
+  );
+
   const undoLabel = state.undo[state.undo.length - 1]?.label ?? null;
   const redoLabel = state.redo[state.redo.length - 1]?.label ?? null;
 
@@ -263,6 +310,7 @@ export function EditModeScreen({
           }}
           onRename={(id, name) => run(() => renameSpaceType(state, id, name))}
           onRecolor={(id, color) => run(() => recolorSpaceType(state, id, color))}
+          onAssignCategory={assignCategory}
           onNewCategory={() =>
             run(() =>
               addSpaceType(state, {
@@ -274,6 +322,56 @@ export function EditModeScreen({
           }
         />
       </Box>
+
+      <Dialog
+        open={Boolean(confirming)}
+        onClose={() => setConfirming(null)}
+        maxWidth="xs"
+      >
+        <DialogTitle>Take this space out of the shaft?</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div">
+            {confirming?.impact && (
+              <>
+                <p>
+                  {layer.rooms.get(confirming.roomId)?.name} is part of the{" "}
+                  {confirming.impact.name} shaft running through this building.
+                  Changing its category takes it out, and the{" "}
+                  {confirming.impact.lostLinks === 1
+                    ? "link"
+                    : `${confirming.impact.lostLinks} links`}{" "}
+                  through it {confirming.impact.lostLinks === 1 ? "goes" : "go"}{" "}
+                  with it.
+                </p>
+                <p>
+                  {describeRuns(confirming.impact.before)} would become{" "}
+                  {describeRuns(confirming.impact.after)}. Access verification
+                  runs over those links, so anything only reachable through
+                  this shaft will stop being reachable.
+                </p>
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setConfirming(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              if (confirming) {
+                const { roomId, typeId } = confirming;
+                run(() => setRoomSpaceType(state, roomId, typeId));
+              }
+              setConfirming(null);
+            }}
+          >
+            Change it anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={toast !== null}

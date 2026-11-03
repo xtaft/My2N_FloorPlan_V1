@@ -49,6 +49,12 @@ export interface CategoriesDrawerProps {
   onRename: (typeId: string, name: string) => void;
   onRecolor: (typeId: string, color: string) => void;
   onNewCategory: () => void;
+  /**
+   * Put a room in a category. The screen above owns this rather than the
+   * drawer, because moving a stairwell out of its category breaks the floors
+   * apart and has to be asked about first.
+   */
+  onAssignCategory: (roomId: string, typeId: string | null) => void;
 }
 
 export function CategoriesDrawer({
@@ -58,6 +64,7 @@ export function CategoriesDrawer({
   onRename,
   onRecolor,
   onNewCategory,
+  onAssignCategory,
 }: CategoriesDrawerProps) {
   const [query, setQuery] = useState("");
   // Absent means closed; every row opens and closes on its own.
@@ -65,6 +72,11 @@ export function CategoriesDrawer({
   const [menu, setMenu] = useState<{ el: HTMLElement; typeId: string } | null>(
     null,
   );
+  /** The room whose category is being picked. */
+  const [assigning, setAssigning] = useState<{
+    el: HTMLElement;
+    room: Room;
+  } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -131,7 +143,14 @@ export function CategoriesDrawer({
         }}
         secondaryTypographyProps={{ variant: "body2" }}
       />
-      <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
+      <IconButton
+        size="small"
+        edge="end"
+        onClick={(e) => {
+          e.stopPropagation();
+          setAssigning({ el: e.currentTarget, room });
+        }}
+      >
         <MoreVert sx={{ fontSize: 20 }} />
       </IconButton>
     </ListItemButton>
@@ -356,6 +375,51 @@ export function CategoriesDrawer({
           </span>
         </Tooltip>
       </Box>
+
+      {/* Which category this one room is in. The categories' own menu,
+          below, renames and recolours the category for every space in it. */}
+      <Menu
+        anchorEl={assigning?.el ?? null}
+        open={Boolean(assigning)}
+        onClose={() => setAssigning(null)}
+      >
+        <MenuItem disabled>
+          <Typography variant="overline">Category</Typography>
+        </MenuItem>
+        {layer.file.space_types.map((type) => (
+          <MenuItem
+            key={type.id}
+            selected={assigning?.room.space_type === type.id}
+            onClick={() => {
+              if (assigning) onAssignCategory(assigning.room.id, type.id);
+              setAssigning(null);
+            }}
+          >
+            <Box
+              sx={{
+                width: 14,
+                height: 14,
+                mr: 1.5,
+                borderRadius: "2px",
+                bgcolor: type.color,
+                border: 1,
+                borderColor: "divider",
+              }}
+            />
+            {type.name}
+          </MenuItem>
+        ))}
+        <MenuItem
+          selected={assigning?.room.space_type === null}
+          onClick={() => {
+            if (assigning) onAssignCategory(assigning.room.id, null);
+            setAssigning(null);
+          }}
+        >
+          <Box sx={{ width: 14, mr: 1.5 }} />
+          Inherit from envelope
+        </MenuItem>
+      </Menu>
 
       <Menu
         anchorEl={menu?.el ?? null}

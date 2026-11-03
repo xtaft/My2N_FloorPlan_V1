@@ -36,6 +36,8 @@ import {
   type Door,
   type Point,
   type Reachability,
+  type Room,
+  type Vertex,
   type VisualLayer,
   type Wall,
   type WallHit,
@@ -689,6 +691,20 @@ export function FloorPlanCanvas({
               />
             ))}
 
+          {/* Stairs and lifts carry their own mark, from their category. */}
+          {scene.rooms.map((room) => {
+            const type = accessType(layer, room);
+            if (type !== "stairs" && type !== "elevator") return null;
+            return (
+              <ShaftMark
+                key={`shaft-${room.id}`}
+                room={room}
+                kind={type}
+                rings={rings.get(room)}
+              />
+            );
+          })}
+
           {/* Labels: the room when it is visible, otherwise its envelope. */}
           <Labels
             layer={layer}
@@ -861,6 +877,95 @@ function DoorSymbol({
         stroke={DOOR_COLOR}
         strokeWidth={3}
       />
+    </g>
+  );
+}
+
+/**
+ * The mark that says a space is vertical circulation: treads for a stair, a
+ * cross for a lift shaft — the two symbols a floor plan already uses, so
+ * nobody has to be told what they mean.
+ *
+ * Drawn from the category rather than from any flag of its own. A room is
+ * stairs because it is in the stairs category, and the plan should not be
+ * able to disagree with the drawer about that.
+ *
+ * Both are clipped to the room, so an L-shaped stairwell gets treads that
+ * stop at its walls instead of a rectangle of lines laid over the top.
+ */
+function ShaftMark({
+  room,
+  kind,
+  rings,
+}: {
+  room: Room;
+  kind: "stairs" | "elevator";
+  rings: Vertex[][];
+}) {
+  if (rings.length === 0) return null;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const ring of rings) {
+    for (const v of ring) {
+      if (v.x < minX) minX = v.x;
+      if (v.y < minY) minY = v.y;
+      if (v.x > maxX) maxX = v.x;
+      if (v.y > maxY) maxY = v.y;
+    }
+  }
+  const w = maxX - minX;
+  const h = maxY - minY;
+  if (w <= 0 || h <= 0) return null;
+
+  const clipId = `shaft-${room.id}`;
+  const stroke = WALL_COLOR;
+
+  let marks: React.ReactNode;
+  if (kind === "elevator") {
+    // The surveyor's cross, corner to corner of the shaft.
+    marks = (
+      <>
+        <line x1={minX} y1={minY} x2={maxX} y2={maxY} />
+        <line x1={minX} y1={maxY} x2={maxX} y2={minY} />
+      </>
+    );
+  } else {
+    // Treads run across the flight, so they divide the long axis.
+    const along = w >= h;
+    const span = along ? w : h;
+    const count = Math.max(2, Math.min(14, Math.round(span / 26)));
+    const step = span / count;
+    const lines = [];
+    for (let i = 1; i < count; i += 1) {
+      const at = (along ? minX : minY) + step * i;
+      lines.push(
+        along ? (
+          <line key={i} x1={at} y1={minY} x2={at} y2={maxY} />
+        ) : (
+          <line key={i} x1={minX} y1={at} x2={maxX} y2={at} />
+        ),
+      );
+    }
+    marks = <>{lines}</>;
+  }
+
+  return (
+    <g pointerEvents="none">
+      <clipPath id={clipId}>
+        <path d={ringsToPath(rings)} clipRule="evenodd" />
+      </clipPath>
+      <g
+        clipPath={`url(#${clipId})`}
+        stroke={stroke}
+        strokeWidth={3}
+        strokeOpacity={0.55}
+        fill="none"
+      >
+        {marks}
+      </g>
     </g>
   );
 }

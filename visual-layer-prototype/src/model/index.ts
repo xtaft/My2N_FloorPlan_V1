@@ -7,3 +7,4 @@ export * from "./derive";
 export * from "./edit";
 export * from "./divide";
 export * from "./merge";
+export * from "./shaft";

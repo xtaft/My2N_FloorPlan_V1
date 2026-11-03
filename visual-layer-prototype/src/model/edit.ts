@@ -42,6 +42,7 @@ export type OperationKind =
   | "add_door"
   | "divide"
   | "delete_wall"
+  | "set_space_type"
   | "show_room"
   | "hide_room"
   | "add_space_type"

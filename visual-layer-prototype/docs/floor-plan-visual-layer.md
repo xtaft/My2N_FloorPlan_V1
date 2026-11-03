@@ -990,9 +990,28 @@ break anything.
 
 The one trap: **vertical doors pair adjacent `level`s, not adjacent drawer rows.**
 Dragging L5 above L3 must not relink them — that fabricates an elevator. Rebuild
-vertical doors when a `level` changes, a floor is added or removed, or a
-`shaft_id` is set; never on reorder. Show `level` in the drawer row so an order
-of 3, 5, 4 does not look like a bug.
+vertical doors when a `level` changes, a floor is added or removed, a
+`shaft_id` is set, or a space leaves the stairs or lift category; never on
+reorder. Show `level` in the drawer row so an order of 3, 5, 4 does not look
+like a bug.
+
+**A shaft is edited through the category, not a tool of its own.** A space is
+part of the vertical circulation because it is in the stairs or lift category,
+and the plan draws it so — treads for a stair, a cross for a lift shaft. A tool
+that tagged shafts separately would be a second place for the same fact to live,
+free to disagree with the drawer.
+
+Taking a space out of those categories clears its envelope's `shaft_id` and
+regenerates the links, which is where pairing adjacent levels earns itself:
+dropping a middle storey leaves two shorter shafts, not one shaft with a long
+step past a floor that is no longer in it. That is a change to what the access
+search can reach, so **confirm it first, and say which storeys stop being
+linked** — a warning about "the structure" in the abstract tells a manager
+nothing they can check against the building.
+
+The reverse is not symmetrical. Giving some room the stairs category says what
+it is, not which stairwell it belongs to, and a building can have several;
+joining a shaft needs the shaft named.
 
 Groups cannot move between floors. Geometry would not follow, since floors have
 independent coordinate systems.
