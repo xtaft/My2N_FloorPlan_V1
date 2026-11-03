@@ -99,6 +99,12 @@ export interface FloorPlanCanvasProps {
   ) => void;
   onDoorMenu?: (doorId: string, at: { top: number; left: number }) => void;
   /**
+   * The door whose menu is open, drawn lit. Doors are only selectable
+   * where `onDoorMenu` is given, which is structure mode — in devices
+   * mode a click on a doorway is after the device on it, not the doorway.
+   */
+  selectedDoorId?: string | null;
+  /**
    * A space from the import list is waiting for a shape, so the next click
    * on a room gives it one instead of opening that room's menu.
    */
@@ -196,6 +202,7 @@ export function FloorPlanCanvas({
   deleteWallError,
   onSpaceMenu,
   onDoorMenu,
+  selectedDoorId = null,
   placingSpace = false,
   onPlaceSpace,
   onDropSpace,
@@ -218,6 +225,12 @@ export function FloorPlanCanvas({
   const [hover, setHover] = useState<WallHit | null>(null);
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [hoverDevice, setHoverDevice] = useState<string | null>(null);
+  const [hoverDoor, setHoverDoor] = useState<string | null>(null);
+  // Switching out of structure mode is not a pointer move, so the lit
+  // door would otherwise stay lit until the pointer happened to move.
+  useEffect(() => {
+    if (!onDoorMenu) setHoverDoor(null);
+  }, [onDoorMenu]);
   /** The first end of a wall being drawn, already on one of the room's walls. */
   const [cutFrom, setCutFrom] = useState<{ roomId: string; at: Point } | null>(
     null,
@@ -447,6 +460,14 @@ export function FloorPlanCanvas({
       const pt = toSvgPoint(e.clientX, e.clientY);
       if (!pt) return;
 
+      // A door is a thin thing on a room's edge, so what the pointer is
+      // over is decided by distance rather than by hit area — the same
+      // way the click does it, or the two would disagree. Set either way
+      // rather than read-then-set: this runs from a memoised callback,
+      // and a stale read would leave a door lit after the mode changed.
+      const overDoor = onDoorMenu && !aiming ? (doorAt(pt)?.id ?? null) : null;
+      setHoverDoor((cur) => (cur === overDoor ? cur : overDoor));
+
       // Which marker the pointer is over, worked out here because the
       // markers themselves take no pointer events — see DeviceMarker.
       if (!aiming) {
@@ -476,6 +497,8 @@ export function FloorPlanCanvas({
       aiming,
       drawing,
       cutFrom,
+      doorAt,
+      onDoorMenu,
       roomAt,
       snapTo,
       toSvgPoint,
@@ -780,6 +803,13 @@ export function FloorPlanCanvas({
               layer={layer}
               door={door}
               showAllRooms={revealAll}
+              lit={
+                door.id === selectedDoorId
+                  ? "selected"
+                  : door.id === hoverDoor
+                    ? "hover"
+                    : null
+              }
             />
           ))}
 
@@ -982,10 +1012,13 @@ function DoorSymbol({
   layer,
   door,
   showAllRooms,
+  lit = null,
 }: {
   layer: VisualLayer;
   door: Door;
   showAllRooms: boolean;
+  /** Under the pointer, or the one whose menu is open. */
+  lit?: "hover" | "selected" | null;
 }) {
   const wall = door.wall_id ? layer.walls.get(door.wall_id) : undefined;
   if (!wall || !isWallVisible(layer, wall, showAllRooms)) return null;
@@ -993,18 +1026,37 @@ function DoorSymbol({
   const g = doorGeometry(layer, door);
   if (!g) return null;
 
+  // The lit band runs along the opening itself rather than round the
+  // leaf: the opening is the part of a door that is in the wall, and it
+  // is the same shape whichever way the leaf has been flipped.
+  const band = lit ? (
+    <line
+      x1={g.p1.x}
+      y1={g.p1.y}
+      x2={g.p2.x}
+      y2={g.p2.y}
+      stroke="#2196f3"
+      strokeOpacity={lit === "selected" ? 0.9 : 0.4}
+      strokeWidth={14}
+      strokeLinecap="round"
+    />
+  ) : null;
+
   // An opening has no leaf: a wall, a position and a width, nothing more.
   if (door.kind === "opening") {
     return (
-      <line
-        x1={g.p1.x}
-        y1={g.p1.y}
-        x2={g.p2.x}
-        y2={g.p2.y}
-        stroke={DOOR_COLOR}
-        strokeWidth={2}
-        strokeDasharray="6 6"
-      />
+      <g pointerEvents="none">
+        {band}
+        <line
+          x1={g.p1.x}
+          y1={g.p1.y}
+          x2={g.p2.x}
+          y2={g.p2.y}
+          stroke={DOOR_COLOR}
+          strokeWidth={2}
+          strokeDasharray="6 6"
+        />
+      </g>
     );
   }
 
@@ -1017,6 +1069,7 @@ function DoorSymbol({
 
   return (
     <g pointerEvents="none">
+      {band}
       <path
         d={`M ${closed.x} ${closed.y} A ${g.width} ${g.width} 0 0 ${sweep} ${open.x} ${open.y}`}
         fill="none"

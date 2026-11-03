@@ -500,7 +500,20 @@ export function EditModeScreen({
                     : { kind: "group", group: found as Group },
               });
             }}
-            onDoorMenu={(doorId, at) => setDoorMenu({ doorId, at })}
+            // A door is a piece of structure, so it is selectable where
+            // structure is edited and nowhere else. In devices mode a
+            // click near a doorway is after the device on it.
+            onDoorMenu={
+              mode === "structure"
+                ? (doorId, at) => setDoorMenu({ doorId, at })
+                : undefined
+            }
+            selectedDoorId={doorMenu?.doorId ?? null}
+            // Structure mode is about walls, doors and spaces. The
+            // devices are the other mode's subject and only crowd this
+            // one — a reader's 40px marker sits exactly where the doors
+            // being edited are.
+            showDevices={mode === "devices"}
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
             placementError={placementError}

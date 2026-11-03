@@ -8,6 +8,7 @@ import {
   accessType,
   deleteDoor,
   deleteSpaceType,
+  deviceAnchor,
   doorGeometry,
   flipDoorHinge,
   flipDoorSwing,
@@ -63,6 +64,46 @@ describe("flipping a door", () => {
     expect(after.file.rooms).toEqual(before.file.rooms);
     expect(after.file.devices).toEqual(before.file.devices);
     expect(after.file.doors.length).toBe(before.file.doors.length);
+  });
+
+  it("leaves the reader checking the same side it always did", () => {
+    // A flip is about the drawing: it says which way the leaf really
+    // opens. It is not a statement about access, so the device on the
+    // door must come out of it verifying entry into the same room, and
+    // drawn on the same side of the wall.
+    const before = state();
+    const reader = before.file.devices.find(
+      (d) => d.host_kind === "door" && d.host_id === DOOR,
+    )!;
+    const was = { guards: reader.guards, at: deviceAnchor(before.layer, reader) };
+    expect(was.guards.length).toBe(1);
+    expect(was.at).not.toBeNull();
+
+    for (const flip of [flipDoorSwing, flipDoorHinge]) {
+      const after = flip(before, DOOR);
+      const now = after.file.devices.find((d) => d.id === reader.id)!;
+      expect(now.guards).toEqual(was.guards);
+      expect(now.host_id).toBe(DOOR);
+      expect(deviceAnchor(after.layer, now)).toEqual(was.at);
+    }
+  });
+
+  it("does change the drawing, which is the point of it", () => {
+    // The companion to the test above: if nothing moved at all, the two
+    // tests together would be passing for the wrong reason.
+    const before = state();
+    const was = doorGeometry(before.layer, before.layer.doors.get(DOOR)!)!;
+    const hinged = doorGeometry(
+      flipDoorHinge(before, DOOR).layer,
+      flipDoorHinge(before, DOOR).layer.doors.get(DOOR)!,
+    )!;
+    expect(hinged.hingePoint).not.toEqual(was.hingePoint);
+
+    const swung = doorGeometry(
+      flipDoorSwing(before, DOOR).layer,
+      flipDoorSwing(before, DOOR).layer.doors.get(DOOR)!,
+    )!;
+    expect(swung.openSide).not.toEqual(was.openSide);
   });
 
   it("refuses a vertical link, which has no sides", () => {

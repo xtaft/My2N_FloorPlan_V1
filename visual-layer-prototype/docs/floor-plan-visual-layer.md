@@ -778,6 +778,28 @@ record survives rather than being removed.
 rooms move up to whatever contained it. Deleting an envelope cannot mean
 deleting the spaces drawn inside it.
 
+### Doors are selected in structure mode, and nowhere else
+
+A door is a piece of structure, so it is clickable where structure is
+edited. In devices mode a click near a doorway is after the device on it,
+and the two selections would fight over the same few pixels. Structure
+mode also stops drawing the devices for the same reason: a reader's
+marker sits exactly on top of the door being edited.
+
+Its menu is Flip wall side, Flip opening side, Delete. Both flips exist
+because a door's orientation is read off the drawing's swing arc during
+segmentation, and an ambiguous arc produces a confident wrong answer.
+Nothing else in the model can tell which way a leaf opens, so nothing
+else can correct it.
+
+**A flip is about the drawing, never about access.** It says which way the
+leaf really opens; it does not say who may go through. So a reader on a
+flipped door comes out verifying the same room and drawn on the same side
+of the wall. That holds because the side a reader is drawn on is derived
+from its `guards` and not from the door's `swing` — the two are
+independent on purpose, and a test pins it, alongside one asserting the
+drawing *does* change, so the pair cannot both pass by nothing happening.
+
 ## Removing a wall — which is how rooms merge
 
 **There is no standalone merge function.** Two rooms become one by deleting the
