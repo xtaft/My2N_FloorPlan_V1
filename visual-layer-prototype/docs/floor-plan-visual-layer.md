@@ -525,6 +525,44 @@ Because `t` is rescaled rather than a position being re-matched, a door stays
 exactly where it was. Storing door endpoints instead would mean the door's
 position and its wall could disagree.
 
+## Importing a space list
+
+A list of apartments and rooms arrives from a letting system or a
+spreadsheet long before anyone draws it. One row is one space: **Name**
+required, **Floor**, **Type** and **Note** optional. Matching ignores case,
+surrounding space and diacritics, because a list typed by hand and plans
+exported from CAD will not agree on any of the three.
+
+A row is matched in three steps, and a space is claimed once so two rows
+cannot both take it:
+
+1. a space **on the plan**, within the floor when the row names one — it is
+   renamed and its type is set
+2. a space **already in the structure** waiting to be placed — the row
+   updates it, and its devices stay
+3. **nothing** — the space joins the list still to be placed
+
+```python
+unplaced_spaces: list   # id, name, floor_id, space_type, note
+```
+
+A space with no shape cannot be a Room. A Room **is** its wall set, and one
+with no walls breaks every derivation that assumes an outline — so these sit
+beside the rooms exactly as an orphaned device sits beside the placed ones,
+and the tree lists them under their floor so the import is visible somewhere.
+
+**Nothing is deleted, ever.** A name or a type is replaced only where a row
+matched, which is what makes importing the same list twice an update rather
+than a second copy of the building. A blank Type column says nothing, which
+is not the same as saying unknown: the category is left as it was. A row
+naming a floor or a category this building does not have comes in without
+one and is counted in the summary shown before anything is written.
+
+The type named in a row is matched against **this building's categories**,
+not a fixed list. A template that offers Office and Retail unit is advice to
+whoever fills it in; what a space can actually be is whatever the types
+panel holds.
+
 ## Deleting a space — which removes a name, not an area
 
 A space cannot simply go. The floor is tiled, so its area would belong to

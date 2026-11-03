@@ -40,6 +40,25 @@ export interface Room {
   floor_id: string;
   /** Visibility only. Carries no access meaning. */
   surfaced: boolean;
+  /** Free text from an imported space list. Nothing derived reads it. */
+  note?: string | null;
+}
+
+/**
+ * A space the building has but the plan does not: imported from a list
+ * before anyone drew it, or named in a list that matched nothing.
+ *
+ * It is not a Room because a Room is its shape — an unordered wall set is
+ * the whole of it, and a Room with no walls would break every derivation
+ * that assumes one. So these sit beside the rooms until someone places
+ * them, exactly as an orphaned device sits beside the placed ones.
+ */
+export interface UnplacedSpace {
+  id: string;
+  name: string;
+  floor_id: string | null;
+  space_type: string | null;
+  note: string | null;
 }
 
 export interface Group {
@@ -142,6 +161,8 @@ export interface VisualLayerFile {
   devices: Device[];
   profiles: Profile[];
   unplaced_devices: string[];
+  /** Spaces named in the structure that have no shape on the plan yet. */
+  unplaced_spaces?: UnplacedSpace[];
   repairs: Repair[];
   counts: Record<string, number>;
 }

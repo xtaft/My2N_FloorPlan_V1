@@ -19,6 +19,7 @@ import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
 import { TREE_DEFAULT } from "./StructureTree";
 import { DRAWER_DEFAULT } from "./CategoriesDrawer";
 import { DoorMenu } from "./DoorMenu";
+import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { EditAppBar } from "./EditAppBar";
@@ -35,6 +36,7 @@ import {
   landingsFor,
   referenceFloor,
   type Transform,
+  applySpaceList,
   deleteDoor,
   deleteRoom,
   detachRoom,
@@ -107,6 +109,7 @@ export function EditModeScreen({
   dirty,
 }: EditModeScreenProps) {
   const [tool, setTool] = useState<EditTool>("select");
+  const [importing, setImporting] = useState(false);
   const [treeWidth, setTreeWidth] = useState(TREE_DEFAULT);
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
@@ -482,6 +485,7 @@ export function EditModeScreen({
           onRowMenu={(el, target) => setRowMenu({ el, target })}
           width={drawerWidth}
           onWidthChange={setDrawerWidth}
+          onImportSpaces={() => setImporting(true)}
           onNewCategory={() =>
             run(() =>
               addSpaceType(state, {
@@ -493,6 +497,13 @@ export function EditModeScreen({
           }
         />
       </Box>
+
+      <ImportSpaceList
+        open={importing}
+        layer={layer}
+        onClose={() => setImporting(false)}
+        onImport={(matches) => run(() => applySpaceList(state, matches))}
+      />
 
       <DoorMenu
         door={doorMenu ? (layer.doors.get(doorMenu.doorId) ?? null) : null}

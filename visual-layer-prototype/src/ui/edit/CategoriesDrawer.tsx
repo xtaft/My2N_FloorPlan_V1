@@ -81,6 +81,8 @@ export interface CategoriesDrawerProps {
   onReassign: (fromId: string, toId: string | null) => void;
   onDeleteCategory: (typeId: string) => void;
   onNewCategory: () => void;
+  /** Opens the space-list importer. */
+  onImportSpaces: () => void;
   /** Figma has it at 320; the user can have it wider. */
   width: number;
   onWidthChange: (width: number) => void;
@@ -100,6 +102,7 @@ export function CategoriesDrawer({
   onReassign,
   onDeleteCategory,
   onNewCategory,
+  onImportSpaces,
   onRowMenu,
   width,
   onWidthChange,
@@ -424,12 +427,15 @@ export function CategoriesDrawer({
         >
           New category
         </Button>
-        <Tooltip title="Not built: importing categories needs the platform's structure">
-          <span>
-            <Button variant="outlined" color="inherit" sx={{ minWidth: 48 }} disabled>
-              <FileUploadOutlined sx={{ fontSize: 20 }} />
-            </Button>
-          </span>
+        <Tooltip title="Import a space list from a spreadsheet">
+          <Button
+            variant="outlined"
+            color="inherit"
+            sx={{ minWidth: 48 }}
+            onClick={onImportSpaces}
+          >
+            <FileUploadOutlined sx={{ fontSize: 20 }} />
+          </Button>
         </Tooltip>
       </Box>
 

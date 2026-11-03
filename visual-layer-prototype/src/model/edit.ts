@@ -51,6 +51,7 @@ export type OperationKind =
   | "flip_door"
   | "delete_door"
   | "delete_space_type"
+  | "import_spaces"
   | "show_room"
   | "hide_room"
   | "add_space_type"

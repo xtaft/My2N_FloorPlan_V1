@@ -30,6 +30,7 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
+import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
@@ -159,6 +160,8 @@ export function StructureTree({
       bold?: boolean;
       /** Paints the icon in the space's own colour. */
       tint?: string;
+      /** Named in the structure but not drawn: nothing to select. */
+      muted?: boolean;
       onMenu?: (el: HTMLElement) => void;
     } = {},
   ) => (
@@ -166,7 +169,12 @@ export function StructureTree({
       key={key}
       selected={opts.selected}
       onClick={opts.onClick}
-      sx={{ pl: 1 + depth * 2, pr: 1, minHeight: 48 }}
+      sx={{
+        pl: 1 + depth * 2,
+        pr: 1,
+        minHeight: 48,
+        opacity: opts.muted ? 0.6 : 1,
+      }}
     >
       {/* The arrow is its own hit target: it toggles this row and does
           nothing else, so the row's main action stays separate. */}
@@ -421,6 +429,21 @@ export function StructureTree({
                     {(layer.roomsByFloor.get(floor.id) ?? [])
                       .filter((r) => r.group_id === null && isRoomListed(layer, r))
                       .map((r) => renderRoom(r, 2))}
+                    {/* Imported from a space list and not drawn yet. They
+                        are part of the building and nothing else would say
+                        so — an import that recorded them somewhere nobody
+                        looks would be an import that did nothing. */}
+                    {(layer.file.unplaced_spaces ?? [])
+                      .filter((space) => space.floor_id === floor.id)
+                      .map((space) =>
+                        row(
+                          space.id,
+                          2,
+                          <PlaceOutlined sx={{ fontSize: 20 }} />,
+                          space.name,
+                          { muted: true },
+                        ),
+                      )}
                   </>
                 )}
               </Fragment>
