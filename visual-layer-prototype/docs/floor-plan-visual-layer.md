@@ -525,6 +525,33 @@ Because `t` is rescaled rather than a position being re-matched, a door stays
 exactly where it was. Storing door endpoints instead would mean the door's
 position and its wall could disagree.
 
+## Deleting a space — which removes a name, not an area
+
+A space cannot simply go. The floor is tiled, so its area would belong to
+nobody; giving an area away is what removing a wall does. What can go is
+everything that says what the space *is*.
+
+| Intent | Operation | Result |
+|---|---|---|
+| this is not a room we track | delete | out of the tree, off the map |
+| this is a room, but we no longer know which | unassign from map | stays in the tree |
+
+Both strip the name to `Unnamed N`, clear `space_type`, and clear
+`group_id`. With no type of its own and no envelope to inherit one from the
+space resolves to Unknown, which is the bucket the types panel already keeps
+open at zero for exactly this. They differ in `surfaced` alone: an
+unassigned space stays listed so somebody can name it again, a deleted one
+does not.
+
+An envelope emptied by either goes with it. The device inside a space stays
+exactly where it is — a space losing its name is not a reason to lose
+hardware — and undo restores all of it, which is the other reason the
+record survives rather than being removed.
+
+**Deleting an envelope** is a different thing again: it dissolves, and its
+rooms move up to whatever contained it. Deleting an envelope cannot mean
+deleting the spaces drawn inside it.
+
 ## Removing a wall — which is how rooms merge
 
 **There is no standalone merge function.** Two rooms become one by deleting the

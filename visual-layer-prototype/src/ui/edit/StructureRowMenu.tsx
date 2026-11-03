@@ -43,6 +43,7 @@ export interface StructureRowMenuProps {
   onToggleHidden: (hide: boolean) => void;
   onAssignCategory: (typeId: string | null) => void;
   onDetach: () => void;
+  onUnassign: () => void;
   onDelete: () => void;
 }
 
@@ -59,6 +60,7 @@ export function StructureRowMenu({
   onToggleHidden,
   onAssignCategory,
   onDetach,
+  onUnassign,
   onDelete,
 }: StructureRowMenuProps) {
   const [page, setPage] = useState<"main" | "category">("main");
@@ -234,16 +236,14 @@ export function StructureRowMenu({
                     "unassign",
                     <LocationOff sx={ICON} />,
                     "Unassign from map",
-                    () => {},
+                    onUnassign,
                     {
-                      disabled: true,
-                      why: "Not built: a space here is its shape on the plan, so there is no record left to keep once it is off the map.",
+                      why: "Keeps the space on its floor, unnamed and uncategorised, ready to be identified again.",
                     },
                   ),
-                  item("delete", <Delete sx={ICON} />, "Delete", () => {}, {
+                  item("delete", <Delete sx={ICON} />, "Delete", onDelete, {
                     danger: true,
-                    disabled: true,
-                    why: "Not built: the floor is tiled, so a space cannot simply go — its area has to become a neighbour's. Remove wall is how that is done.",
+                    why: "Takes the space out of the structure and off the map. Its area stays — the floor is tiled — but belongs to nothing in particular.",
                   }),
                 ]
               : [

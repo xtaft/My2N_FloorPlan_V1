@@ -33,6 +33,7 @@ import {
   landingsFor,
   referenceFloor,
   type Transform,
+  deleteRoom,
   detachRoom,
   dissolveGroup,
   renameGroup,
@@ -41,6 +42,7 @@ import {
   setGroupSpaceType,
   setRoomSpaceType,
   shaftImpact,
+  unassignRoom,
   previewDeleteWall,
   previewDivide,
   type DivideRoomRequest,
@@ -468,10 +470,19 @@ export function EditModeScreen({
           if (target?.kind !== "room") return;
           run(() => detachRoom(state, target.room.id));
         }}
+        onUnassign={() => {
+          const target = rowMenu?.target;
+          if (target?.kind !== "room") return;
+          run(() => unassignRoom(state, target.room.id));
+        }}
         onDelete={() => {
           const target = rowMenu?.target;
-          if (target?.kind !== "group") return;
-          run(() => dissolveGroup(state, target.group.id));
+          if (!target) return;
+          run(() =>
+            target.kind === "group"
+              ? dissolveGroup(state, target.group.id)
+              : deleteRoom(state, target.room.id),
+          );
         }}
       />
 

@@ -368,13 +368,23 @@ export function StructureTree({
                 )}
                 {/* floorEnvelopes skips the pass-through group that would
                     otherwise name the floor a second time. */}
-                {isOpen &&
-                  floorEnvelopes(layer, floor.id)
-                    .filter(
-                      (g) =>
-                        !HIDDEN_FROM_TREE.has(groupAccessType(layer, g) ?? ""),
-                    )
-                    .map((g) => renderGroup(g, 2))}
+                {isOpen && (
+                  <>
+                    {floorEnvelopes(layer, floor.id)
+                      .filter(
+                        (g) =>
+                          !HIDDEN_FROM_TREE.has(groupAccessType(layer, g) ?? ""),
+                      )
+                      .map((g) => renderGroup(g, 2))}
+                    {/* Spaces in no envelope sit under the storey itself.
+                        A space unassigned from the map has left its flat
+                        but is still a space someone has to deal with, and
+                        a row nobody can reach is not a to-do list. */}
+                    {(layer.roomsByFloor.get(floor.id) ?? [])
+                      .filter((r) => r.group_id === null && isRoomListed(layer, r))
+                      .map((r) => renderRoom(r, 2))}
+                  </>
+                )}
               </Fragment>
             );
           })}

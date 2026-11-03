@@ -211,6 +211,86 @@ export function dissolveGroup(state: EditState, groupId: string): EditState {
   return commit(state, "regroup", `Delete ${group.name}`, next);
 }
 
+/**
+ * The next free "Unnamed N".
+ *
+ * Numbered across the building rather than per floor: the number is there
+ * to tell two anonymous spaces apart, and two called "Unnamed 3" on
+ * different storeys would defeat that the moment anyone searched.
+ */
+export function unnamedRoomName(layer: VisualLayer): string {
+  const taken = new Set(layer.file.rooms.map((r) => r.name));
+  for (let n = 1; ; n += 1) {
+    const name = `Unnamed ${n}`;
+    if (!taken.has(name)) return name;
+  }
+}
+
+/**
+ * Strip a space's identity: it stops being a named room of a known kind and
+ * becomes an anonymous area.
+ *
+ * The geometry cannot go. The floor is tiled, so the area has to belong to
+ * something — giving it away is what removing a wall does. What can go is
+ * everything that says what it *is*: its name, its category, and its place
+ * in an envelope. With no category of its own and no envelope to inherit
+ * one from, it resolves to Unknown, which is the bucket the drawer keeps
+ * open for exactly this.
+ */
+function anonymise(
+  state: EditState,
+  roomId: string,
+  surfaced: boolean,
+  kind: "delete_room" | "unassign_room",
+  label: string,
+): EditState {
+  const { layer, file } = state;
+  must(layer.rooms, roomId, "room"); // refuse an id that is not a room
+  const name = unnamedRoomName(layer);
+
+  const rooms = file.rooms.map((r) =>
+    r.id === roomId
+      ? { ...r, name, space_type: null, group_id: null, surfaced }
+      : r,
+  );
+  // The envelope it leaves may now hold nothing, and an empty envelope is a
+  // row that names nothing.
+  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
+  const hasChild = new Set(
+    file.groups.map((g) => g.parent_group_id).filter(Boolean),
+  );
+
+  return commit(state, kind, label, {
+    ...file,
+    rooms,
+    groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
+  });
+}
+
+/**
+ * Delete a space: out of the structure and off the map.
+ *
+ * It keeps its shape, because something has to own the floor, but it is
+ * listed nowhere and drawn as nothing in particular — `surfaced` false is
+ * what takes a space out of the tree and off the map as a space in its own
+ * right. Undo brings all of it back, which is the other reason the record
+ * survives.
+ */
+export function deleteRoom(state: EditState, roomId: string): EditState {
+  return anonymise(state, roomId, false, "delete_room", "Delete space");
+}
+
+/**
+ * Unassign a space from the map: it stops being a known room, but stays in
+ * the tree as an anonymous space on its floor, waiting to be named.
+ *
+ * The difference from delete is only whether it is still listed. Both leave
+ * the same thing on the plan.
+ */
+export function unassignRoom(state: EditState, roomId: string): EditState {
+  return anonymise(state, roomId, true, "unassign_room", "Unassign from map");
+}
+
 /** The envelopes a room could be moved into on its floor, for a submenu. */
 export function envelopesOnFloor(layer: VisualLayer, floorId: string): Group[] {
   return layer.file.groups.filter((g) => g.floor_id === floorId);

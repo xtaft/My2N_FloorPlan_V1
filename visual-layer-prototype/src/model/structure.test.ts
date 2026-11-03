@@ -6,6 +6,7 @@ import { fixture } from "./load";
 import {
   OperationRejected,
   accessType,
+  deleteRoom,
   detachRoom,
   dissolveGroup,
   hideRoomRefusal,
@@ -15,6 +16,7 @@ import {
   roomsInGroup,
   setGroupRoomsSurfaced,
   setGroupSpaceType,
+  unassignRoom,
   undo,
   type EditState,
   type VisualLayerFile,
@@ -222,5 +224,98 @@ describe("dissolveGroup", () => {
   it("is undone", () => {
     const before = state();
     expect(undo(dissolveGroup(before, "1:A1")).file).toEqual(before.file);
+  });
+});
+
+describe("deleteRoom and unassignRoom", () => {
+  it("leaves the shape alone — the floor is still tiled", () => {
+    const before = state();
+    for (const op of [deleteRoom, unassignRoom]) {
+      const after = op(before, "1:B1");
+      expect(after.file.walls).toEqual(before.file.walls);
+      expect(after.file.vertices).toEqual(before.file.vertices);
+      expect(after.layer.rooms.get("1:B1")!.walls).toEqual(
+        before.layer.rooms.get("1:B1")!.walls,
+      );
+    }
+  });
+
+  it("strips the name, the category and the envelope", () => {
+    const before = state();
+    expect(accessType(before.layer, before.layer.rooms.get("1:B1")!)).toBe(
+      "apartment",
+    );
+
+    for (const op of [deleteRoom, unassignRoom]) {
+      const room = op(before, "1:B1").layer.rooms.get("1:B1")!;
+      expect(room.name).toMatch(/^Unnamed \d+$/);
+      expect(room.space_type).toBeNull();
+      expect(room.group_id).toBeNull();
+      // No type of its own and no envelope to inherit one from: Unknown.
+      expect(accessType(op(before, "1:B1").layer, room)).toBeNull();
+    }
+  });
+
+  it("differs only in whether the space is still listed", () => {
+    const before = state();
+    expect(deleteRoom(before, "1:B1").layer.rooms.get("1:B1")!.surfaced).toBe(
+      false,
+    );
+    expect(unassignRoom(before, "1:B1").layer.rooms.get("1:B1")!.surfaced).toBe(
+      true,
+    );
+  });
+
+  it("numbers each anonymous space apart from the last", () => {
+    const one = unassignRoom(state(), "1:B1");
+    const two = unassignRoom(one, "1:B2");
+    const names = [
+      two.layer.rooms.get("1:B1")!.name,
+      two.layer.rooms.get("1:B2")!.name,
+    ];
+    expect(names[0]).not.toBe(names[1]);
+    // Room names are not unique in general — five storeys of "Bedroom" —
+    // so it is the anonymous ones that have to be told apart.
+    const unnamed = two.file.rooms
+      .map((r) => r.name)
+      .filter((n) => n.startsWith("Unnamed "));
+    expect(unnamed.length).toBe(2);
+    expect(new Set(unnamed).size).toBe(2);
+  });
+
+  it("removes an envelope it empties", () => {
+    const before = state();
+    const only = [...before.layer.rooms.values()].find(
+      (r) =>
+        r.group_id !== null && roomsInGroup(before.layer, r.group_id).length === 1,
+    )!;
+    const after = deleteRoom(before, only.id);
+    expect(after.layer.groups.has(only.group_id!)).toBe(false);
+  });
+
+  it("keeps the device that was in it, rather than losing hardware", () => {
+    const before = state();
+    const after = unassignRoom(before, "1:L1");
+    expect(after.file.devices.length).toBe(before.file.devices.length);
+    expect(after.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe(
+      "1:L1",
+    );
+  });
+
+  it("is undone", () => {
+    const before = state();
+    expect(undo(deleteRoom(before, "1:B1")).file).toEqual(before.file);
+    expect(undo(unassignRoom(before, "1:B1")).file).toEqual(before.file);
+  });
+
+  it("labels itself on the undo stack", () => {
+    expect(deleteRoom(state(), "1:B1").undo.at(-1)!.label).toBe("Delete space");
+    expect(unassignRoom(state(), "1:B1").undo.at(-1)!.label).toBe(
+      "Unassign from map",
+    );
+  });
+
+  it("refuses a room it does not have", () => {
+    expect(() => deleteRoom(state(), "1:nope")).toThrow();
   });
 });

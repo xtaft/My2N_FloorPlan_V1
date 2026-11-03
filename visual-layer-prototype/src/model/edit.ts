@@ -46,6 +46,8 @@ export type OperationKind =
   | "align_floor"
   | "rename"
   | "regroup"
+  | "delete_room"
+  | "unassign_room"
   | "show_room"
   | "hide_room"
   | "add_space_type"
