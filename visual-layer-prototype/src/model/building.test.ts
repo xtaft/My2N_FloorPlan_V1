@@ -10,6 +10,7 @@ import {
   buildingDevices,
   buildingSpaces,
   deviceStatusName,
+  allPeople,
   operatorRoleName,
   operators,
   productName,
@@ -18,76 +19,86 @@ import {
 } from "./index";
 
 describe("residents", () => {
-  it("is everyone whose access reaches an apartment", () => {
+  it("is everybody the data says lives here", () => {
     const all = residents(layer);
-    expect(all.length).toBe(44);
-    for (const r of all) {
-      expect(r.apartment_id).toMatch(/^\d:A\d+$/);
-      expect(r.apartment_name).toBe(layer.groups.get(r.apartment_id)!.name);
-    }
+    expect(all).toHaveLength(44);
+    for (const r of all) expect(r.apartment_id).toMatch(/^\d:A\d+$/);
   });
 
-  it("puts each person in one apartment, the one they live in", () => {
-    const seen = new Map<string, string>();
+  it("joins their flat to the plan's envelope for it", () => {
+    // The data gives a storey and a name — "A1" on floor 1 — and the
+    // plan calls that envelope 1:A1. That join is the only derivation
+    // left in here; everything else is read.
+    const grace = residents(layer).find((r) => r.id === "R001")!;
+    expect(grace.name).toBe("Grace Collins");
+    expect(grace.floor).toBe(1);
+    expect(grace.apartment_name).toBe("A1");
+    expect(layer.groups.get(grace.apartment_id)).toBeDefined();
+  });
+
+  it("reads names and addresses rather than making them up", () => {
+    const all = residents(layer);
+    expect(all.map((r) => r.name)).toContain("Carlos García");
+    for (const r of all) expect(r.email).toMatch(/@example\.com$/);
+  });
+
+  it("knows who the building writes to for each flat", () => {
+    const byFlat = new Map<string, number>();
     for (const r of residents(layer)) {
-      expect(seen.has(r.id)).toBe(false);
-      seen.set(r.id, r.apartment_id);
+      if (r.mainContact) byFlat.set(r.apartment_id, (byFlat.get(r.apartment_id) ?? 0) + 1);
     }
+    // One per flat, which is what a main contact is.
+    for (const n of byFlat.values()) expect(n).toBe(1);
+    expect(byFlat.size).toBe(28);
   });
 
-  it("gives everybody their own name, address and number", () => {
-    const all = [...residents(layer), ...operators(layer)];
-    expect(new Set(all.map((p) => p.name)).size).toBe(all.length);
-    expect(new Set(all.map((p) => p.email)).size).toBe(all.length);
-    expect(new Set(all.map((p) => p.phone)).size).toBe(all.length);
-  });
-
-  it("writes an address a mail server would take", () => {
-    // Accents are the point: the fixture is a Prague building.
-    for (const p of residents(layer)) {
-      expect(p.email).toMatch(/^[a-z][a-z.]*[a-z]@[a-z.]+$/);
-    }
-    const accented = residents(layer).find((p) => /[^\x20-\x7E]/.test(p.name));
-    expect(accented).toBeDefined();
-    expect(accented!.email).toMatch(/^[a-z.]+@/);
-  });
-
-  it("is the same list every time it is asked for", () => {
-    expect(residents(layer)).toEqual(residents(layer));
-  });
-
-  it("has somebody still setting up, so Pending is not an empty filter", () => {
-    expect(residents(layer).some((r) => r.status === "pending")).toBe(true);
+  it("carries the note the data wanted kept", () => {
+    // Four flats have no entrance door drawn yet, and the data says so
+    // on the people who live in them.
+    const noted = residents(layer).filter((r) => r.note !== null);
+    expect(noted.length).toBeGreaterThan(0);
+    for (const r of noted) expect(r.note).toMatch(/no entrance door/);
   });
 });
 
 describe("operators", () => {
-  it("is everyone who is not a resident", () => {
+  it("is everybody who works here, with the job the data gives them", () => {
     const staff = operators(layer);
-    const living = new Set(residents(layer).map((r) => r.id));
-    expect(staff.length).toBe(15);
-    for (const o of staff) expect(living.has(o.id)).toBe(false);
-
-    // Between them they are everybody the building knows.
-    const people = new Set<string>();
-    for (const profile of layer.profiles) {
-      for (const id of profile.people) people.add(id);
-    }
-    expect(staff.length + living.size).toBe(people.size);
-  });
-
-  it("has one property manager and a maintenance pair", () => {
-    const by = (role: string) =>
-      operators(layer).filter((o) => o.role === role).length;
+    expect(staff).toHaveLength(15);
+    const by = (role: string) => staff.filter((o) => o.role === role).length;
     expect(by("property_manager")).toBe(1);
     expect(by("maintenance")).toBe(2);
     expect(by("employee")).toBe(12);
+
+    const manager = staff.find((o) => o.role === "property_manager")!;
+    expect(manager.name).toBe("James Foster");
+    expect(manager.jobTitle).toBe("Property manager");
+    // Null workplace means the whole building rather than a gap.
+    expect(manager.workplace).toBeNull();
+  });
+
+  it("places the shop and gym staff at their business", () => {
+    const where = new Set(
+      operators(layer)
+        .filter((o) => o.role === "employee")
+        .map((o) => o.workplace),
+    );
+    expect([...where].sort()).toEqual(["C1", "C2", "GYM"]);
   });
 
   it("names the roles for the table", () => {
     expect(operatorRoleName("property_manager")).toBe("Property manager");
     expect(operatorRoleName("maintenance")).toBe("Maintenance");
     expect(operatorRoleName("employee")).toBe("Employee");
+  });
+});
+
+describe("everybody", () => {
+  it("is the residents and the operators, all 59 of them", () => {
+    const all = allPeople(layer);
+    expect(all).toHaveLength(59);
+    expect(new Set(all.map((p) => p.id)).size).toBe(59);
+    expect(new Set(all.map((p) => p.email)).size).toBe(59);
   });
 });
 

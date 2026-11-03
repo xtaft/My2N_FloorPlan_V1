@@ -4,16 +4,13 @@
  * Figma: 108:269031 (devices), 108:270663 (people). Each is the shared
  * DataTable with its own columns and its own filter chips.
  */
-import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import AccountCircleOutlined from "@mui/icons-material/AccountCircleOutlined";
-import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline";
 import CloudDownloadOutlined from "@mui/icons-material/CloudDownloadOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
 import ShareOutlined from "@mui/icons-material/ShareOutlined";
-import WarningAmberOutlined from "@mui/icons-material/WarningAmberOutlined";
 import IconButton from "@mui/material/IconButton";
 import { Column, DataTable, FilterChip, StatusChip } from "./DataTable";
 import { DeviceGlyph } from "../DeviceMarker";
@@ -108,19 +105,27 @@ export function ResidentsTable({ residents }: { residents: Resident[] }) {
         />
       ),
     },
-    { key: "email", label: "Email", cell: (r) => <Email person={r} /> },
+    { key: "email", label: "Email", cell: (r) => <Email address={r.email} /> },
     {
-      key: "status",
-      label: "Status",
-      cell: (r) => (
-        <StatusChip
-          label={r.status === "ready" ? "Ready" : "Pending"}
-          tone={r.status === "ready" ? "ok" : "warn"}
-        />
-      ),
+      key: "contact",
+      label: "Main contact",
+      // Who the building writes to when it has to write to the flat.
+      // A real field, unlike the status column that used to sit here
+      // and was invented.
+      cell: (r) =>
+        r.mainContact ? (
+          <Chip
+            size="small"
+            label="Main contact"
+            variant="outlined"
+            sx={{ height: 24, fontSize: 13 }}
+          />
+        ) : (
+          ""
+        ),
     },
-    { key: "phone", label: "Phone number", cell: (r) => r.phone },
-    { key: "notes", label: "Notes", cell: () => "" },
+    { key: "unit", label: "Answering unit", cell: (r) => r.answeringUnit ?? "—" },
+    { key: "notes", label: "Notes", cell: (r) => r.note ?? "" },
   ];
 
   return (
@@ -128,14 +133,13 @@ export function ResidentsTable({ residents }: { residents: Resident[] }) {
       rows={residents}
       columns={columns}
       rowKey={(r) => r.id}
-      searchable={(r) => `${r.name} ${r.email} ${r.phone} ${r.apartment_name}`}
+      searchable={(r) => `${r.name} ${r.email} ${r.apartment_name}`}
       searchPlaceholder="Search"
       filters={
         <>
-          <FilterChip label="Pending" />
-          <FilterChip label="Problem" />
-          <FilterChip label="Status" />
-          <FilterChip label="Services" />
+          <FilterChip label="Main contact" />
+          <FilterChip label="Floor" />
+          <FilterChip label="Apartment" />
         </>
       }
       tools={
@@ -169,14 +173,16 @@ export function OperatorsTable({ operators }: { operators: Operator[] }) {
         />
       ),
     },
-    { key: "email", label: "Email", cell: (o) => <Email person={o} /> },
+    { key: "job", label: "Job title", cell: (o) => o.jobTitle ?? "—" },
     {
-      key: "status",
-      label: "Status",
-      cell: () => <StatusChip label="Ready" tone="ok" />,
+      key: "where",
+      label: "Workplace",
+      // Empty in the data means the whole building, which is a fact
+      // about the job rather than a missing value.
+      cell: (o) => o.workplace ?? "Whole building",
     },
-    { key: "phone", label: "Phone number", cell: (o) => o.phone },
-    { key: "notes", label: "Notes", cell: () => "" },
+    { key: "email", label: "Email", cell: (o) => <Email address={o.email} /> },
+    { key: "notes", label: "Notes", cell: (o) => o.note ?? "" },
   ];
 
   return (
@@ -184,14 +190,14 @@ export function OperatorsTable({ operators }: { operators: Operator[] }) {
       rows={operators}
       columns={columns}
       rowKey={(o) => o.id}
-      searchable={(o) => `${o.name} ${o.email} ${o.phone} ${operatorRoleName(o.role)}`}
+      searchable={(o) =>
+        `${o.name} ${o.email} ${o.jobTitle ?? ""} ${o.workplace ?? ""} ${operatorRoleName(o.role)}`
+      }
       searchPlaceholder="Search"
       filters={
         <>
-          <FilterChip label="Pending" />
-          <FilterChip label="Problem" />
           <FilterChip label="Role" />
-          <FilterChip label="Status" />
+          <FilterChip label="Workplace" />
         </>
       }
       tools={
@@ -216,20 +222,17 @@ function PersonName({ name }: { name: string }) {
   );
 }
 
-/** A tick once the address is confirmed, a warning while it is not. */
-function Email({ person }: { person: { email: string; status: string } }) {
-  const ready = person.status === "ready";
+/**
+ * Just the address.
+ *
+ * The design draws a tick or a warning beside it for whether it has
+ * been confirmed. The data says nothing about that, and a tick on every
+ * row would be stating something nobody checked.
+ */
+function Email({ address }: { address: string }) {
   return (
-    <Stack direction="row" alignItems="center" spacing={1}>
-      {ready ? (
-        <CheckCircleOutline sx={{ fontSize: 18, color: "#2E7D32" }} />
-      ) : (
-        <WarningAmberOutlined sx={{ fontSize: 18, color: "#C77700" }} />
-      )}
-      <Typography variant="body2" noWrap>
-        {person.email}
-      </Typography>
-      <Box />
-    </Stack>
+    <Typography variant="body2" noWrap>
+      {address}
+    </Typography>
   );
 }

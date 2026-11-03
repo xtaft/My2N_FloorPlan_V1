@@ -9,12 +9,13 @@
  * Nothing is stored. An access group is a profile read a different way,
  * and a person's reach is the union of the groups they are in.
  */
-import { accessType, reachable, roomsInGroup } from "./access";
+import groupsFile from "../fixtures/access_groups.json";
+import { accessType, reachable } from "./access";
 import type { VisualLayer } from "./load";
-import { residents } from "./building";
+import { allPeople } from "./building";
 import type { Room } from "./types";
 
-/** A permission set, as the access panel lists it. */
+/** A permission set, as the building's data defines it. */
 export interface AccessGroup {
   id: string;
   name: string;
@@ -22,98 +23,72 @@ export interface AccessGroup {
   people: string[];
 }
 
+interface GroupRecord {
+  id: string;
+  name: string;
+  devices: string[];
+  people: string[];
+}
+
+const GROUPS = (groupsFile as { access_groups: GroupRecord[] }).access_groups;
+
 /**
  * The building's access groups.
  *
- * A profile is already "a set of devices and the people who hold them",
- * which is what an access group is — so this renames rather than
- * invents. The name is derived from what the group admits to, because
- * "P17" tells nobody anything and the thing a manager is looking for is
- * the group that opens a particular door.
+ * Read, not derived. An earlier version of this built thirty-two
+ * "groups" out of the access profiles and named them after the rooms
+ * their devices guarded — which was a per-apartment permission set
+ * dressed up as a group. There are four: Maintenance, the two
+ * commercial units, and the gym.
  */
-export function accessGroups(layer: VisualLayer): AccessGroup[] {
-  return layer.profiles
-    .map((profile) => ({
-      id: profile.id,
-      name: groupName(layer, profile.rooms),
-      devices: [...profile.devices],
-      people: [...profile.people],
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-}
-
-function groupName(layer: VisualLayer, rooms: string[]): string {
-  // The rooms a profile lists are the ones its devices guard. The last
-  // is the one it is really for: resident profiles read [lobby, flat],
-  // and the flat is what distinguishes one from another.
-  for (const id of [...rooms].reverse()) {
-    const room = layer.rooms.get(id);
-    if (!room) continue;
-    const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
-    const where = group?.name ?? room.name;
-    return accessType(layer, room) === "apartment"
-      ? `${where} residents`
-      : `${where} access`;
-  }
-  return "Access group";
-}
-
-/**
- * The way in that everybody has.
- *
- * Somebody who cannot get through the front door holds a key to nothing,
- * so the main entrance is not something a resident's group has to grant.
- * It is found rather than named: the devices guarding the space the
- * building is entered through.
- */
-export function mainEntranceDevices(layer: VisualLayer): string[] {
-  const lobby = defaultEntrance(layer);
-  if (!lobby) return [];
-  return layer.file.devices
-    .filter((d) => d.host_kind === "door" && d.guards.includes(lobby))
-    .map((d) => d.id);
-}
-
-function defaultEntrance(layer: VisualLayer): string | null {
-  const ground = layer.floors[0];
-  const rooms = ground ? (layer.roomsByFloor.get(ground.id) ?? []) : [];
-  const lobby = rooms.find((r) => accessType(layer, r) === "circulation");
-  return lobby?.id ?? rooms[0]?.id ?? null;
-}
-
-/** The devices guarding any room of an envelope — the way into a flat. */
-export function devicesIntoGroup(layer: VisualLayer, groupId: string): string[] {
-  const inside = new Set(roomsInGroup(layer, groupId).map((r) => r.id));
-  return layer.file.devices
-    .filter(
-      (d) => d.host_kind === "door" && d.guards.some((g) => inside.has(g)),
-    )
-    .map((d) => d.id);
+export function accessGroups(): AccessGroup[] {
+  return GROUPS.map((g) => ({
+    id: g.id,
+    name: g.name,
+    devices: [...g.devices],
+    people: [...g.people],
+  }));
 }
 
 /**
  * Everything a person can open.
  *
- * Their groups, and then the two things a resident has regardless: their
- * own front door and the building's. Neither is a group they were added
- * to — a resident who was left out of one would still be able to go
- * home, and showing them locked out of their own flat would be a lie
- * about the building rather than a finding about the data.
+ * Two sources, and the data states both: the devices they hold in their
+ * own right — their flat's door and the entrance intercom — and the
+ * devices of every group they are in.
+ *
+ * The personal half used to be derived here, by finding the devices
+ * guarding somebody's flat and adding them. That was wrong in a way
+ * worth keeping a note of: four flats have no entrance door yet, so
+ * their residents hold the intercom and nothing else, and the data says
+ * so. Deriving it would have granted a key to a door that is not there.
  */
 export function devicesHeldBy(layer: VisualLayer, personId: string): string[] {
   const held = new Set<string>();
-  for (const profile of layer.profiles) {
-    if (!profile.people.includes(personId)) continue;
-    for (const id of profile.devices) held.add(id);
-  }
 
-  const home = residents(layer).find((r) => r.id === personId);
-  if (home) {
-    for (const id of devicesIntoGroup(layer, home.apartment_id)) held.add(id);
-    for (const id of mainEntranceDevices(layer)) held.add(id);
+  const person = allPeople(layer).find((x) => x.id === personId);
+  for (const id of person?.accessPoints ?? []) held.add(id);
+
+  for (const group of GROUPS) {
+    if (!group.people.includes(personId)) continue;
+    for (const id of group.devices) held.add(id);
   }
 
   return [...held];
+}
+
+/**
+ * Where the walk starts: the space the building is entered through.
+ *
+ * Everything is measured from the front door, because that is where
+ * somebody actually arrives. Starting anywhere else would answer a
+ * question about a person who is already inside.
+ */
+function defaultEntrance(layer: VisualLayer): string | null {
+  const ground = layer.floors[0];
+  const rooms = ground ? (layer.roomsByFloor.get(ground.id) ?? []) : [];
+  const lobby = rooms.find((r) => accessType(layer, r) === "circulation");
+  return lobby?.id ?? rooms[0]?.id ?? null;
 }
 
 /** How a space is drawn in access mode. */

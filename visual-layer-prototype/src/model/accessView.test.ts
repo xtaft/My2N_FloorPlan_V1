@@ -6,128 +6,84 @@ import {
   ACCESS_COLORS,
   accessGroups,
   accessPaint,
+  allPeople,
   accessShading,
   devicesHeldBy,
-  devicesIntoGroup,
-  mainEntranceDevices,
-  operators,
   residents,
   visualLayer as layer,
 } from "./index";
 
 describe("access groups", () => {
-  it("is the profiles, one for one", () => {
-    const groups = accessGroups(layer);
-    expect(groups).toHaveLength(layer.profiles.length);
-    expect(new Set(groups.map((g) => g.id)).size).toBe(groups.length);
+  it("is the four the data defines", () => {
+    expect(accessGroups().map((g) => g.name)).toEqual([
+      "Maintenance",
+      "Commercial 1",
+      "Commercial 2",
+      "Gym",
+    ]);
   });
 
-  it("is named after what it admits to, not after its id", () => {
-    const names = accessGroups(layer).map((g) => g.name);
-    for (const n of names) expect(n).not.toMatch(/^P\d+$/);
-    // A resident group is named for the flat it opens.
-    expect(names).toContain("A1 residents");
-    // Everything else by the space, so the list reads as places.
-    expect(names.some((n) => n.endsWith(" access"))).toBe(true);
+  it("carries the devices and the people the data gives each", () => {
+    const gym = accessGroups().find((g) => g.name === "Gym")!;
+    expect(gym.devices.sort()).toEqual(["AC-0-d8", "AC-U1", "AC-U2"]);
+    // Staff and the residents who are gym members.
+    expect(gym.people).toHaveLength(18);
+    expect(gym.people).toContain("S010");
+    expect(gym.people).toContain("R003");
   });
 
-  it("carries the devices and the people the profile holds", () => {
-    const groups = accessGroups(layer);
-    for (const profile of layer.profiles) {
-      const group = groups.find((g) => g.id === profile.id)!;
-      expect(group.devices).toEqual(profile.devices);
-      expect(group.people).toEqual(profile.people);
+  it("names every device it holds, and they are real devices", () => {
+    const known = new Set(layer.file.devices.map((d) => d.id));
+    for (const group of accessGroups()) {
+      expect(group.devices.length).toBeGreaterThan(0);
+      for (const id of group.devices) expect(known.has(id)).toBe(true);
     }
   });
-});
 
-describe("the way in everybody has", () => {
-  it("is the device guarding the space the building is entered through", () => {
-    expect(mainEntranceDevices(layer)).toEqual(["IC-0-d10"]);
-  });
-
-  it("finds the devices into a flat", () => {
-    const into = devicesIntoGroup(layer, "1:A1");
-    expect(into.length).toBeGreaterThan(0);
-    for (const id of into) {
-      const device = layer.file.devices.find((d) => d.id === id)!;
-      expect(device.host_kind).toBe("door");
+  it("names every person it holds, and they are real people", () => {
+    const known = new Set(allPeople(layer).map((p) => p.id));
+    for (const group of accessGroups()) {
+      for (const id of group.people) expect(known.has(id)).toBe(true);
     }
   });
 });
 
 describe("what a person holds", () => {
-  it("is the union of their groups", () => {
-    const staff = operators(layer)[0];
-    const expected = new Set<string>();
-    for (const p of layer.profiles) {
-      if (p.people.includes(staff.id)) for (const d of p.devices) expected.add(d);
-    }
-    expect(new Set(devicesHeldBy(layer, staff.id))).toEqual(expected);
-  });
-
-  it("gives a resident their own front door and the building's", () => {
-    const person = residents(layer)[0];
-    const held = new Set(devicesHeldBy(layer, person.id));
-    for (const id of devicesIntoGroup(layer, person.apartment_id)) {
-      expect(held.has(id)).toBe(true);
-    }
-    for (const id of mainEntranceDevices(layer)) expect(held.has(id)).toBe(true);
-  });
-
-  it("gets a resident home when their group does not open their door", () => {
-    // The rule exists for this: a group that grants the entrance but
-    // not the flat would otherwise draw somebody locked out of where
-    // they live, which is a lie about the building rather than a
-    // finding about the data.
-    //
-    // It cannot be tested by taking the person out of every group,
-    // because living somewhere is *derived* from a group of theirs
-    // reaching an apartment — out of all of them they stop being a
-    // resident. So the groups keep them and lose the device.
-    const person = residents(layer)[0];
-    const theirDoor = devicesIntoGroup(layer, person.apartment_id);
-    expect(theirDoor.length).toBeGreaterThan(0);
-
-    const stripped = {
-      ...layer,
-      profiles: layer.profiles.map((p) => ({
-        ...p,
-        devices: p.people.includes(person.id)
-          ? p.devices.filter((d) => !theirDoor.includes(d))
-          : p.devices,
-      })),
-    };
-    // The groups no longer open it...
-    const fromGroups = new Set(
-      stripped.profiles
-        .filter((p) => p.people.includes(person.id))
-        .flatMap((p) => p.devices),
+  it("is what they hold themselves plus what their groups open", () => {
+    // The gym's cleaner: the gym door from the group, and nothing of
+    // her own beyond it.
+    const chloe = allPeople(layer).find((p) => p.name === "Chloe Taylor")!;
+    expect(new Set(devicesHeldBy(layer, chloe.id))).toEqual(
+      new Set(["AC-0-d8", "AC-U1", "AC-U2"]),
     );
-    for (const id of theirDoor) expect(fromGroups.has(id)).toBe(false);
-
-    // ...and they can still go home.
-    const held = new Set(devicesHeldBy(stripped, person.id));
-    for (const id of theirDoor) expect(held.has(id)).toBe(true);
   });
 
-  it("adds nothing in this fixture, where the groups already grant it", () => {
-    // Worth stating: the rule above is a guard, not something doing
-    // visible work here. Every resident profile already carries the
-    // entrance and the flat, so the extra grant is a no-op — and a
-    // reader of the screen should not think it is what makes the
-    // colours come out as they do.
-    for (const person of residents(layer)) {
-      const fromGroups = new Set(
-        layer.profiles
-          .filter((p) => p.people.includes(person.id))
-          .flatMap((p) => p.devices),
-      );
-      expect(new Set(devicesHeldBy(layer, person.id))).toEqual(fromGroups);
-    }
+  it("gives a resident the entrance and their own door, from the data", () => {
+    const grace = residents(layer).find((r) => r.id === "R001")!;
+    expect(new Set(devicesHeldBy(layer, grace.id))).toEqual(
+      new Set(["IC-0-d10", "AC-1-d11"]),
+    );
   });
 
-  it("gives somebody who is in nothing and lives nowhere nothing", () => {
+  it("adds the gym to a resident who is a member", () => {
+    // R003 lives in A2 and is in the Gym group, so he holds both.
+    const held = new Set(devicesHeldBy(layer, "R003"));
+    expect(held.has("AC-1-d7")).toBe(true); // his own flat
+    expect(held.has("IC-0-d10")).toBe(true); // the entrance
+    expect(held.has("AC-0-d8")).toBe(true); // the gym
+  });
+
+  it("gives no flat key where the data says there is no door yet", () => {
+    // Four flats have no entrance door drawn. Their residents hold the
+    // intercom and nothing else — and deriving "a resident always gets
+    // their own door" would have handed them a key to a door that is
+    // not there, which is what this file used to do.
+    const lorenzo = residents(layer).find((r) => r.id === "R012")!;
+    expect(lorenzo.apartment_name).toBe("A7");
+    expect(devicesHeldBy(layer, lorenzo.id)).toEqual(["IC-0-d10"]);
+  });
+
+  it("gives somebody the data has never heard of nothing", () => {
     expect(devicesHeldBy(layer, "nobody")).toEqual([]);
   });
 });
@@ -149,7 +105,7 @@ describe("shading the plan", () => {
   });
 
   it("opens the flat a resident lives in and not the one next door", () => {
-    const person = residents(layer).find((r) => r.apartment_name === "A1")!;
+    const person = residents(layer).find((r) => r.id === "R001")!;
     const shade = accessShading(layer, new Set(devicesHeldBy(layer, person.id)));
 
     const theirs = layer.file.rooms.filter((r) => r.group_id === "1:A1");
@@ -161,7 +117,7 @@ describe("shading the plan", () => {
   });
 
   it("opens more as more groups are selected", () => {
-    const groups = accessGroups(layer);
+    const groups = accessGroups();
     const one = new Set(groups[0].devices);
     const two = new Set([...groups[0].devices, ...groups[1].devices]);
     const count = (s: Set<string>) =>

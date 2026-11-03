@@ -1,0 +1,130 @@
+{
+  "note": "access groups grant their people access through their devices. Personal access (own apartment door + main entrance intercom) is listed per person in people.json.",
+  "access_groups": [
+    {
+      "id": "AG1",
+      "name": "Maintenance",
+      "devices": [
+        "RD-0-d3"
+      ],
+      "people": [
+        "S001",
+        "S002",
+        "S003"
+      ],
+      "people_count": 3,
+      "people_names": [
+        "James Foster",
+        "Hannah Wilson",
+        "Katharina Keller"
+      ],
+      "device_names": [
+        "Technical Reader"
+      ]
+    },
+    {
+      "id": "AG2",
+      "name": "Commercial 1",
+      "devices": [
+        "AC-0-d9"
+      ],
+      "people": [
+        "S004",
+        "S005",
+        "S006"
+      ],
+      "people_count": 3,
+      "people_names": [
+        "Lorenzo Conti",
+        "Samuel Clarke",
+        "Isabel García"
+      ],
+      "device_names": [
+        "C1 Entrance"
+      ]
+    },
+    {
+      "id": "AG3",
+      "name": "Commercial 2",
+      "devices": [
+        "AC-0-d11"
+      ],
+      "people": [
+        "S007",
+        "S008",
+        "S009"
+      ],
+      "people_count": 3,
+      "people_names": [
+        "Thomas Mitchell",
+        "Pablo López",
+        "Isabel Martínez"
+      ],
+      "device_names": [
+        "C2 Entrance"
+      ]
+    },
+    {
+      "id": "AG4",
+      "name": "Gym",
+      "devices": [
+        "AC-0-d8",
+        "AC-U1",
+        "AC-U2"
+      ],
+      "people": [
+        "S010",
+        "S011",
+        "S012",
+        "S013",
+        "S014",
+        "S015",
+        "S001",
+        "S002",
+        "S003",
+        "R003",
+        "R004",
+        "R018",
+        "R019",
+        "R025",
+        "R026",
+        "R028",
+        "R029",
+        "R040"
+      ],
+      "apartments": [
+        "A2",
+        "A24",
+        "A32",
+        "A34",
+        "A44"
+      ],
+      "people_count": 18,
+      "people_names": [
+        "Sabine Braun",
+        "Henry Foster",
+        "Jack Bennett",
+        "Stefan Keller",
+        "Marta Ortega",
+        "Chloe Taylor",
+        "James Foster",
+        "Hannah Wilson",
+        "Katharina Keller",
+        "Carlos García",
+        "Daniel Hughes",
+        "Samuel Wilson",
+        "Ella Wilson",
+        "Felix Braun",
+        "Julia Braun",
+        "Leo Bennett",
+        "Ella Bennett",
+        "Lena Wagner"
+      ],
+      "device_names": [
+        "Gym Entrance",
+        "Locker Room W",
+        "Locker Room M"
+      ]
+    }
+  ]
+}

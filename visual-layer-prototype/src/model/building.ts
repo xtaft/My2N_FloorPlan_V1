@@ -21,6 +21,7 @@
  *   starts unplaced — which is the honest state and also the reason the
  *   floor plan is worth drawing.
  */
+import peopleFile from "../fixtures/people.json";
 import { accessType, roomsInGroup } from "./access";
 import { allEnvelopes } from "./derive";
 import type { VisualLayer } from "./load";
@@ -28,164 +29,114 @@ import type { Group } from "./types";
 
 // ----------------------------------------------------------------- people
 
+/**
+ * The people are read, not invented.
+ *
+ * `people.json` is part of the building's data: names, roles, job titles,
+ * which flat somebody lives in, and — importantly — which devices each
+ * person holds personally. Nothing here derives any of that. An earlier
+ * version of this file made names up from a pool because the access
+ * profiles carried ids alone; that is gone, and anything the data does
+ * not say is now shown as missing rather than filled in.
+ */
+
 export type OperatorRole = "property_manager" | "maintenance" | "employee";
 
 export interface Person {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  /** Ready to use the system, invited but not yet set up, or in trouble. */
-  status: "ready" | "pending" | "problem";
+  /** Devices this person holds in their own right, not through a group. */
+  accessPoints: string[];
+  /** What the data wanted said about them, if anything. */
+  note: string | null;
 }
 
 export interface Resident extends Person {
-  /** The envelope they live in. */
+  /** The envelope they live in, as the plan knows it. */
   apartment_id: string;
+  /** The flat as the customer names it. */
   apartment_name: string;
+  floor: number;
+  /** The one the building writes to when it has to write to the flat. */
+  mainContact: boolean;
+  answeringUnit: string | null;
 }
 
 export interface Operator extends Person {
   role: OperatorRole;
+  jobTitle: string | null;
+  /** Which business they work for, or null for the whole building. */
+  workplace: string | null;
+}
+
+/** A row of `people.json`, which is the shape on disk. */
+interface PersonRecord {
+  id: string;
+  role: string;
+  job_title: string | null;
+  workplace: string | null;
+  full_name: string;
+  floor: number | null;
+  apartment: string | null;
+  main_contact: boolean | null;
+  email: string;
+  answering_unit: string | null;
+  access_points: string[];
+  note: string | null;
+}
+
+const PEOPLE = (peopleFile as { people: PersonRecord[] }).people;
+
+function base(record: PersonRecord): Person {
+  return {
+    id: record.id,
+    name: record.full_name,
+    email: record.email,
+    accessPoints: [...record.access_points],
+    note: record.note,
+  };
 }
 
 /**
- * Names for the people the fixture only gives ids to.
+ * Everybody who lives here, with the flat they live in.
  *
- * A fixed pool indexed by the id, so the same person is the same person on
- * every render and in every test. The mix is deliberate: the building is in
- * Prague and its residents are not all Czech, which is the case the product
- * is actually sold into and the case where a name column has to behave.
- */
-const NAMES = [
-  "Camille Dubois", "Jae-won Jung", "Joanna Nowak", "Kavya Sharma",
-  "Rina Takahashi", "Selin Arslan", "Taras Melnyk", "Youssef Farouk",
-  "Emre Arslan", "Petra Nováková", "Lukáš Dvořák", "Mei Chen",
-  "Olumide Adeyemi", "Sofia Rossi", "Jonas Berg", "Amara Okonkwo",
-  "Tomáš Procházka", "Elena Petrova", "Hiroshi Sato", "Fatima Zahra",
-  "Marek Kowalski", "Ana Beatriz Lima", "Niels Jansen", "Priya Nair",
-  "Dmytro Shevchenko", "Isabelle Moreau", "Andrés Gómez", "Nguyen Minh",
-  "Klara Svobodová", "Omar Haddad", "Ingrid Larsen", "Rajesh Kumar",
-  "Chiara Ferrari", "Pavel Horák", "Leila Nasser", "Sten Mägi",
-  "Grace Mwangi", "Viktor Novák", "Mira Alonso", "Hassan Darwish",
-  "Jana Benešová", "Kofi Mensah", "Linnea Holm", "Arjun Patel",
-  "Zuzana Kučerová", "Mateo Silva", "Yuki Tanaka", "Ewa Zielińska",
-  "Ibrahim Toure", "Martina Veselá", "Sanne de Vries", "Rohan Desai",
-  "Alina Popescu", "Jakub Černý", "Noor Rahman", "Astrid Nilsen",
-  "Daniel Moreira", "Hana Pospíšilová", "Emeka Obi",
-];
-
-/**
- * Hand out names so that no two people share one.
- *
- * Taking the number out of the id is not enough: the fixture numbers its
- * residents R001… and its staff S001… separately, so the digits collide
- * across the two. Positions in a sorted list cannot.
- */
-function named(ids: string[], offset: number): Person[] {
-  return ids.sort().map((id, i) => {
-    const slot = (offset + i) % NAMES.length;
-    const name = NAMES[slot];
-    return {
-      id,
-      name,
-      email: emailFor(name, HOSTS[slot % HOSTS.length]),
-      // Czech mobile numbers, laid out so no two people share one.
-      phone: `+420 ${600 + (slot % 100)} ${String(100 + (slot % 900)).padStart(3, "0")} ${String(100 + ((slot * 37) % 900)).padStart(3, "0")}`,
-      // Every eighth is still setting up, so the Pending filter has
-      // something to find and the status column is not one value.
-      status: i % 8 === 7 ? ("pending" as const) : ("ready" as const),
-    };
-  });
-}
-
-const ACCENTS: Record<string, string> = {
-  á: "a", č: "c", ď: "d", é: "e", ě: "e", í: "i", ň: "n", ó: "o", ř: "r",
-  š: "s", ť: "t", ú: "u", ů: "u", ý: "y", ž: "z", ł: "l", ń: "n", ś: "s",
-  ź: "z", ż: "z", ğ: "g", ı: "i", ö: "o", ü: "u", ç: "c", å: "a", ø: "o",
-  æ: "ae", ã: "a", õ: "o", ê: "e", è: "e", ô: "o", ñ: "n",
-};
-
-/** An address someone could actually have, from a name that has accents. */
-function emailFor(name: string, host: string): string {
-  const plain = [...name.toLowerCase()]
-    .map((c) => ACCENTS[c] ?? c)
-    .join("")
-    .replace(/[^a-z ]/g, "")
-    .trim()
-    .replace(/ +/g, ".");
-  return `${plain}@${host}`;
-}
-
-const HOSTS = ["gmail.com", "outlook.com", "seznam.cz", "yahoo.com"];
-
-/**
- * Residents, read off the access profiles.
- *
- * A resident is someone whose profile reaches an apartment — that is what
- * living there means in this model, and it is why the apartment on the row
- * is derived rather than stored twice.
+ * The flat is given as a name and a storey — "A1" on floor 1 — and the
+ * plan's envelope for it is `1:A1`. Putting the two together here is the
+ * only joining this needs: the rest is read straight off the record.
  */
 export function residents(layer: VisualLayer): Resident[] {
-  const home = new Map<string, Group>();
-
-  for (const profile of layer.profiles) {
-    for (const roomId of profile.rooms) {
-      const room = layer.rooms.get(roomId);
-      if (!room || accessType(layer, room) !== "apartment") continue;
-      const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
-      if (!group) continue;
-      for (const personId of profile.people) {
-        if (!home.has(personId)) home.set(personId, group);
-      }
-      break; // one apartment per profile: the one they live in
-    }
-  }
-
-  return named([...home.keys()], 0)
-    .map((person) => {
-      const group = home.get(person.id)!;
+  return PEOPLE.filter((r) => r.role === "resident")
+    .map((record) => {
+      const id = `${record.floor}:${record.apartment}`;
+      const group = layer.groups.get(id);
       return {
-        ...person,
-        apartment_id: group.id,
-        apartment_name: group.name,
+        ...base(record),
+        apartment_id: group?.id ?? id,
+        apartment_name: group?.name ?? record.apartment ?? "",
+        floor: record.floor ?? 0,
+        mainContact: record.main_contact === true,
+        answeringUnit: record.answering_unit,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Everyone else: the people who work in the building rather than live in it.
- *
- * The roles are assigned by rank rather than stored, because the fixture has
- * no notion of a job. One property manager, two on maintenance, the rest
- * employees of whatever the building holds — the shops and the gym.
- */
-export function operators(layer: VisualLayer): Operator[] {
-  const living = residents(layer);
-  const isResident = new Set(living.map((r) => r.id));
-
-  const ids = new Set<string>();
-  for (const profile of layer.profiles) {
-    for (const personId of profile.people) {
-      if (!isResident.has(personId)) ids.add(personId);
-    }
-  }
-
-  // Named from where the residents left off, so the two lists never show
-  // the same person under two jobs.
-  return named([...ids], living.length)
-    .map((person, i) => ({
-      ...person,
-      status: "ready" as const,
-      role:
-        i === 0
-          ? ("property_manager" as const)
-          : i < 3
-            ? ("maintenance" as const)
-            : ("employee" as const),
+/** Everybody who works here rather than living here. */
+export function operators(_layer: VisualLayer): Operator[] {
+  return PEOPLE.filter((r) => r.role !== "resident")
+    .map((record) => ({
+      ...base(record),
+      role: record.role as OperatorRole,
+      jobTitle: record.job_title,
+      workplace: record.workplace,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Everybody, for the panels that do not care which they are. */
+export function allPeople(layer: VisualLayer): (Resident | Operator)[] {
+  return [...residents(layer), ...operators(layer)];
 }
 
 export function operatorRoleName(role: OperatorRole): string {

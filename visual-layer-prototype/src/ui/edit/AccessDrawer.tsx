@@ -36,6 +36,7 @@ import { ResizeHandle } from "./ResizeHandle";
 import {
   accessGroups,
   deviceRows,
+  operatorRoleName,
   operators,
   residents,
   type VisualLayer,
@@ -72,7 +73,7 @@ export function AccessDrawer({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
 
-  const groups = useMemo(() => accessGroups(layer), [layer]);
+  const groups = useMemo(() => accessGroups(), []);
   const rows = useMemo(() => deviceRows(layer), [layer]);
   const people = useMemo(
     () => [...residents(layer), ...operators(layer)],
@@ -164,7 +165,12 @@ export function AccessDrawer({
   const personRow = (id: string, depth: number) => {
     const who = person.get(id);
     if (!who || !hit(who.name)) return null;
-    const home = "apartment_name" in who ? who.apartment_name : undefined;
+    // A resident is placed by their flat, somebody who works here by
+    // their job — both from the data, neither invented.
+    const where =
+      "apartment_name" in who
+        ? who.apartment_name
+        : (who.jobTitle ?? operatorRoleName(who.role));
     return (
       <ListItemButton
         key={`p:${id}`}
@@ -180,7 +186,7 @@ export function AccessDrawer({
         />
         <ListItemText
           primary={who.name}
-          secondary={home ?? ("role" in who ? "Operator" : "")}
+          secondary={where}
           primaryTypographyProps={{ variant: "body2", noWrap: true }}
           secondaryTypographyProps={{ variant: "caption", noWrap: true }}
         />
@@ -284,7 +290,7 @@ export function AccessDrawer({
                   </Box>
                   <ListItemText
                     primary={group.name}
-                    secondary={`${group.devices.length} devices   ${group.people.length} people`}
+                    secondary={`${count(group.devices.length, "device")}   ${count(group.people.length, "person", "people")}`}
                     primaryTypographyProps={{ variant: "body2", noWrap: true }}
                     secondaryTypographyProps={{
                       variant: "caption",
@@ -355,6 +361,11 @@ export function AccessDrawer({
       </Box>
     </Box>
   );
+}
+
+/** "1 device", "3 devices" — a count nobody has to read twice. */
+function count(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 function SubHeading({ label, depth }: { label: string; depth: number }) {

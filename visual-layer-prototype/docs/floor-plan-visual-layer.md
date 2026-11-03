@@ -622,8 +622,8 @@ seen before drawing and the building edited afterwards cannot drift apart:
 | List | Derived as |
 |---|---|
 | spaces | the envelopes, flat — no floors, because which storey each is on is what the plan is for |
-| residents | the people whose access reaches an apartment, in that apartment |
-| operators | everyone else, ranked into one property manager, two on maintenance, the rest employees |
+| residents | `people.json`, joined to the plan: "A1" on floor 1 is envelope `1:A1` |
+| operators | `people.json` — the role and job title are given, not ranked |
 | devices | answering units in their flat; everything else unplaced |
 
 **Answering units are placed and nothing else is**, and that is not a
@@ -632,13 +632,19 @@ flat exists. A reader or an intercom goes on a door, and until the building
 has been drawn there are no doors — which is the honest state, and also the
 clearest statement of what the floor plan is worth.
 
-Two things the data had to settle rather than a rule. Residents and staff
-are numbered separately in the fixture, R001… and S001…, so a name handed
-out by the digits in an id collides the two lists; position in a sorted
-list cannot. And of the common spaces, the lobby is one a customer
-administers while the four hallways are not — the difference being that
-every resident is admitted to the lobby and nobody is admitted to a
-hallway, because walking down it needs no permission.
+**The people are read, not invented.** `people.json` gives every name,
+email, role, job title, flat and answering unit, and `access_groups.json`
+gives the four groups. An earlier version of this prototype made the
+names up from a pool, because the access profiles carried ids alone —
+that is gone, and a column the data cannot fill is now absent rather
+than filled in. The resident table lost its invented phone number and
+status and gained main contact, answering unit and the note the data
+carries.
+
+Of the common spaces, the lobby is one a customer administers while the
+four hallways are not — the difference being that every resident is
+admitted to the lobby and nobody is admitted to a hallway, because
+walking down it needs no permission.
 
 ### Making the plan
 
@@ -828,11 +834,11 @@ as in devices mode, and the right-hand panel becomes access groups with
 their devices and their people under them, filtered by All / Devices /
 People.
 
-**An access group is a profile read a different way** — a set of devices
-and the people who hold them is what both already are — so this renames
-rather than invents. The name is derived from what the group admits to,
-because "P17" tells nobody anything and what a manager is looking for is
-the group that opens a particular door.
+**The four access groups are read from `access_groups.json`**:
+Maintenance, the two commercial units, and the gym. An earlier version
+built thirty-two of them out of the access profiles and named them after
+the rooms their devices guarded, which was a per-apartment permission
+set dressed up as a group.
 
 Groups and devices are ticked and a person is picked, and that
 difference is the model's: reach adds up, so "what do these two groups
@@ -848,15 +854,13 @@ been asked.
 **People never appear on the plan.** A person is not somewhere, they are
 allowed somewhere, and the colours are what says so.
 
-A resident is granted their own front door and the building's on top of
-their groups. The rule is a guard rather than something doing visible
-work: in this fixture every resident profile already carries both, and a
-test says so, so that nobody reading the screen concludes the extra
-grant is what makes the colours come out as they do. It cannot be tested
-by removing somebody from every group, either — living somewhere is
-*derived* from a group of theirs reaching an apartment, so out of all of
-them they stop being a resident. The test strips the device from the
-groups instead and keeps the person in them.
+**A person holds two things: their own access points and their groups'
+devices.** Both are stated in the data, and neither is derived. The
+personal half used to be worked out here — find the devices guarding
+somebody's flat, add them — and that was wrong in a way worth keeping:
+four flats have no entrance door drawn yet, so their residents hold the
+entrance intercom and nothing else, and `people.json` says exactly that.
+Deriving it handed them a key to a door that does not exist.
 
 ### Placing a device by dragging it
 
