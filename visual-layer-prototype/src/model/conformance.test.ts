@@ -241,7 +241,11 @@ describe("devices (Part 2, Part 3)", () => {
   });
 
   it("gives a door-hosted device guards and no position", () => {
-    for (const d of file.devices.filter((x) => x.host_kind === "door")) {
+    // On a door, not merely of the kind that goes on doors: a reader
+    // waiting to be placed keeps its kind and has nothing to guard yet.
+    for (const d of file.devices.filter(
+      (x) => x.host_kind === "door" && x.host_id !== null,
+    )) {
       expect(d.position).toBeNull();
       // An unguarded reader on a real door is a configuration error worth
       // surfacing, so the fixture should not contain one.

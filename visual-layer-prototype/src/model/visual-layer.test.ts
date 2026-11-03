@@ -368,9 +368,23 @@ describe("devices", () => {
     expect(moved.length).toBeGreaterThan(0);
   });
 
-  it("leaves nothing unplaced in this fixture", () => {
-    expect(layer.unplacedDevices.map((d) => d.id)).toEqual([]);
-    expect(file.unplaced_devices).toEqual([]);
+  it("has the two locker-room readers waiting to be placed", () => {
+    // Deliberate: a building that arrives with every device already on a
+    // door never exercises placing one, and the locker rooms are the
+    // natural pair to leave — adjacent, same kind, one each side.
+    expect(layer.unplacedDevices.map((d) => d.id).sort()).toEqual([
+      "AC-U1",
+      "AC-U2",
+    ]);
+    expect([...file.unplaced_devices].sort()).toEqual(["AC-U1", "AC-U2"]);
+
+    // Waiting means nowhere and nothing checked, but still a reader.
+    for (const d of layer.unplacedDevices) {
+      expect(d.host_id).toBeNull();
+      expect(d.guards).toEqual([]);
+      expect(d.floor_id).toBeNull();
+      expect(d.host_kind).toBe("door");
+    }
   });
 
   it("surfaces both rooms of a door that carries a guarding device", () => {

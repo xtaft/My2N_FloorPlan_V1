@@ -9159,12 +9159,10 @@
       "name": "Locker Room W",
       "device_type": "access_unit",
       "host_kind": "door",
-      "host_id": "0:d6",
+      "host_id": null,
       "position": null,
-      "guards": [
-        "0:GL2"
-      ],
-      "floor_id": "0:floor",
+      "guards": [],
+      "floor_id": null,
       "status": "not_verified"
     },
     {
@@ -9172,12 +9170,10 @@
       "name": "Locker Room M",
       "device_type": "access_unit",
       "host_kind": "door",
-      "host_id": "0:d1",
+      "host_id": null,
       "position": null,
-      "guards": [
-        "0:GL1"
-      ],
-      "floor_id": "0:floor",
+      "guards": [],
+      "floor_id": null,
       "status": "not_verified"
     },
     {
@@ -9736,7 +9732,10 @@
       "people_count": 3
     }
   ],
-  "unplaced_devices": [],
+  "unplaced_devices": [
+    "AC-U1",
+    "AC-U2"
+  ],
   "repairs": [
     {
       "apartment": "A7",

@@ -174,9 +174,11 @@ export function DevicesDrawer({
           active={floor !== null}
           onClick={(el) => setPicker({ el, which: "floor" })}
         />
+        {/* On or off, so it carries no arrow: there is nothing to open. */}
         <Chip
           label="Unassigned"
           active={unassignedOnly}
+          opens={false}
           onClick={() => setUnassignedOnly((was) => !was)}
         />
       </Stack>
@@ -280,22 +282,17 @@ export function DevicesDrawer({
         anchorEl={picker?.el ?? null}
         onClose={() => setPicker(null)}
       >
-        <MenuItem
-          onClick={() => {
-            if (picker?.which === "type") setType(null);
-            else setFloor(null);
-            setPicker(null);
-          }}
-        >
-          Any
-        </MenuItem>
-        <Divider />
+        {/* No "Any" row: not filtering is what the chip already says
+            when nothing is picked. Choosing what is already chosen turns
+            it off again, so there is still a way back without reaching
+            for Clear filters. */}
         {picker?.which === "type"
           ? types.map((t) => (
               <MenuItem
                 key={t}
+                selected={type === t}
                 onClick={() => {
-                  setType(t);
+                  setType(type === t ? null : t);
                   setPicker(null);
                 }}
               >
@@ -305,8 +302,9 @@ export function DevicesDrawer({
           : layer.floors.map((f) => (
               <MenuItem
                 key={f.id}
+                selected={floor === f.name}
                 onClick={() => {
-                  setFloor(f.name);
+                  setFloor(floor === f.name ? null : f.name);
                   setPicker(null);
                 }}
               >
@@ -322,18 +320,21 @@ export function DevicesDrawer({
 function Chip({
   label,
   active,
+  opens = true,
   onClick,
 }: {
   label: string;
   active: boolean;
+  /** Whether it opens a list. A plain toggle shows no arrow. */
+  opens?: boolean;
   onClick: (el: HTMLElement) => void;
 }) {
   return (
     <Button
       size="small"
-      variant="outlined"
+      variant={active && !opens ? "contained" : "outlined"}
       color={active ? "primary" : "inherit"}
-      endIcon={<ArrowDropDown sx={{ fontSize: 18 }} />}
+      endIcon={opens ? <ArrowDropDown sx={{ fontSize: 18 }} /> : undefined}
       onClick={(e) => onClick(e.currentTarget)}
       sx={{ px: 1 }}
     >

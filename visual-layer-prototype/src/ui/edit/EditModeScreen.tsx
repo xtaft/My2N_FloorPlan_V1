@@ -141,6 +141,12 @@ export function EditModeScreen({
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  // A tool armed in structure mode has nothing to act on in devices
+  // mode, and leaving it armed would make the pointer behave oddly on a
+  // screen whose buttons are all greyed.
+  useEffect(() => {
+    if (mode !== "structure") setTool("select");
+  }, [mode]);
   const [draggingDevice, setDraggingDevice] = useState<{
     id: string;
     deviceType: string;
@@ -504,7 +510,11 @@ export function EditModeScreen({
               run(() => placeSpace(state, spaceId, roomId));
               setPlacing(null);
             }}
-            onSpaceMenu={(target, at) => {
+            // In devices mode the devices are the only thing with
+            // anything to say. A room, a space or a doorway answering a
+            // click there would be offering structure edits from the
+            // mode that is not about structure.
+            onSpaceMenu={mode !== "structure" ? undefined : (target, at) => {
               const found =
                 target.kind === "room"
                   ? layer.rooms.get(target.id)

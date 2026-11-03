@@ -66,7 +66,9 @@ export function FloorPlanActionBar({
           size="small"
           startIcon={icon}
           sx={toolSx}
-          disabled={!enabled}
+          // Every one of these edits the structure, so none of them is
+          // available in the mode that is about devices.
+          disabled={!enabled || mode !== "structure"}
           // Pressing the armed tool again puts the pointer back to selecting.
           onClick={() => onToolChange(tool === id ? "select" : id)}
         >

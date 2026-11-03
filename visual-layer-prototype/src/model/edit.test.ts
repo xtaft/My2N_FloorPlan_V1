@@ -225,12 +225,21 @@ describe("show and hide room", () => {
   });
 
   it("refuses to hide a room access is verified into", () => {
-    // AC-U2 guards the men's locker room, so that is the boundary being
+    // AC-0-d8 guards the gym floor, so that is the boundary being
     // checked and it has to stay visible.
-    expect(guardingDevice(state.layer, "0:GL1")).not.toBeNull();
-    expect(() => setRoomSurfaced(state, "0:GL1", false)).toThrow(
+    expect(guardingDevice(state.layer, "0:GM")).not.toBeNull();
+    expect(() => setRoomSurfaced(state, "0:GM", false)).toThrow(
       /verifies access into/,
     );
+  });
+
+  it("allows hiding a room whose reader has been taken off", () => {
+    // The locker rooms start with their readers unplaced, which is the
+    // case this refusal must not catch: nothing checks the way in, so
+    // there is no check to keep visible.
+    expect(guardingDevice(state.layer, "0:GL1")).toBeNull();
+    expect(setRoomSurfaced(state, "0:GL1", false).layer.rooms.get("0:GL1")!
+      .surfaced).toBe(false);
   });
 
   it("hides a walk-through room whose readers guard the rooms beyond", () => {
