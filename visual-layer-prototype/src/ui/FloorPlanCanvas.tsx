@@ -104,6 +104,10 @@ export interface FloorPlanCanvasProps {
    * mode a click on a doorway is after the device on it, not the doorway.
    */
   selectedDoorId?: string | null;
+  /** The device whose menu is open, drawn lit. */
+  selectedDeviceId?: string | null;
+  /** Clicking a device opens its menu where the pointer is. */
+  onDeviceMenu?: (deviceId: string, at: { top: number; left: number }) => void;
   /**
    * A space from the import list is waiting for a shape, so the next click
    * on a room gives it one instead of opening that room's menu.
@@ -203,6 +207,8 @@ export function FloorPlanCanvas({
   onSpaceMenu,
   onDoorMenu,
   selectedDoorId = null,
+  selectedDeviceId = null,
+  onDeviceMenu,
   placingSpace = false,
   onPlaceSpace,
   onDropSpace,
@@ -851,6 +857,32 @@ export function FloorPlanCanvas({
             </g>
           )}
 
+          {/* Hit targets for the devices, above everything.
+              Markers themselves take no pointer events, so that a reader
+              sitting on a doorway cannot swallow the click meant for the
+              door. Devices mode has no door selection to protect, and a
+              marker on an exterior door sits outside every room — so
+              there is nothing else under it to carry the click. */}
+          {onDeviceMenu &&
+            scene.glyphs.map((glyph) => (
+              <circle
+                key={`hit:${glyph.device.id}`}
+                cx={glyph.x}
+                cy={glyph.y}
+                r={(DEVICE_PX / 2) * unitScale}
+                fill="transparent"
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => setHoverDevice(glyph.device.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeviceMenu(glyph.device.id, {
+                    top: e.clientY,
+                    left: e.clientX,
+                  });
+                }}
+              />
+            ))}
+
           {overlay}
 
           {/* Devices. A reader sits on the side access is verified from.
@@ -871,7 +903,10 @@ export function FloorPlanCanvas({
                 y={glyph.y}
                 unitScale={unitScale}
                 showStatus={showDeviceStatus}
-                hovered={glyph.device.id === hoverDevice}
+                hovered={
+                  glyph.device.id === hoverDevice ||
+                  glyph.device.id === selectedDeviceId
+                }
               />
             ))}
 

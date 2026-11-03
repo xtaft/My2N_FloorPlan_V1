@@ -57,7 +57,9 @@ export type OperationKind =
   | "hide_room"
   | "add_space_type"
   | "rename_space_type"
-  | "recolor_space_type";
+  | "recolor_space_type"
+  | "rename_device"
+  | "unassign_device";
 
 export interface EditOperation {
   kind: OperationKind;

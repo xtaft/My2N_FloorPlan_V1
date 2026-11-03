@@ -14,3 +14,4 @@ export * from "./door";
 export * from "./spaceList";
 export * from "./building";
 export * from "./onboarding";
+export * from "./device";

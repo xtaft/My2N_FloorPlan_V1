@@ -800,6 +800,33 @@ from its `guards` and not from the door's `swing` — the two are
 independent on purpose, and a test pins it, alongside one asserting the
 drawing *does* change, so the pair cannot both pass by nothing happening.
 
+### Devices mode
+
+The dropdown swaps what the plan is about, and with it the right-hand
+panel. Structure mode lists the categories and hides the devices; devices
+mode lists the devices and draws them **with their status**, which is the
+one place in the editor where a device's health is the subject rather
+than noise.
+
+The panel is a flat list, not a tree: a device is attached to one thing
+and the row says which — the storey and the space, or "Unassigned".
+Grouping them by space would bury the unassigned ones, and those are the
+whole reason the panel exists.
+
+A device's menu is Rename device, then Unassign from door or Unassign
+from space depending on what it is on, greyed when it is on nothing. The
+kind of host survives being unassigned, so the greyed item still names
+the right thing rather than guessing. Unassigning keeps the record and
+drops the guards with the place: a reader verifies entry into a room
+*through a door*, and off the door there is no entry left for it to
+verify, so keeping the room would claim a check nothing carries out.
+
+**Devices get hit targets only in devices mode.** Markers take no pointer
+events everywhere else, so that a reader sitting on a doorway cannot
+swallow the click meant for the door. Devices mode has no door selection
+to protect — and a marker on an exterior door sits outside every room, so
+there is nothing underneath it to carry the click anyway.
+
 ## Removing a wall — which is how rooms merge
 
 **There is no standalone merge function.** Two rooms become one by deleting the

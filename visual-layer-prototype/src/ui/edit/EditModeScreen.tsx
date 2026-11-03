@@ -29,6 +29,8 @@ import { DoorMenu } from "./DoorMenu";
 import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
+import { DeviceMenu } from "./DeviceMenu";
+import { DevicesDrawer } from "./DevicesDrawer";
 import { EditAppBar } from "./EditAppBar";
 import { FloorPlanActionBar, type EditModeName, type EditTool } from "./FloorPlanActionBar";
 import { StructureTree } from "./StructureTree";
@@ -60,6 +62,7 @@ import {
   setGroupSpaceType,
   setRoomSpaceType,
   shaftImpact,
+  unassignDevice,
   unassignRoom,
   type Group,
   type Room,
@@ -73,6 +76,7 @@ import {
   previewAddDoor,
   recolorSpaceType,
   redo,
+  renameDevice,
   renameSpaceType,
   setRoomSurfaced,
   undo,
@@ -134,6 +138,13 @@ export function EditModeScreen({
   const [treeWidth, setTreeWidth] = useState(TREE_DEFAULT);
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT);
   const [mode, setMode] = useState<EditModeName>("structure");
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [renamingDeviceId, setRenamingDeviceId] = useState<string | null>(null);
+  const [deviceMenu, setDeviceMenu] = useState<{
+    el: HTMLElement | null;
+    at?: { top: number; left: number };
+    deviceId: string;
+  } | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; kind: "ok" | "bad" } | null>(
@@ -469,7 +480,9 @@ export function EditModeScreen({
             }
             // A device's status is about how the building is running, not
             // about its shape, so it is not shown while editing the shape.
-            showDeviceStatus={false}
+            // A device's status is what the devices mode is about, and
+            // noise in the mode that is about walls.
+            showDeviceStatus={mode === "devices"}
             onPlaceDoor={handlePlaceDoor}
             onDivideRoom={handleDivideRoom}
             divideError={divideError}
@@ -514,6 +527,15 @@ export function EditModeScreen({
             // one — a reader's 40px marker sits exactly where the doors
             // being edited are.
             showDevices={mode === "devices"}
+            selectedDeviceId={mode === "devices" ? selectedDeviceId : null}
+            onDeviceMenu={
+              mode === "devices"
+                ? (deviceId, at) => {
+                    setSelectedDeviceId(deviceId);
+                    setDeviceMenu({ el: null, at, deviceId });
+                  }
+                : undefined
+            }
             onShowRoom={showRoomById}
             onHideRoom={hideRoomById}
             placementError={placementError}
@@ -522,6 +544,36 @@ export function EditModeScreen({
           )}
         </Box>
 
+        {mode === "devices" ? (
+          <DevicesDrawer
+            layer={layer}
+            selectedId={selectedDeviceId}
+            onSelect={(id) => {
+              setSelectedDeviceId(id);
+              // Following a device to its storey, the way clicking a
+              // space in the other panel follows that.
+              const device = id
+                ? layer.file.devices.find((d) => d.id === id)
+                : undefined;
+              if (
+                device?.host_id &&
+                device.floor_id &&
+                device.floor_id !== floorId
+              ) {
+                onFloorChange(device.floor_id);
+              }
+            }}
+            onMenu={(el, deviceId) => setDeviceMenu({ el, deviceId })}
+            renamingId={renamingDeviceId}
+            onRenameCommit={(deviceId, name) => {
+              setRenamingDeviceId(null);
+              run(() => renameDevice(state, deviceId, name));
+            }}
+            onRenameCancel={() => setRenamingDeviceId(null)}
+            width={drawerWidth}
+            onWidthChange={setDrawerWidth}
+          />
+        ) : (
         <CategoriesDrawer
           layer={layer}
           selectedRoomId={selectedRoomId}
@@ -545,6 +597,7 @@ export function EditModeScreen({
           onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
           onNewCategory={newCategory}
         />
+        )}
       </Box>
 
       {/* What a space with no shape can do: take one, or go. */}
@@ -622,6 +675,22 @@ export function EditModeScreen({
         }
         onDelete={() =>
           doorMenu && run(() => deleteDoor(state, doorMenu.doorId))
+        }
+      />
+
+      <DeviceMenu
+        device={
+          deviceMenu
+            ? (layer.file.devices.find((d) => d.id === deviceMenu.deviceId) ??
+              null)
+            : null
+        }
+        at={deviceMenu?.at ?? null}
+        anchorEl={deviceMenu?.el ?? null}
+        onClose={() => setDeviceMenu(null)}
+        onRename={() => setRenamingDeviceId(deviceMenu?.deviceId ?? null)}
+        onUnassign={() =>
+          deviceMenu && run(() => unassignDevice(state, deviceMenu.deviceId))
         }
       />
 
