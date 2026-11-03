@@ -11,7 +11,7 @@
  * of its own, so the types panel owns rename and recolour, and every space of
  * that type follows."
  */
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -33,9 +33,8 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import {
-  accessType,
-  envelopeChain,
   isRoomListed,
+  passThroughRoom,
   roomColor,
   spaceCategories,
   type Group,
@@ -75,23 +74,6 @@ export function CategoriesDrawer({
 
   const categories = useMemo(() => spaceCategories(layer), [layer]);
 
-  /**
-   * Open the way to the selected room, once it is a room the lists name —
-   * category, then the envelopes above it. Surfacing a bedroom is meant to
-   * make it appear here too, and it would otherwise be buried.
-   */
-  useEffect(() => {
-    if (!selectedRoomId) return;
-    const room = layer.rooms.get(selectedRoomId);
-    if (!room || !isRoomListed(layer, room)) return;
-    const path = [accessType(layer, room) ?? "__unknown__", ...envelopeChain(layer, room)];
-    setExpanded((prev) => {
-      if (path.every((id) => prev[id])) return prev;
-      const next = { ...prev };
-      for (const id of path) next[id] = true;
-      return next;
-    });
-  }, [layer, selectedRoomId]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -118,11 +100,11 @@ export function CategoriesDrawer({
     return (layer.childGroups.get(group.id) ?? []).some(branchMatches);
   };
 
-  const renderRoom = (room: Room, depth: number) => (
+  const renderRoom = (room: Room, depth: number, secondary?: string) => (
     <ListItemButton
       key={room.id}
       selected={room.id === selectedRoomId}
-      sx={{ pl: 2 + depth * 2, pr: 1, minHeight: 48 }}
+      sx={{ pl: 2 + depth * 2, pr: 1, minHeight: secondary ? 68 : 48 }}
       onClick={() => onSelectRoom(room.id)}
     >
       <Box sx={{ width: 28, flexShrink: 0 }} />
@@ -140,7 +122,14 @@ export function CategoriesDrawer({
       />
       <ListItemText
         primary={room.name}
-        primaryTypographyProps={{ variant: "body2", noWrap: true }}
+        // The floor, when this room is standing in for its envelope: five
+        // storeys each have a room called Stairs.
+        secondary={secondary}
+        primaryTypographyProps={{
+          variant: secondary ? "body1" : "body2",
+          noWrap: true,
+        }}
+        secondaryTypographyProps={{ variant: "body2" }}
       />
       <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
         <MoreVert sx={{ fontSize: 20 }} />
@@ -150,6 +139,14 @@ export function CategoriesDrawer({
 
   const renderEnvelope = (group: Group, depth: number): React.ReactNode => {
     if (!branchMatches(group)) return null;
+
+    // A stairwell is an envelope holding one room called Stairs. Listing both
+    // puts a row inside an identical row, so the room stands in for it.
+    const only = passThroughRoom(layer, group);
+    if (only && isRoomListed(layer, only)) {
+      return renderRoom(only, depth, floorName(group.floor_id));
+    }
+
     // Same rule as the tree: a flat's rooms stay folded inside it until one
     // is surfaced, every other envelope lists its rooms.
     const rooms = layer.file.rooms.filter(

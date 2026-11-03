@@ -99,6 +99,27 @@ export function highlightTargets(layer: VisualLayer, roomId: string): string[] {
 }
 
 /**
+ * The single room an envelope amounts to, if that is all it is.
+ *
+ * A stairwell, a lift car, a lobby, a hallway, the technical room: each is an
+ * envelope holding exactly one room of the same name, so listing both puts a
+ * row inside an identical row. Where that is the shape, the room stands in
+ * for the envelope and the level disappears.
+ *
+ * An envelope with two rooms (a shop and its storage) or with child envelopes
+ * (the gym) is not this, and keeps its level — there the grouping says
+ * something the rooms do not.
+ */
+export function passThroughRoom(
+  layer: VisualLayer,
+  group: Group,
+): Room | null {
+  if ((layer.childGroups.get(group.id) ?? []).length > 0) return null;
+  const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
+  return rooms.length === 1 ? rooms[0] : null;
+}
+
+/**
  * The rooms folded away inside an envelope, descendants included.
  *
  * A hidden room is not in any list and cannot be clicked, so the envelope

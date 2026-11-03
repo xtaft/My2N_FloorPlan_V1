@@ -39,6 +39,7 @@ import {
   floorEnvelopes,
   groupAccessType,
   isRoomListed,
+  passThroughRoom,
   roomColor,
   type Group,
   type Room,
@@ -229,6 +230,13 @@ export function StructureTree({
   };
 
   const renderGroup = (group: Group, depth: number): React.ReactNode => {
+    // An envelope that is just its one room — a stairwell, the technical
+    // room — would otherwise put a row inside an identical row.
+    const only = passThroughRoom(layer, group);
+    if (only && isRoomListed(layer, only) && !matches) {
+      return renderRoom(only, depth);
+    }
+
     // A flat's rooms stay folded inside it until one is surfaced; every other
     // envelope lists its rooms. An apartment with nothing surfaced therefore
     // has nothing to expand, and gets no chevron.

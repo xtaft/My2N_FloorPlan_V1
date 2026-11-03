@@ -12,6 +12,7 @@ import {
   EXTERIOR,
   accessType,
   floorEnvelopes,
+  passThroughRoom,
   spaceCategories,
   visualLayer as layer,
 } from "./index";
@@ -410,6 +411,24 @@ describe("the categories panel groups by envelope", () => {
       "technical",
       null,
     ]);
+  });
+
+  it("treats a one-room envelope as that room", () => {
+    // A stairwell is an envelope holding one room called Stairs; listing
+    // both puts a row inside an identical row.
+    for (const id of ["0:gS", "0:gE", "0:gL", "1:gH", "0:gTECH"]) {
+      const group = layer.groups.get(id)!;
+      const only = passThroughRoom(layer, group);
+      expect(only).not.toBeNull();
+      expect(only!.group_id).toBe(id);
+    }
+  });
+
+  it("keeps the level where the envelope says something the rooms do not", () => {
+    // A shop and its storage, and the gym with its changing rooms.
+    for (const id of ["0:C1", "0:C2", "0:GYM", "1:A1"]) {
+      expect(passThroughRoom(layer, layer.groups.get(id)!)).toBeNull();
+    }
   });
 
   it("always offers the unbound bucket, empty here", () => {
