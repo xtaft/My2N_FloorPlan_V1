@@ -31,7 +31,7 @@ export type EditTool =
   | "remove_wall"
   | "door"
   | "align";
-export type EditModeName = "structure" | "devices";
+export type EditModeName = "structure" | "devices" | "access";
 
 export interface FloorPlanActionBarProps {
   tool: EditTool;
@@ -177,6 +177,7 @@ export function FloorPlanActionBar({
       >
         <MenuItem value="structure">Structure</MenuItem>
         <MenuItem value="devices">Devices</MenuItem>
+        <MenuItem value="access">Access</MenuItem>
       </TextField>
     </Box>
   );

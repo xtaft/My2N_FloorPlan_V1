@@ -3,7 +3,7 @@
  * (36:4871) — app bar, floor-plan action bar, then the 256 / canvas / 320
  * three-column content.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -30,7 +30,9 @@ import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { DeviceMenu } from "./DeviceMenu";
+import { AccessDrawer } from "./AccessDrawer";
 import { DevicesDrawer } from "./DevicesDrawer";
+import { PersonMenu } from "./PersonMenu";
 import { EditAppBar } from "./EditAppBar";
 import { FloorPlanActionBar, type EditModeName, type EditTool } from "./FloorPlanActionBar";
 import { StructureTree } from "./StructureTree";
@@ -76,6 +78,9 @@ import {
   previewAddDoor,
   recolorSpaceType,
   redo,
+  accessPaint,
+  accessShading,
+  devicesHeldBy,
   placeDeviceInSpace,
   placeDeviceOnDoor,
   renameDevice,
@@ -147,6 +152,16 @@ export function EditModeScreen({
   useEffect(() => {
     if (mode !== "structure") setTool("select");
   }, [mode]);
+  /** Access mode: the groups and devices ticked, and the person asked
+   *  about. A person and a tick list are different questions, so
+   *  choosing one clears the other. */
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [personId, setPersonId] = useState<string | null>(null);
+  const [personMenu, setPersonMenu] = useState<{
+    el: HTMLElement;
+    personId: string;
+  } | null>(null);
+
   const [draggingDevice, setDraggingDevice] = useState<{
     id: string;
     deviceType: string;
@@ -169,6 +184,21 @@ export function EditModeScreen({
   }, []);
 
   const { layer } = state;
+
+  /**
+   * What the access question is being asked with: a person's own keys,
+   * or whatever is ticked. Never both — picking one clears the other.
+   */
+  const allowed = useMemo(() => {
+    if (personId) return new Set(devicesHeldBy(layer, personId));
+    return picked;
+  }, [layer, personId, picked]);
+
+  const shading = useMemo(
+    () => (mode === "access" ? accessShading(layer, allowed) : null),
+    [mode, layer, allowed],
+  );
+
 
   // Esc reverts the view toggle, as the doc specifies, and clears selection.
   useEffect(() => {
@@ -546,7 +576,12 @@ export function EditModeScreen({
             // devices are the other mode's subject and only crowd this
             // one — a reader's 40px marker sits exactly where the doors
             // being edited are.
-            showDevices={mode === "devices"}
+            // Access mode draws the devices too — they are what the
+            // answer is made of — but people never appear on the plan,
+            // because a person is not somewhere, they are allowed
+            // somewhere, and that is what the colours say.
+            showDevices={mode !== "structure"}
+            paint={shading ? accessPaint(shading) : undefined}
             selectedDeviceId={mode === "devices" ? selectedDeviceId : null}
             dragging={draggingDevice}
             onDropOnDoor={(deviceId, doorId, side) => {
@@ -573,7 +608,25 @@ export function EditModeScreen({
           )}
         </Box>
 
-        {mode === "devices" ? (
+        {mode === "access" ? (
+          <AccessDrawer
+            layer={layer}
+            picked={picked}
+            onPicked={(next) => {
+              setPicked(next);
+              if (next.size > 0) setPersonId(null);
+            }}
+            personId={personId}
+            onPerson={(id) => {
+              setPersonId(id);
+              if (id) setPicked(new Set());
+            }}
+            onDeviceMenu={(el, deviceId) => setDeviceMenu({ el, deviceId })}
+            onPersonMenu={(el, id) => setPersonMenu({ el, personId: id })}
+            width={drawerWidth}
+            onWidthChange={setDrawerWidth}
+          />
+        ) : mode === "devices" ? (
           <DevicesDrawer
             layer={layer}
             selectedId={selectedDeviceId}
@@ -731,6 +784,19 @@ export function EditModeScreen({
         onUnassign={() =>
           deviceMenu && run(() => unassignDevice(state, deviceMenu.deviceId))
         }
+      />
+
+      <PersonMenu
+        open={Boolean(personMenu)}
+        anchorEl={personMenu?.el ?? null}
+        inAGroup={
+          personMenu
+            ? layer.profiles.some((p) =>
+                p.people.includes(personMenu.personId),
+              )
+            : false
+        }
+        onClose={() => setPersonMenu(null)}
       />
 
       <StructureRowMenu

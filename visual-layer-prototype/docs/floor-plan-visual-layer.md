@@ -821,6 +821,43 @@ drops the guards with the place: a reader verifies entry into a room
 *through a door*, and off the door there is no entry left for it to
 verify, so keeping the room would claim a check nothing carries out.
 
+### Access mode
+
+The third mode answers "who gets in where". Every structure tool is off,
+as in devices mode, and the right-hand panel becomes access groups with
+their devices and their people under them, filtered by All / Devices /
+People.
+
+**An access group is a profile read a different way** — a set of devices
+and the people who hold them is what both already are — so this renames
+rather than invents. The name is derived from what the group admits to,
+because "P17" tells nobody anything and what a manager is looking for is
+the group that opens a particular door.
+
+Groups and devices are ticked and a person is picked, and that
+difference is the model's: reach adds up, so "what do these two groups
+open together" is a real question, while two people are not a thing that
+walks through a door together. Choosing one clears the other.
+
+**Nothing selected is not a question, so it gets no answer**: every space
+is grey. With a selection the walk from the entrance says which spaces
+are behind a door it opens — green — and which are not — red. Every
+space is one or the other; there is no third state once a question has
+been asked.
+
+**People never appear on the plan.** A person is not somewhere, they are
+allowed somewhere, and the colours are what says so.
+
+A resident is granted their own front door and the building's on top of
+their groups. The rule is a guard rather than something doing visible
+work: in this fixture every resident profile already carries both, and a
+test says so, so that nobody reading the screen concludes the extra
+grant is what makes the colours come out as they do. It cannot be tested
+by removing somebody from every group, either — living somewhere is
+*derived* from a group of theirs reaching an apartment, so out of all of
+them they stop being a resident. The test strips the device from the
+groups instead and keeps the person in them.
+
 ### Placing a device by dragging it
 
 An unplaced device is dragged out of the panel onto the plan. Only
