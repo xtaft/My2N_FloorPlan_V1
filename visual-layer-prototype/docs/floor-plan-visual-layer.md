@@ -589,14 +589,34 @@ everything that says what the space *is*.
 | Intent | Operation | Result |
 |---|---|---|
 | this is not a room we track | delete | out of the tree, off the map |
-| this is a room, but we no longer know which | unassign from map | stays in the tree |
+| the plan is right that something is here, wrong about what | unassign from map | splits in two |
 
-Both strip the name to `Unnamed N`, clear `space_type`, and clear
-`group_id`. With no type of its own and no envelope to inherit one from the
-space resolves to Unknown, which is the bucket the types panel already keeps
-open at zero for exactly this. They differ in `surfaced` alone: an
-unassigned space stays listed so somebody can name it again, a deleted one
-does not.
+**Delete** strips the name to `Unnamed N`, clears `space_type` and
+`group_id`, and unsurfaces it. With nothing of its own and no envelope to
+inherit from it reads as Unknown, which is the bucket the types panel keeps
+open at zero for exactly this.
+
+**Unassign separates what a space is from where it is**, because the two
+claims fail independently: the drawing was right that there is a space
+there and wrong about which one, so neither half should be thrown away.
+
+- the **shape** stays on the plan as a new space nobody has identified —
+  `Unnamed N`, Unknown, the same walls, in no envelope. It is in the tree,
+  because it is a space on a floor.
+- the **identity** leaves the plan and waits in the types panel under the
+  category it read as, still named, now labelled unplaced. It is *not* in
+  the tree: a space with no shape is not part of the floor's structure.
+
+Devices divide the same way. An answering unit is the flat's rather than
+the walls', so it comes away with the identity and returns when that is
+placed again; the space carries their ids. A reader is on a door, the door
+is part of the shape, and the shape has not moved — so it stays exactly
+where it is, now verifying entry into whatever is there now.
+
+Placing the space back onto a room joins them: that room takes the name,
+the category and the note, and the units come home. What it does not
+restore is envelope membership — the room left its flat when it stopped
+agreeing with it, and rejoining a name is not rejoining a flat.
 
 An envelope emptied by either goes with it. The device inside a space stays
 exactly where it is — a space losing its name is not a reason to lose

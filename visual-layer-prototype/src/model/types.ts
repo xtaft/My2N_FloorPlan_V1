@@ -59,6 +59,13 @@ export interface UnplacedSpace {
   floor_id: string | null;
   space_type: string | null;
   note: string | null;
+  /**
+   * Devices that were inside it — an answering unit belongs to the flat,
+   * not to the walls, so it comes away with the flat and goes back when
+   * the flat is placed again. Readers stay on their doors, which belong to
+   * the shape rather than to whoever lives behind them.
+   */
+  devices?: string[];
 }
 
 export interface Group {

@@ -8,9 +8,9 @@
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import { must, type VisualLayer } from "./load";
-import { roomsInGroup } from "./access";
+import { accessType, roomsInGroup } from "./access";
 import { doorsOfRoom } from "./derive";
-import type { Group, Room, VisualLayerFile } from "./types";
+import type { Group, Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 function trimmed(name: string): string {
   const out = name.trim();
@@ -287,8 +287,102 @@ export function deleteRoom(state: EditState, roomId: string): EditState {
  * The difference from delete is only whether it is still listed. Both leave
  * the same thing on the plan.
  */
+/** Ids keep their floor prefix, so a new room still says where it lives. */
+function freeRoomId(taken: Set<string>, floor: string): string {
+  for (let n = 1; ; n += 1) {
+    const id = `${floor}:r${n}`;
+    if (!taken.has(id)) return id;
+  }
+}
+
+function freeSpaceId(taken: Set<string>): string {
+  for (let n = 1; ; n += 1) {
+    const id = `space:${n}`;
+    if (!taken.has(id)) return id;
+  }
+}
+
+/**
+ * Unassign a space from the map: separate what it *is* from where it *is*.
+ *
+ * Two things come out of one. The shape stays on the plan as a new space
+ * that nobody has identified yet — Unnamed, Unknown, exactly the area the
+ * old one covered. The identity leaves the plan and waits in the types
+ * panel under the category it had, still named, still that kind of space,
+ * now labelled unplaced.
+ *
+ * That is the honest reading of "this room is not what the plan says it
+ * is": the drawing was right about there being a space there and wrong
+ * about which one, so neither half should be thrown away.
+ *
+ * Devices divide the same way. An answering unit is the flat's and comes
+ * away with it; a reader is on a door, the door is part of the shape, and
+ * the shape has not moved — so it stays where it is, now checking entry
+ * into the space that is still there.
+ */
 export function unassignRoom(state: EditState, roomId: string): EditState {
-  return anonymise(state, roomId, true, "unassign_room", "Unassign from map");
+  const { layer, file } = state;
+  const room = must(layer.rooms, roomId, "room");
+  const floor = room.floor_id.split(":")[0];
+
+  const shape: Room = {
+    id: freeRoomId(new Set(file.rooms.map((r) => r.id)), floor),
+    name: unnamedRoomName(layer),
+    walls: [...room.walls],
+    // Unknown: no category of its own and no envelope to inherit one from.
+    group_id: null,
+    space_type: null,
+    floor_id: room.floor_id,
+    surfaced: true,
+    note: null,
+  };
+
+  const carried = (layer.devicesInRoom.get(roomId) ?? []).map((d) => d.id);
+  const space: UnplacedSpace = {
+    id: freeSpaceId(new Set((file.unplaced_spaces ?? []).map((x) => x.id))),
+    name: room.name,
+    floor_id: room.floor_id,
+    // What it read as, not what it stored: a bedroom inheriting "apartment"
+    // is an apartment space, and that is the category it waits under.
+    space_type: accessType(layer, room),
+    note: room.note ?? null,
+    devices: carried,
+  };
+
+  const swap = (id: string) => (id === roomId ? shape.id : id);
+
+  const rooms = file.rooms.filter((r) => r.id !== roomId).concat(shape);
+  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
+  const hasChild = new Set(
+    file.groups.map((g) => g.parent_group_id).filter(Boolean),
+  );
+
+  return commit(state, "unassign_room", "Unassign from map", {
+    ...file,
+    rooms,
+    walls: file.walls.map((w) => ({
+      ...w,
+      room_a: swap(w.room_a),
+      room_b: swap(w.room_b),
+    })),
+    doors: file.doors.map((d) =>
+      d.rooms ? { ...d, rooms: [swap(d.rooms[0]), swap(d.rooms[1])] as [string, string] } : d,
+    ),
+    devices: file.devices.map((d) => {
+      // Inside it: away with the space, to come back when it is placed.
+      if (d.host_kind === "room" && d.host_id === roomId) {
+        return { ...d, host_id: null };
+      }
+      // On its door: the door has not moved, so neither has the check —
+      // it now verifies entry into whatever is there now.
+      if (d.guards.includes(roomId)) {
+        return { ...d, guards: d.guards.map(swap) };
+      }
+      return d;
+    }),
+    groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
+    unplaced_spaces: [...(file.unplaced_spaces ?? []), space],
+  });
 }
 
 /** The envelopes a room could be moved into on its floor, for a submenu. */

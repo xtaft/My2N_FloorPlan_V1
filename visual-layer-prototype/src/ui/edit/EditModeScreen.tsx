@@ -416,7 +416,6 @@ export function EditModeScreen({
           }
           onRenameCommit={commitRename}
           onRenameCancel={() => setRenaming(null)}
-          onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
           width={treeWidth}
           onWidthChange={setTreeWidth}
         />

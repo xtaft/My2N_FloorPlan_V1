@@ -377,9 +377,25 @@ export function placeSpace(
       : r,
   );
 
+  // The units it took with it come back into the room it has joined. A
+  // space and its answering unit were separated by the unassign; placing
+  // it is what puts them back together.
+  const returning = new Set(space.devices ?? []);
+  const devices = returning.size
+    ? file.devices.map((d) =>
+        returning.has(d.id) && d.host_id === null
+          ? { ...d, host_kind: "room" as const, host_id: roomId }
+          : d,
+      )
+    : file.devices;
+
   return commit(state, "place_space", `Place ${space.name}`, {
     ...file,
     rooms,
+    devices,
+    unplaced_devices: devices
+      .filter((d) => d.host_id === null)
+      .map((d) => d.id),
     groups: pruneGroups(file, rooms),
     unplaced_spaces: (file.unplaced_spaces ?? []).filter(
       (s) => s.id !== spaceId,

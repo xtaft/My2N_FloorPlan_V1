@@ -30,7 +30,6 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
-import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
@@ -79,8 +78,6 @@ export interface StructureTreeProps {
   onRenameChange: (draft: string) => void;
   onRenameCommit: () => void;
   onRenameCancel: () => void;
-  /** The menu on a space that has been imported but not drawn yet. */
-  onUnplacedMenu: (el: HTMLElement, spaceId: string) => void;
   /** Figma has it at 256; the user can have it wider. */
   width: number;
   onWidthChange: (width: number) => void;
@@ -98,7 +95,6 @@ export function StructureTree({
   onRenameChange,
   onRenameCommit,
   onRenameCancel,
-  onUnplacedMenu,
   width,
   onWidthChange,
 }: StructureTreeProps) {
@@ -433,24 +429,6 @@ export function StructureTree({
                     {(layer.roomsByFloor.get(floor.id) ?? [])
                       .filter((r) => r.group_id === null && isRoomListed(layer, r))
                       .map((r) => renderRoom(r, 2))}
-                    {/* Imported from a space list and not drawn yet. They
-                        are part of the building and nothing else would say
-                        so — an import that recorded them somewhere nobody
-                        looks would be an import that did nothing. */}
-                    {(layer.file.unplaced_spaces ?? [])
-                      .filter((space) => space.floor_id === floor.id)
-                      .map((space) =>
-                        row(
-                          space.id,
-                          2,
-                          <PlaceOutlined sx={{ fontSize: 20 }} />,
-                          space.name,
-                          {
-                            muted: true,
-                            onMenu: (el) => onUnplacedMenu(el, space.id),
-                          },
-                        ),
-                      )}
                   </>
                 )}
               </Fragment>

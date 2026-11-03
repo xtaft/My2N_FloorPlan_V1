@@ -245,10 +245,11 @@ export function CategoriesDrawer({
       </Box>
       <ListItemText
         primary={space.name}
+        // It is still whatever it was; what it has lost is a place.
         secondary={
           space.floor_id
-            ? `${floorName(space.floor_id)} · drag onto a space`
-            : "drag onto a space"
+            ? `${floorName(space.floor_id)} · unplaced`
+            : "unplaced"
         }
         primaryTypographyProps={{ variant: "body1", noWrap: true }}
         secondaryTypographyProps={{ variant: "body2" }}
