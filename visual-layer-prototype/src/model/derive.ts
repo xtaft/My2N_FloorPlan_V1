@@ -98,6 +98,17 @@ export function highlightTargets(layer: VisualLayer, roomId: string): string[] {
   return roomsInGroup(layer, room.group_id).map((r) => r.id);
 }
 
+/**
+ * The rooms folded away inside an envelope, descendants included.
+ *
+ * A hidden room is not in any list and cannot be clicked, so the envelope
+ * that contains it is how it is reached: this is what the envelope's menu
+ * offers to show.
+ */
+export function hiddenRoomsIn(layer: VisualLayer, groupId: string): Room[] {
+  return roomsInGroup(layer, groupId).filter((r) => !isRoomListed(layer, r));
+}
+
 export function groupAccessType(
   layer: VisualLayer,
   group: Group,

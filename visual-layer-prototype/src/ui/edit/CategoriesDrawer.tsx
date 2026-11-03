@@ -32,6 +32,7 @@ import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
+import { HiddenRoomsMenu } from "./HiddenRoomsMenu";
 import {
   accessType,
   envelopeChain,
@@ -50,6 +51,8 @@ export interface CategoriesDrawerProps {
   onRename: (typeId: string, name: string) => void;
   onRecolor: (typeId: string, color: string) => void;
   onNewCategory: () => void;
+  /** Show a room that is folded away inside an envelope. */
+  onShowRoom: (roomId: string) => void;
 }
 
 export function CategoriesDrawer({
@@ -59,8 +62,13 @@ export function CategoriesDrawer({
   onRename,
   onRecolor,
   onNewCategory,
+  onShowRoom,
 }: CategoriesDrawerProps) {
   const [query, setQuery] = useState("");
+  const [envelopeMenu, setEnvelopeMenu] = useState<{
+    el: HTMLElement;
+    groupId: string;
+  } | null>(null);
   // Absent means closed; every row opens and closes on its own.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [menu, setMenu] = useState<{ el: HTMLElement; typeId: string } | null>(
@@ -184,7 +192,15 @@ export function CategoriesDrawer({
             primaryTypographyProps={{ variant: "body1", noWrap: true }}
             secondaryTypographyProps={{ variant: "body2" }}
           />
-          <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
+          <IconButton
+            size="small"
+            edge="end"
+            onClick={(e) => {
+              e.stopPropagation();
+              // The envelope is how a room folded inside it is reached.
+              setEnvelopeMenu({ el: e.currentTarget, groupId: group.id });
+            }}
+          >
             <MoreVert sx={{ fontSize: 20 }} />
           </IconButton>
         </ListItemButton>
@@ -355,6 +371,13 @@ export function CategoriesDrawer({
           </span>
         </Tooltip>
       </Box>
+
+      <HiddenRoomsMenu
+        layer={layer}
+        menu={envelopeMenu}
+        onClose={() => setEnvelopeMenu(null)}
+        onShowRoom={onShowRoom}
+      />
 
       <Menu
         anchorEl={menu?.el ?? null}

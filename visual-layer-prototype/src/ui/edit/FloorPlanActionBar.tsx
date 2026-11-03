@@ -6,16 +6,20 @@
  * Wall / Door / Stairs / Elevator are the geometry tools, of which only Door
  * is implemented.
  */
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import ListSubheader from "@mui/material/ListSubheader";
+import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
 import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
 import ElevatorOutlined from "@mui/icons-material/ElevatorOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
@@ -24,6 +28,7 @@ import UnfoldMoreOutlined from "@mui/icons-material/UnfoldMoreOutlined";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
+import type { Room } from "../../model";
 
 export type EditTool = "select" | "wall" | "door" | "stairs" | "elevator";
 export type EditModeName = "structure" | "devices";
@@ -46,6 +51,14 @@ export interface FloorPlanActionBarProps {
    */
   showAllRooms: boolean;
   onToggleShowAllRooms: () => void;
+  /**
+   * The rooms folded inside the selected envelope. Clicking a flat on the
+   * map selects the envelope, because a hidden room cannot be clicked — so
+   * Show room becomes a menu of what is inside it.
+   */
+  hiddenInSelection: Room[];
+  onShowRoomById: (roomId: string) => void;
+  selectedGroupName: string | null;
 }
 
 const toolSx = { height: 30 } as const;
@@ -62,7 +75,14 @@ export function FloorPlanActionBar({
   selectionLabel,
   showAllRooms,
   onToggleShowAllRooms,
+  hiddenInSelection,
+  onShowRoomById,
+  selectedGroupName,
 }: FloorPlanActionBarProps) {
+  const [showMenu, setShowMenu] = useState<HTMLElement | null>(null);
+  // With an envelope selected, Show room has to ask which of its folded
+  // rooms is meant; with a room selected it just acts.
+  const offersMenu = !canShowRoom && hiddenInSelection.length > 0;
   const toolButton = (
     id: EditTool,
     label: string,
@@ -103,9 +123,11 @@ export function FloorPlanActionBar({
       <Stack direction="row" spacing={2} alignItems="center">
         <Tooltip
           title={
-            selectionLabel
+            canShowRoom
               ? `Draw ${selectionLabel} on the map separately`
-              : "Select a hidden room first"
+              : offersMenu
+                ? `Pick a room folded inside ${selectedGroupName}`
+                : "Select a room, or an envelope with rooms folded inside it"
           }
         >
           <span>
@@ -114,14 +136,39 @@ export function FloorPlanActionBar({
               size="small"
               color="inherit"
               startIcon={<VisibilityOutlined sx={{ fontSize: 16 }} />}
+              endIcon={
+                offersMenu ? <ArrowDropDown sx={{ fontSize: 16 }} /> : undefined
+              }
               sx={toolSx}
-              disabled={!canShowRoom}
-              onClick={onShowRoom}
+              disabled={!canShowRoom && !offersMenu}
+              onClick={(e) =>
+                offersMenu ? setShowMenu(e.currentTarget) : onShowRoom()
+              }
             >
               Show room
             </Button>
           </span>
         </Tooltip>
+        <Menu
+          anchorEl={showMenu}
+          open={showMenu !== null}
+          onClose={() => setShowMenu(null)}
+        >
+          <ListSubheader sx={{ lineHeight: "32px" }}>
+            Show room in {selectedGroupName}
+          </ListSubheader>
+          {hiddenInSelection.map((room) => (
+            <MenuItem
+              key={room.id}
+              onClick={() => {
+                onShowRoomById(room.id);
+                setShowMenu(null);
+              }}
+            >
+              {room.name}
+            </MenuItem>
+          ))}
+        </Menu>
         <Tooltip
           title={
             selectionLabel

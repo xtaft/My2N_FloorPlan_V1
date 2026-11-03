@@ -34,6 +34,7 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
+import { HiddenRoomsMenu } from "./HiddenRoomsMenu";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -62,6 +63,8 @@ export interface StructureTreeProps {
   onFloorChange: (floorId: string) => void;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string | null) => void;
+  /** Show a room that is folded away inside an envelope. */
+  onShowRoom: (roomId: string) => void;
 }
 
 export function StructureTree({
@@ -71,8 +74,12 @@ export function StructureTree({
   onFloorChange,
   selectedRoomId,
   onSelectRoom,
+  onShowRoom,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
+  const [menu, setMenu] = useState<{ el: HTMLElement; groupId: string } | null>(
+    null,
+  );
   // Absent means closed. The floor on screen when the tree first mounts
   // starts open so there is something to look at.
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => ({
@@ -132,6 +139,7 @@ export function StructureTree({
       selected?: boolean;
       bold?: boolean;
       swatch?: string;
+      onMenu?: (el: HTMLElement) => void;
     } = {},
   ) => (
     <ListItemButton
@@ -198,7 +206,14 @@ export function StructureTree({
         }}
         secondaryTypographyProps={{ variant: "body2", noWrap: true }}
       />
-      <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
+      <IconButton
+        size="small"
+        edge="end"
+        onClick={(e) => {
+          e.stopPropagation();
+          opts.onMenu?.(e.currentTarget);
+        }}
+      >
         <MoreVert sx={{ fontSize: 20 }} />
       </IconButton>
     </ListItemButton>
@@ -265,6 +280,9 @@ export function StructureTree({
             expanded: isOpen,
             onToggle: () => toggle(group.id),
             onClick: () => expandable && toggle(group.id),
+            // The envelope is how a room folded inside it is reached, since
+            // the room itself is in no list and cannot be clicked.
+            onMenu: (el) => setMenu({ el, groupId: group.id }),
           },
         )}
         {isOpen && (
@@ -362,6 +380,13 @@ export function StructureTree({
           })}
         </List>
       </Box>
+
+      <HiddenRoomsMenu
+        layer={layer}
+        menu={menu}
+        onClose={() => setMenu(null)}
+        onShowRoom={onShowRoom}
+      />
 
       <Divider />
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 3 }}>

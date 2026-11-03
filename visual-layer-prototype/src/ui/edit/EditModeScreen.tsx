@@ -15,6 +15,7 @@ import { FloorPlanActionBar, type EditModeName, type EditTool } from "./FloorPla
 import { StructureTree } from "./StructureTree";
 import {
   OperationRejected,
+  hiddenRoomsIn,
   addDoor,
   addSpaceType,
   canRedo,
@@ -136,6 +137,22 @@ export function EditModeScreen({
   const canShowRoom = Boolean(selected && !selected.surfaced);
   const canHideRoom = Boolean(selected && selected.surfaced);
 
+  // With an envelope selected — which is what clicking a flat on the map
+  // gives, since a hidden room cannot be clicked — Show room offers the
+  // rooms folded inside it.
+  const hiddenInSelection = useMemo(
+    () => (selectedGroupId ? hiddenRoomsIn(layer, selectedGroupId) : []),
+    [layer, selectedGroupId],
+  );
+
+  const showRoomById = useCallback(
+    (roomId: string) => {
+      run(() => setRoomSurfaced(state, roomId, true));
+      selectRoom(roomId);
+    },
+    [run, state, selectRoom],
+  );
+
   const newCategoryName = useMemo(() => {
     const taken = new Set(layer.file.space_types.map((t) => t.id));
     for (let n = 1; ; n += 1) {
@@ -172,6 +189,11 @@ export function EditModeScreen({
         selectionLabel={selected?.name ?? null}
         showAllRooms={showAllRooms}
         onToggleShowAllRooms={() => setShowAllRooms((v) => !v)}
+        hiddenInSelection={hiddenInSelection}
+        onShowRoomById={showRoomById}
+        selectedGroupName={
+          selectedGroupId ? (layer.groups.get(selectedGroupId)?.name ?? null) : null
+        }
         onShowRoom={() =>
           selectedRoomId && run(() => setRoomSurfaced(state, selectedRoomId, true))
         }
@@ -188,6 +210,7 @@ export function EditModeScreen({
           onFloorChange={onFloorChange}
           selectedRoomId={selectedRoomId}
           onSelectRoom={selectRoom}
+          onShowRoom={showRoomById}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
@@ -218,6 +241,7 @@ export function EditModeScreen({
             if (room && room.floor_id !== floorId) onFloorChange(room.floor_id);
           }}
           onRename={(id, name) => run(() => renameSpaceType(state, id, name))}
+          onShowRoom={showRoomById}
           onRecolor={(id, color) => run(() => recolorSpaceType(state, id, color))}
           onNewCategory={() =>
             run(() =>
