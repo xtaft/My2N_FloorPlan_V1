@@ -39,6 +39,13 @@ export interface PendingFloor {
   ground: boolean;
   /** The user has looked at this one on the check screen. */
   checked: boolean;
+  /**
+   * The storey this page already stands for, when it was added to a
+   * building that has a plan. The first wizard pairs pages with the
+   * drawn floors by position; a page added later has its own floor
+   * from the start, and says so.
+   */
+  floor_id?: string;
 }
 
 /** Floors are held highest-first, the way the list is read and drawn. */

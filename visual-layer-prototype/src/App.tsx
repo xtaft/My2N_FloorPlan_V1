@@ -25,6 +25,7 @@ import { CheckFloorsScreen } from "./ui/onboarding/CheckFloorsScreen";
 import { FloorPlanCanvas, typesOnFloor } from "./ui/FloorPlanCanvas";
 import { NavigationDrawer } from "./ui/NavigationDrawer";
 import { EditModeScreen } from "./ui/edit/EditModeScreen";
+import type { NewFloorPage } from "./ui/edit/NewSpaceDialog";
 import { theme } from "./ui/theme";
 import {
   buildAdjacency,
@@ -35,6 +36,7 @@ import {
   reachable,
   shaftMembers,
   unguardedDevices,
+  addStoreys,
   type CreateMethod,
   type EditState,
   type FloorList,
@@ -58,6 +60,16 @@ export default function App() {
     "building",
   );
   const [hasPlan, setHasPlan] = useState(false);
+  /**
+   * The check screen is reached twice over: from the building, when the
+   * plan is first made, and from the editor, when floors are added to a
+   * plan that exists. Leaving it has to go back to the right one, and
+   * cancelling the second kind has to take the added floors with it —
+   * they went into the model before the pages could be checked, so
+   * that the check screen had storeys to show.
+   */
+  const [checkFrom, setCheckFrom] = useState<"building" | "edit">("building");
+  const [beforeAdding, setBeforeAdding] = useState<EditState | null>(null);
 
   /** Where the creation wizard has got to, and what it has collected. */
   const [step, setStep] = useState<"none" | "how" | "what" | "creating">(
@@ -66,7 +78,51 @@ export default function App() {
   const [method, setMethod] = useState<CreateMethod>("pdf");
   const [pending, setPending] = useState<FloorList>([]);
 
+  /**
+   * New floors from the editor's Add new space.
+   *
+   * Pages are added as storeys first and checked second, because the
+   * check screen shows the storey a page stands for. Nothing is drawn
+   * on them — the prototype has no detector, and the fixture has no
+   * sixth floor to stand in — so each is reviewed in its undetected
+   * state and drawn by hand after. No pages means one empty floor,
+   * made on the spot, which the dialog's own note says is what no
+   * file does.
+   */
+  const addFloors = (name: string, pages: NewFloorPage[]) => {
+    if (pages.length === 0) {
+      const { state: next, floorIds } = addStoreys(edit, [name]);
+      setEdit(next);
+      if (floorIds[0]) setFloorId(floorIds[0]);
+      return;
+    }
+    // One page with a name typed takes the name; several are named from
+    // their files, since one name cannot be three floors'.
+    const names =
+      pages.length === 1 && name.trim()
+        ? [name]
+        : pages.map((p) => p.name.replace(/\.[^.]+$/, ""));
+    const { state: next, floorIds } = addStoreys(edit, names);
+    setBeforeAdding(edit);
+    setEdit(next);
+    setPending(
+      floorIds.map((id, i) => ({
+        id: `pending:${i + 1}`,
+        name: pages[i].name,
+        source: pages[i].source,
+        segmented: false,
+        ground: false,
+        checked: false,
+        floor_id: id,
+      })),
+    );
+    setCheckFrom("edit");
+    setScreen("check");
+  };
+
   const startWizard = (picked: CreateMethod | null) => {
+    setCheckFrom("building");
+    setBeforeAdding(null);
     setPending([]);
     if (picked === null) {
       setStep("how");
@@ -127,9 +183,17 @@ export default function App() {
           buildingName={BUILDING_NAME}
           floors={pending}
           onFloors={setPending}
-          onCancel={() => setScreen("building")}
+          onCancel={() => {
+            if (checkFrom === "edit" && beforeAdding) setEdit(beforeAdding);
+            setBeforeAdding(null);
+            setScreen(checkFrom);
+          }}
           onSave={() => {
+            setBeforeAdding(null);
             setHasPlan(true);
+            if (checkFrom === "edit" && pending[0]?.floor_id) {
+              setFloorId(pending[0].floor_id);
+            }
             setScreen("edit");
           }}
         />
@@ -204,6 +268,7 @@ export default function App() {
             setHasPlan(true);
             setScreen("building");
           }}
+          onAddFloors={addFloors}
         />
       </ThemeProvider>
     );

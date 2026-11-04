@@ -50,15 +50,18 @@ export function neighboursOf(layer: VisualLayer, room: Room): Set<string> {
  * twice. It is a pass-through, so its children take its place.
  *
  * The test is whether the group holds rooms, not what it is called: a
- * top-level group that does own rooms is a real envelope and stays.
+ * top-level group that does own rooms is a real envelope and stays. One
+ * that holds nothing at all — a storey just added, with nothing drawn
+ * on it yet — is a pass-through with nothing to pass through, and
+ * listing it would put a row named for the floor under the floor and
+ * count it as an Unknown space.
  */
 export function floorEnvelopes(layer: VisualLayer, floorId: string): Group[] {
   const out: Group[] = [];
   for (const group of topGroups(layer, floorId)) {
     const holdsRooms = layer.file.rooms.some((r) => r.group_id === group.id);
-    const children = layer.childGroups.get(group.id) ?? [];
-    if (!holdsRooms && children.length > 0) out.push(...children);
-    else out.push(group);
+    if (holdsRooms) out.push(group);
+    else out.push(...(layer.childGroups.get(group.id) ?? []));
   }
   return out;
 }

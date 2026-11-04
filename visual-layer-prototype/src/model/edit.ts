@@ -60,7 +60,9 @@ export type OperationKind =
   | "recolor_space_type"
   | "rename_device"
   | "unassign_device"
-  | "place_device";
+  | "place_device"
+  | "create_envelope"
+  | "add_floor";
 
 export interface EditOperation {
   kind: OperationKind;

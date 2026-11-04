@@ -154,7 +154,10 @@ export function CheckFloorsScreen({
    * holds a building. Pairing them by position is what lets the real plan
    * be checked without inventing a detector.
    */
-  const floorId = layer.floors[index % layer.floors.length]?.id ?? "";
+  // A page added to a building that has a plan carries its own storey;
+  // the first wizard's pages are paired with the drawn floors by position.
+  const floorId =
+    floor?.floor_id ?? layer.floors[index % layer.floors.length]?.id ?? "";
 
   const levels = useMemo(() => storeyLevels(floors), [floors]);
 
@@ -185,7 +188,7 @@ export function CheckFloorsScreen({
       if (!pendingId) return undefined;
       const i = floors.findIndex((f) => f.id === pendingId);
       if (i < 0) return undefined;
-      return layer.floors[i % layer.floors.length]?.id;
+      return floors[i].floor_id ?? layer.floors[i % layer.floors.length]?.id;
     },
     [floors, layer],
   );

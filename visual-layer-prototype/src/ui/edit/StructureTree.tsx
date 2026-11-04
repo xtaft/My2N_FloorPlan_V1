@@ -111,6 +111,12 @@ export interface StructureTreeProps {
   /** Figma has it at 256; the user can have it wider. */
   width: number;
   onWidthChange: (width: number) => void;
+  /**
+   * Opens the Add new space dialog. Structure mode only — in the
+   * other modes the button draws disabled, since what it makes is
+   * structure.
+   */
+  onNewSpace?: () => void;
 }
 
 export function StructureTree({
@@ -128,6 +134,7 @@ export function StructureTree({
   onRenameCancel,
   width,
   onWidthChange,
+  onNewSpace,
 }: StructureTreeProps) {
   const [query, setQuery] = useState("");
   // Absent means closed. The floor on screen when the tree first mounts
@@ -483,14 +490,15 @@ export function StructureTree({
 
       <Divider />
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 3 }}>
-        <Tooltip title="Not built: a new space needs the divide operation">
+        <Tooltip title={onNewSpace ? "" : "Switch to Structure to add a space"}>
           <span style={{ width: "100%" }}>
             <Button
               fullWidth
               variant="outlined"
               color="inherit"
               endIcon={<AddIcon />}
-              disabled
+              disabled={!onNewSpace}
+              onClick={onNewSpace}
             >
               New space
             </Button>

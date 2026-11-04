@@ -350,6 +350,14 @@ export function FloorPlanCanvas({
       maxX = Math.max(maxX, g.x);
       maxY = Math.max(maxY, g.y);
     }
+    // A storey just added has nothing drawn on it yet. Infinity is not
+    // a viewBox, so an empty floor gets a page-sized one to draw into.
+    if (!Number.isFinite(minX)) {
+      minX = 0;
+      minY = 0;
+      maxX = 1200;
+      maxY = 800;
+    }
 
     return {
       rooms,

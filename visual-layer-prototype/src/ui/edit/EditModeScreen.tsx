@@ -26,6 +26,7 @@ import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
 import { TREE_DEFAULT } from "./StructureTree";
 import { DRAWER_DEFAULT } from "./CategoriesDrawer";
 import { DoorMenu } from "./DoorMenu";
+import { NewSpaceDialog, type NewFloorPage } from "./NewSpaceDialog";
 import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
@@ -74,6 +75,7 @@ import {
   type DivideRoomRequest,
   addSpaceType,
   newSpaceType,
+  createEnvelope,
   canRedo,
   canUndo,
   previewAddDoor,
@@ -104,6 +106,12 @@ export interface EditModeScreenProps {
   onSave: () => void;
   /** True once anything has been edited since entering edit mode. */
   dirty: boolean;
+  /**
+   * A new floor leaves the editor: with pages it goes to be checked,
+   * without it is made empty. Either way the screens above decide,
+   * since the check screen is theirs.
+   */
+  onAddFloors: (name: string, pages: NewFloorPage[]) => void;
 }
 
 /** "floors 0 to 4", or "floors 0 to 1 and 3 to 4" once a shaft is broken. */
@@ -130,7 +138,9 @@ export function EditModeScreen({
   onClose,
   onSave,
   dirty,
+  onAddFloors,
 }: EditModeScreenProps) {
+  const [newSpace, setNewSpace] = useState(false);
   const [tool, setTool] = useState<EditTool>("select");
   const [importing, setImporting] = useState(false);
   /** The menu on a space that has no shape yet. */
@@ -509,6 +519,7 @@ export function EditModeScreen({
           onRenameCancel={() => setRenaming(null)}
           width={treeWidth}
           onWidthChange={setTreeWidth}
+          onNewSpace={mode === "structure" ? () => setNewSpace(true) : undefined}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
@@ -786,6 +797,21 @@ export function EditModeScreen({
             Cancel
           </Button>
         }
+      />
+
+      <NewSpaceDialog
+        open={newSpace}
+        layer={layer}
+        buildingName={buildingName}
+        onClose={() => setNewSpace(false)}
+        onCreateEnvelope={(kind, name, members) => {
+          setNewSpace(false);
+          run(() => createEnvelope(state, { kind, name, members }));
+        }}
+        onCreateFloor={(name, pages) => {
+          setNewSpace(false);
+          onAddFloors(name, pages);
+        }}
       />
 
       <ImportSpaceList

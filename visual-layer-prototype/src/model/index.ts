@@ -16,3 +16,4 @@ export * from "./building";
 export * from "./onboarding";
 export * from "./device";
 export * from "./accessView";
+export * from "./envelope";
