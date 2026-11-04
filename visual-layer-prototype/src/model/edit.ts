@@ -62,7 +62,8 @@ export type OperationKind =
   | "unassign_device"
   | "place_device"
   | "create_envelope"
-  | "add_floor";
+  | "add_floor"
+  | "add_wall";
 
 export interface EditOperation {
   kind: OperationKind;
@@ -446,10 +447,12 @@ export function nearestWall(
 ): WallHit | null {
   let best: WallHit | null = null;
 
+  // By the floor the wall's vertices are namespaced to, not by a room on
+  // either side: a slit on open floor has no room, and still has to be
+  // found to be removed.
+  const floor = floorId.split(":")[0];
   for (const wall of layer.file.walls) {
-    const room =
-      layer.rooms.get(wall.room_a) ?? layer.rooms.get(wall.room_b);
-    if (room?.floor_id !== floorId) continue;
+    if (wall.v1.split(":")[0] !== floor) continue;
 
     const [a, b] = wallEnds(layer, wall);
     const dx = b.x - a.x;

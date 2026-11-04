@@ -11,14 +11,12 @@
  * never changes anything, so the editor's own panel is already a
  * read-only thing and is reused whole.
  *
- * Three modes, and Devices is where the plan opens. It is the plan at
- * rest: the building in its category colours, every device on it with
- * how it is doing, and nothing asked of it. The other two each ask a
- * question — what is this, who gets in — and open a panel to answer
- * it in. Devices asks none, so it has no panel and the plan takes the
- * width. A list of the devices on screen was tried there and was a
- * list of what you were already looking at; finding one is the search
- * box, and each one opens its card when clicked.
+ * Two modes, and Structure is where the plan opens: the building in
+ * its category colours with every device drawn on it. A devices mode
+ * earned its place in the editor, where it is the mode you place and
+ * unplace things in; here the devices are on the plan in both modes
+ * and each opens its card, so a third mode was a switch between two
+ * screens showing the same devices. Finding one is the search box.
  */
 import { useMemo, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -56,7 +54,7 @@ import {
   type VisualLayer,
 } from "../../model";
 
-export type PlanMode = "devices" | "structure" | "access";
+export type PlanMode = "structure" | "access";
 
 export interface FloorPlanViewProps {
   layer: VisualLayer;
@@ -80,7 +78,7 @@ export function FloorPlanView({
   selectedGroupId,
   onClearSelection,
 }: FloorPlanViewProps) {
-  const [mode, setMode] = useState<PlanMode>("devices");
+  const [mode, setMode] = useState<PlanMode>("structure");
   /** The device the search found, drawn lit with its name out. */
   const [found, setFound] = useState<string | null>(null);
 
@@ -263,7 +261,6 @@ export function FloorPlanView({
             onChange={(e) => setMode(e.target.value as PlanMode)}
             sx={{ width: 180 }}
           >
-            <MenuItem value="devices">Devices</MenuItem>
             <MenuItem value="structure">Structure</MenuItem>
             <MenuItem value="access">Access</MenuItem>
           </TextField>
@@ -319,9 +316,9 @@ export function FloorPlanView({
             width={320}
             onWidthChange={() => {}}
           />
-        ) : mode === "structure" ? (
+        ) : (
           <SpacePanel layer={layer} />
-        ) : null}
+        )}
       </Box>
 
       <DeviceDetailCard

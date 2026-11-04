@@ -44,7 +44,7 @@ import {
   IDENTITY,
   alignFloor,
   deleteWall,
-  divideRoom,
+  addWall,
   floorTransform,
   landingsFor,
   referenceFloor,
@@ -71,8 +71,8 @@ import {
   type Group,
   type Room,
   previewDeleteWall,
-  previewDivide,
-  type DivideRoomRequest,
+  previewAddWall,
+  type AddWallRequest,
   addSpaceType,
   newSpaceType,
   createEnvelope,
@@ -287,16 +287,16 @@ export function EditModeScreen({
     [run, state],
   );
 
-  const divideError = useCallback(
-    (req: DivideRoomRequest) => {
-      const preview = previewDivide(state, req);
+  const addWallError = useCallback(
+    (req: AddWallRequest) => {
+      const preview = previewAddWall(state, req);
       return preview.ok ? null : preview.reason;
     },
     [state],
   );
 
-  const handleDivideRoom = useCallback(
-    (req: DivideRoomRequest) => run(() => divideRoom(state, req)),
+  const handleAddWall = useCallback(
+    (req: AddWallRequest) => run(() => addWall(state, req)),
     [run, state],
   );
 
@@ -564,8 +564,8 @@ export function EditModeScreen({
             // noise in the mode that is about walls.
             showDeviceStatus={mode === "devices"}
             onPlaceDoor={handlePlaceDoor}
-            onDivideRoom={handleDivideRoom}
-            divideError={divideError}
+            onAddWall={handleAddWall}
+            addWallError={addWallError}
             onDeleteWall={handleDeleteWall}
             deleteWallError={deleteWallError}
             onDropSpace={(spaceId, roomId) =>

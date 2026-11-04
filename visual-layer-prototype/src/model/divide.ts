@@ -57,7 +57,7 @@ export function nearestWallInRoom(
 }
 
 /** Strict crossing: segments that merely touch at an end do not count. */
-function segmentsCross(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
+export function segmentsCross(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
   const side = (a: Point, b: Point, c: Point) =>
     (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
   const d1 = side(p3, p4, p1);
@@ -71,14 +71,14 @@ function segmentsCross(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
 }
 
 /** Ids keep their floor prefix, so a new wall still says where it lives. */
-function freeId(taken: Set<string>, prefix: string): string {
+export function freeId(taken: Set<string>, prefix: string): string {
   for (let n = 1; ; n += 1) {
     const id = `${prefix}${n}`;
     if (!taken.has(id)) return id;
   }
 }
 
-interface Work {
+export interface Work {
   vertices: Vertex[];
   walls: Wall[];
   doors: Door[];
@@ -100,7 +100,7 @@ interface Work {
  * out exactly where it went in. Returns the vertex at the cut; a cut landing
  * on an end of the wall reuses that vertex and splits nothing.
  */
-function splitWall(work: Work, wallId: string, t: number, floor: string): string {
+export function splitWall(work: Work, wallId: string, t: number, floor: string): string {
   const wall = work.walls.find((w) => w.id === wallId)!;
   const v1 = work.vertices.find((v) => v.id === wall.v1)!;
   const v2 = work.vertices.find((v) => v.id === wall.v2)!;

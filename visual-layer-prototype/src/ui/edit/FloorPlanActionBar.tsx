@@ -113,7 +113,7 @@ export function FloorPlanActionBar({
           "wall",
           "Wall",
           <VerticalSplitOutlined sx={{ fontSize: 16 }} />,
-          "Click one wall of a room, then another, to divide it in two",
+          "Click where a wall starts and where it stops — on a wall, at a corner, or on open floor. Close a shape and it becomes a room",
         )}
         {toolButton(
           "remove_wall",

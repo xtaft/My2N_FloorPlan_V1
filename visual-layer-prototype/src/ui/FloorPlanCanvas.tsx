@@ -25,7 +25,7 @@ import {
   labelPoint,
   lerp,
   nearestWall,
-  nearestWallInRoom,
+  snapEnd,
   ringsToPath,
   roomColor,
   freeDoorSides,
@@ -39,7 +39,7 @@ import {
   wallEnds,
   wallSolidSpans,
   type Device,
-  type DivideRoomRequest,
+  type AddWallRequest,
   type Door,
   type Point,
   type Reachability,
@@ -61,6 +61,9 @@ const DOOR_COLOR = "#5A646E";
 const GHOST_OK = "#2196f3";
 const GHOST_BAD = "#C62828";
 const PAD = 40;
+/** The page an empty floor is drawn on, in plan units. */
+const PAGE_W = 1200;
+const PAGE_H = 800;
 
 export interface FloorPlanCanvasProps {
   layer: VisualLayer;
@@ -85,10 +88,10 @@ export interface FloorPlanCanvasProps {
   tool?: "select" | "door" | "show" | "hide" | "wall" | "remove_wall";
   /** Called with the wall and side under the pointer when it is clicked. */
   onPlaceDoor?: (hit: WallHit) => void;
-  /** Both ends of a finished cut, each already snapped to a wall. */
-  onDivideRoom?: (req: DivideRoomRequest) => void;
-  /** Why the cut being drawn would be refused, for the ghost's colour. */
-  divideError?: (req: DivideRoomRequest) => string | null;
+  /** Both ends of a finished wall, each snapped to a corner, a wall, or nothing. */
+  onAddWall?: (req: AddWallRequest) => void;
+  /** Why the wall being drawn would be refused, for the ghost's colour. */
+  addWallError?: (req: AddWallRequest) => string | null;
   /** The wall clicked with the remove tool armed. */
   onDeleteWall?: (wallId: string) => void;
   /** Why removing the wall under the pointer would be refused. */
@@ -217,8 +220,8 @@ export function FloorPlanCanvas({
   onSelectGroup,
   tool = "select",
   onPlaceDoor,
-  onDivideRoom,
-  divideError,
+  onAddWall,
+  addWallError,
   onDeleteWall,
   deleteWallError,
   onSpaceMenu,
@@ -262,10 +265,10 @@ export function FloorPlanCanvas({
     if (!onDoorMenu) setHoverDoor(null);
   }, [onDoorMenu]);
   /** The first end of a wall being drawn, already on one of the room's walls. */
-  const [cutFrom, setCutFrom] = useState<{ roomId: string; at: Point } | null>(
+  const [cutFrom, setCutFrom] = useState<{ at: Point } | null>(
     null,
   );
-  /** Where the pointer is now, snapped to the same room's boundary. */
+  /** Where the pointer is now, snapped to whatever it is near. */
   const [cutTo, setCutTo] = useState<Point | null>(null);
   /**
    * Plan units per CSS pixel with the plan unzoomed — the viewBox against the
@@ -307,8 +310,15 @@ export function FloorPlanCanvas({
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
     const roomIds = new Set(rooms.map((r) => r.id));
 
+    // By room, and by the floor the vertices belong to as well: a wall
+    // drawn on open floor has no room on either side yet, and is still
+    // standing there to be seen and to be joined to.
+    const floorPrefix = floorId.split(":")[0];
     const walls = layer.file.walls.filter(
-      (w) => roomIds.has(w.room_a) || roomIds.has(w.room_b),
+      (w) =>
+        roomIds.has(w.room_a) ||
+        roomIds.has(w.room_b) ||
+        w.v1.split(":")[0] === floorPrefix,
     );
 
     const doors = layer.file.doors.filter(
@@ -351,12 +361,20 @@ export function FloorPlanCanvas({
       maxY = Math.max(maxY, g.y);
     }
     // A storey just added has nothing drawn on it yet. Infinity is not
-    // a viewBox, so an empty floor gets a page-sized one to draw into.
-    if (!Number.isFinite(minX)) {
+    // a viewBox, so an empty floor gets a page-sized one to draw into —
+    // and keeps it while what is drawn fits on the page. A box fitted
+    // to the walls would re-fit on every wall added, and the plan would
+    // slide under the pointer between one click and the next: the end
+    // of the last wall is no longer where the next one is started. The
+    // fixture's floors lie beyond the page and are fitted as before.
+    const onPage =
+      !Number.isFinite(minX) ||
+      (minX >= 0 && minY >= 0 && maxX <= PAGE_W && maxY <= PAGE_H);
+    if (onPage) {
       minX = 0;
       minY = 0;
-      maxX = 1200;
-      maxY = 800;
+      maxX = PAGE_W;
+      maxY = PAGE_H;
     }
 
     return {
@@ -438,6 +456,14 @@ export function FloorPlanCanvas({
 
   const placing = tool === "door";
   const drawing = tool === "wall";
+  // Putting the tool down puts the half-drawn wall down with it: the
+  // floor is where the next click lands now, so nothing else clears it.
+  useEffect(() => {
+    if (!drawing) {
+      setCutFrom(null);
+      setCutTo(null);
+    }
+  }, [drawing]);
   const erasing = tool === "remove_wall";
   /** Each of these aims at the plan, so none may let a drag pan it. */
   const aiming = placing || drawing || erasing || placingSpace;
@@ -488,20 +514,19 @@ export function FloorPlanCanvas({
     [scene.doors, layer],
   );
 
+  /**
+   * Where an end would land: a corner or a wall within reach, else the
+   * point itself. The model snaps the same way, so the line shown is
+   * the line built.
+   */
   const snapTo = useCallback(
-    (roomId: string, pt: Point) => {
-      const room = layer.rooms.get(roomId);
-      if (!room) return null;
-      return nearestWallInRoom(layer, room, pt, Infinity)?.at ?? null;
-    },
-    [layer],
+    (pt: Point) => snapEnd(layer, floorId, pt).at,
+    [layer, floorId],
   );
 
-  const cutRequest: DivideRoomRequest | null =
-    cutFrom && cutTo
-      ? { roomId: cutFrom.roomId, from: cutFrom.at, to: cutTo }
-      : null;
-  const cutError = cutRequest && divideError ? divideError(cutRequest) : null;
+  const cutRequest: AddWallRequest | null =
+    cutFrom && cutTo ? { floorId, from: cutFrom.at, to: cutTo } : null;
+  const cutError = cutRequest && addWallError ? addWallError(cutRequest) : null;
 
   const handleMove = useCallback(
     (e: React.MouseEvent) => {
@@ -533,10 +558,7 @@ export function FloorPlanCanvas({
         return;
       }
       if (drawing) {
-        // Once a cut has started it stays in its own room: the second end
-        // has to be a wall of the room being divided.
-        const roomId = cutFrom?.roomId ?? roomAt(pt);
-        setCutTo(roomId ? snapTo(roomId, pt) : null);
+        setCutTo(snapTo(pt));
         return;
       }
       setHover(nearestWall(layer, floorId, pt, 45));
@@ -612,7 +634,7 @@ export function FloorPlanCanvas({
             display: "block",
             cursor: aiming ? "crosshair" : "default",
           }}
-          onClick={() => {
+          onClick={(e) => {
             if (placing) {
               if (liveHover && onPlaceDoor) onPlaceDoor(liveHover);
               return;
@@ -623,9 +645,22 @@ export function FloorPlanCanvas({
               if (liveHover && onDeleteWall) onDeleteWall(liveHover.wallId);
               return;
             }
-            // Clicking off the plan abandons a half-drawn wall rather than
-            // leaving it armed and invisible.
+            // The wall tool draws here, on the floor itself, so a wall can
+            // start on open floor as well as in a room. The first click
+            // sets one end where it would land; the second sends the wall,
+            // even when the preview is red — the refusal names the reason,
+            // and a click that silently does nothing leaves the user
+            // guessing which rule they hit.
             if (drawing) {
+              const pt = toSvgPoint(e.clientX, e.clientY);
+              if (!pt) return;
+              const at = snapTo(pt);
+              if (!cutFrom) {
+                setCutFrom({ at });
+                setCutTo(at);
+                return;
+              }
+              onAddWall?.({ floorId, from: cutFrom.at, to: at });
               setCutFrom(null);
               setCutTo(null);
               return;
@@ -701,9 +736,9 @@ export function FloorPlanCanvas({
                     setHoverRoom((cur) => (cur === room.id ? null : cur))
                   }
                   onClick={(e) => {
-                    // The svg handler owns both of these: they act on a
-                    // wall, which is not this room's to claim.
-                    if (placing || erasing) return;
+                    // The svg handler owns these: they act on a wall, or
+                    // on the floor, which is not this room's to claim.
+                    if (placing || erasing || drawing) return;
                     e.stopPropagation();
 
                     // A space waiting for a shape takes the next room
@@ -713,35 +748,6 @@ export function FloorPlanCanvas({
                       return;
                     }
 
-                    if (drawing) {
-                      // Snapped from this click's own position rather than
-                      // from what the last move left behind: a click that
-                      // arrives before any move in this room would otherwise
-                      // land nowhere.
-                      const pt = toSvgPoint(e.clientX, e.clientY);
-                      const at = pt && snapTo(room.id, pt);
-                      if (!at) return;
-
-                      // A click in another room starts again there, which is
-                      // friendlier than refusing and explaining why.
-                      if (!cutFrom || cutFrom.roomId !== room.id) {
-                        setCutFrom({ roomId: room.id, at });
-                        setCutTo(at);
-                        return;
-                      }
-                      // Sent even when the preview is already red, the way
-                      // the door tool does: the refusal names the reason,
-                      // and a click that silently does nothing leaves the
-                      // user guessing which rule they hit.
-                      onDivideRoom?.({
-                        roomId: room.id,
-                        from: cutFrom.at,
-                        to: at,
-                      });
-                      setCutFrom(null);
-                      setCutTo(null);
-                      return;
-                    }
 
                     // The show tool is the only thing that puts a folded
                     // room on the map, and clicking one there shows it.
@@ -1072,8 +1078,8 @@ export function FloorPlanCanvas({
             />
           )}
 
-          {/* The wall being drawn. Both ends sit on the boundary already, so
-              what is shown is what the operation would build. */}
+          {/* The wall being drawn. Each end is already where it would land,
+              so what is shown is what the operation would build. */}
           {drawing && (
             <g pointerEvents="none">
               {cutTo && !cutFrom && (
