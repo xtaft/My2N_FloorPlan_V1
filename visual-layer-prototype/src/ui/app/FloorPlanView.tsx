@@ -11,13 +11,14 @@
  * never changes anything, so the editor's own panel is already a
  * read-only thing and is reused whole.
  *
- * Two modes, not three. A devices mode earned its place in the editor,
- * where it is the mode you place and unplace things in; here it had
- * nothing of its own to do. The devices are drawn in both modes and
- * each one opens its card, so the mode was a switch between two
- * screens that showed the same devices — and the panel behind it was
- * a list of what you were already looking at. What it was actually
- * good for was finding a device, and that is the search box.
+ * Three modes, and Devices is where the plan opens. It is the plan at
+ * rest: the building in its category colours, every device on it with
+ * how it is doing, and nothing asked of it. The other two each ask a
+ * question — what is this, who gets in — and open a panel to answer
+ * it in. Devices asks none, so it has no panel and the plan takes the
+ * width. A list of the devices on screen was tried there and was a
+ * list of what you were already looking at; finding one is the search
+ * box, and each one opens its card when clicked.
  */
 import { useMemo, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -55,7 +56,7 @@ import {
   type VisualLayer,
 } from "../../model";
 
-export type PlanMode = "structure" | "access";
+export type PlanMode = "devices" | "structure" | "access";
 
 export interface FloorPlanViewProps {
   layer: VisualLayer;
@@ -79,7 +80,7 @@ export function FloorPlanView({
   selectedGroupId,
   onClearSelection,
 }: FloorPlanViewProps) {
-  const [mode, setMode] = useState<PlanMode>("access");
+  const [mode, setMode] = useState<PlanMode>("devices");
   /** The device the search found, drawn lit with its name out. */
   const [found, setFound] = useState<string | null>(null);
 
@@ -262,6 +263,7 @@ export function FloorPlanView({
             onChange={(e) => setMode(e.target.value as PlanMode)}
             sx={{ width: 180 }}
           >
+            <MenuItem value="devices">Devices</MenuItem>
             <MenuItem value="structure">Structure</MenuItem>
             <MenuItem value="access">Access</MenuItem>
           </TextField>
@@ -285,7 +287,7 @@ export function FloorPlanView({
             // Not in access mode: there the rooms are already red and
             // green for who gets in, and a red badge on a reader would
             // read as part of that answer rather than as its health.
-            showDeviceStatus={mode === "structure"}
+            showDeviceStatus={mode !== "access"}
             selectedDeviceId={found}
             // The devices are on the plan whichever question is being
             // asked of it. This screen is for looking, and a reader
@@ -317,9 +319,9 @@ export function FloorPlanView({
             width={320}
             onWidthChange={() => {}}
           />
-        ) : (
+        ) : mode === "structure" ? (
           <SpacePanel layer={layer} />
-        )}
+        ) : null}
       </Box>
 
       <DeviceDetailCard
