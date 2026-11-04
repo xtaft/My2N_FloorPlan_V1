@@ -6,6 +6,9 @@ import {
   ACCESS_COLORS,
   accessBadges,
   accessGroups,
+  addPersonToGroup,
+  groupsOf,
+  removePersonFromGroup,
   accessPaint,
   allPeople,
   accessShading,
@@ -377,5 +380,39 @@ describe("a person is asked about from the street", () => {
     expect(grace.has("Lobby")).toBe(true);
     expect(grace.has("Stairs")).toBe(true);
     expect(grace.has("Living room")).toBe(true);
+  });
+});
+
+describe("group membership", () => {
+  it("gives a resident the group's devices once they are added, and takes them back", () => {
+    // A resident who holds their flat's door and the intercom, and
+    // nothing of Maintenance's.
+    const groups = accessGroups();
+    const maintenance = groups.find((g) => g.name === "Maintenance")!;
+    const person = residents(layer).find((r) => !maintenance.people.includes(r.id))!;
+    const before = new Set(devicesHeldBy(layer, person.id, groups));
+    for (const id of maintenance.devices) expect(before.has(id)).toBe(false);
+
+    const added = addPersonToGroup(groups, maintenance.id, person.id);
+    expect(groupsOf(added, person.id).map((g) => g.id)).toContain(maintenance.id);
+    const after = new Set(devicesHeldBy(layer, person.id, added));
+    for (const id of maintenance.devices) expect(after.has(id)).toBe(true);
+    // What they held in their own right they still hold.
+    for (const id of before) expect(after.has(id)).toBe(true);
+
+    const removed = removePersonFromGroup(added, maintenance.id, person.id);
+    expect(new Set(devicesHeldBy(layer, person.id, removed))).toEqual(before);
+    // The seed is untouched: these are values, not edits in place.
+    expect(maintenance.people.includes(person.id)).toBe(false);
+  });
+
+  it("refuses a second add and a remove of somebody not in it", () => {
+    const groups = accessGroups();
+    const gym = groups.find((g) => g.name === "Gym")!;
+    const member = gym.people[0];
+    expect(() => addPersonToGroup(groups, gym.id, member)).toThrow(/already/);
+    const outsider = residents(layer).find((r) => !gym.people.includes(r.id))!.id;
+    expect(() => removePersonFromGroup(groups, gym.id, outsider)).toThrow(/not in/);
+    expect(() => addPersonToGroup(groups, "AG99", member)).toThrow(/no group/);
   });
 });

@@ -85,6 +85,9 @@ import {
   accessPaint,
   accessShading,
   devicesHeldBy,
+  addPersonToGroup,
+  removePersonFromGroup,
+  type AccessGroup,
   placeDeviceInSpace,
   placeDeviceOnDoor,
   renameDevice,
@@ -112,6 +115,9 @@ export interface EditModeScreenProps {
    * since the check screen is theirs.
    */
   onAddFloors: (name: string, pages: NewFloorPage[]) => void;
+  /** Access groups, and the one write access mode makes: who is in them. */
+  groups: readonly AccessGroup[];
+  onGroupsChange: (next: AccessGroup[]) => void;
 }
 
 /** "floors 0 to 4", or "floors 0 to 1 and 3 to 4" once a shaft is broken. */
@@ -139,6 +145,8 @@ export function EditModeScreen({
   onSave,
   dirty,
   onAddFloors,
+  groups,
+  onGroupsChange,
 }: EditModeScreenProps) {
   const [newSpace, setNewSpace] = useState(false);
   const [tool, setTool] = useState<EditTool>("select");
@@ -209,9 +217,9 @@ export function EditModeScreen({
    * or whatever is ticked. Never both — picking one clears the other.
    */
   const allowed = useMemo(() => {
-    if (personId) return new Set(devicesHeldBy(layer, personId));
+    if (personId) return new Set(devicesHeldBy(layer, personId, groups));
     return picked;
-  }, [layer, personId, picked]);
+  }, [layer, personId, picked, groups]);
 
   const shading = useMemo(
     () =>
@@ -269,6 +277,23 @@ export function EditModeScreen({
       }
     },
     [onChange],
+  );
+
+  /** Like run(), for the groups: a value swapped, a toast, or the reason. */
+  const changeGroups = useCallback(
+    (op: () => AccessGroup[], label: string) => {
+      try {
+        onGroupsChange(op());
+        setToast({ text: `${label} — done`, kind: "ok" });
+      } catch (e) {
+        if (e instanceof OperationRejected) {
+          setToast({ text: e.message, kind: "bad" });
+          return;
+        }
+        throw e;
+      }
+    },
+    [onGroupsChange],
   );
 
   const placementError = useCallback(
@@ -654,6 +679,7 @@ export function EditModeScreen({
         {mode === "access" ? (
           <AccessDrawer
             layer={layer}
+            groups={groups}
             picked={picked}
             onPicked={(next) => {
               setPicked(next);
@@ -875,14 +901,11 @@ export function EditModeScreen({
       <PersonMenu
         open={Boolean(personMenu)}
         anchorEl={personMenu?.el ?? null}
-        inAGroup={
-          personMenu
-            ? layer.profiles.some((p) =>
-                p.people.includes(personMenu.personId),
-              )
-            : false
-        }
+        personId={personMenu?.personId ?? null}
+        groups={groups}
         onClose={() => setPersonMenu(null)}
+        onAddToGroup={(groupId) => changeGroups(() => addPersonToGroup(groups, groupId, personMenu!.personId), `Added to ${groups.find((g) => g.id === groupId)?.name ?? "group"}`)}
+        onRemoveFromGroup={(groupId) => changeGroups(() => removePersonFromGroup(groups, groupId, personMenu!.personId), `Removed from ${groups.find((g) => g.id === groupId)?.name ?? "group"}`)}
       />
 
       <StructureRowMenu

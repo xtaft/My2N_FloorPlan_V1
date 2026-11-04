@@ -52,6 +52,7 @@ import {
   spacesByFloor,
   operators,
   residents,
+  type AccessGroup,
   type VisualLayer,
 } from "../../model";
 
@@ -75,6 +76,9 @@ export interface BuildingScreenProps {
   /** The empty state, which has said how, so it goes straight there. */
   onCreatePlanWith: (method: "pdf" | "manual") => void;
   onOpenPlan: () => void;
+  /** Access groups, held above both screens so an edit in one shows in the other. */
+  groups: readonly AccessGroup[];
+  onGroupsChange: (next: AccessGroup[]) => void;
 }
 
 const TABS: { id: BuildingTab; label: string }[] = [
@@ -95,6 +99,8 @@ export function BuildingScreen({
   onCreatePlan,
   onCreatePlanWith,
   onOpenPlan,
+  groups,
+  onGroupsChange,
 }: BuildingScreenProps) {
   const [tab, setTab] = useState<BuildingTab>("plan");
   const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
@@ -292,6 +298,8 @@ export function BuildingScreen({
                 onFloorChange={setFloorId}
                 selectedGroupId={spaceId}
                 onClearSelection={() => setSpaceId(null)}
+                groups={groups}
+                onGroupsChange={onGroupsChange}
                 hasPlan={hasPlan}
                 onCreate={onCreatePlanWith}
               />

@@ -35,7 +35,7 @@ import { DeviceGlyph } from "../DeviceMarker";
 import { DRAWER_MAX, DRAWER_MIN } from "./CategoriesDrawer";
 import { ResizeHandle } from "./ResizeHandle";
 import {
-  accessGroups,
+  type AccessGroup,
   deviceRows,
   operatorRoleName,
   operators,
@@ -47,6 +47,8 @@ export type AccessTab = "all" | "devices" | "people";
 
 export interface AccessDrawerProps {
   layer: VisualLayer;
+  /** The building's access groups, as they are now. */
+  groups: readonly AccessGroup[];
   /** Groups and devices ticked; their reach is added together. */
   picked: ReadonlySet<string>;
   onPicked: (next: Set<string>) => void;
@@ -61,6 +63,7 @@ export interface AccessDrawerProps {
 
 export function AccessDrawer({
   layer,
+  groups,
   picked,
   onPicked,
   personId,
@@ -74,7 +77,6 @@ export function AccessDrawer({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
 
-  const groups = useMemo(() => accessGroups(), []);
   const rows = useMemo(() => deviceRows(layer), [layer]);
   const people = useMemo(
     () => ({ residents: residents(layer), operators: operators(layer) }),

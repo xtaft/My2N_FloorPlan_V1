@@ -11,7 +11,7 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { FloorPlanView } from "./FloorPlanView";
-import type { VisualLayer } from "../../model";
+import type { AccessGroup, VisualLayer } from "../../model";
 
 export interface FloorPlanTabProps {
   layer: VisualLayer;
@@ -20,6 +20,8 @@ export interface FloorPlanTabProps {
   /** The space the tree is pointing at, drawn lit. */
   selectedGroupId: string | null;
   onClearSelection: () => void;
+  groups: readonly AccessGroup[];
+  onGroupsChange: (next: AccessGroup[]) => void;
   hasPlan: boolean;
   /**
    * The empty state names the method, so it goes straight to that upload
@@ -35,6 +37,8 @@ export function FloorPlanTab({
   onFloorChange,
   selectedGroupId,
   onClearSelection,
+  groups,
+  onGroupsChange,
   hasPlan,
   onCreate,
 }: FloorPlanTabProps) {
@@ -48,6 +52,8 @@ export function FloorPlanTab({
         onFloorChange={onFloorChange}
         selectedGroupId={selectedGroupId}
         onClearSelection={onClearSelection}
+        groups={groups}
+        onGroupsChange={onGroupsChange}
       />
     );
   }

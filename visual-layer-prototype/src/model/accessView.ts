@@ -6,13 +6,17 @@
  * opens. What is added here is who holds which devices, and the two
  * rules that are about people rather than about doors.
  *
- * Nothing is stored. An access group is a profile read a different way,
- * and a person's reach is the union of the groups they are in.
+ * The groups are stored — who is in which is a fact about the building
+ * that nothing could derive — and they are state the screens hold and
+ * hand down, seeded from the building's data. A person's reach is the
+ * union of the groups they are in, read fresh from whatever the groups
+ * are now.
  */
 import groupsFile from "../fixtures/access_groups.json";
 import { accessType, buildAdjacency, reachable } from "./access";
 import type { VisualLayer } from "./load";
 import { allPeople } from "./building";
+import { OperationRejected } from "./edit";
 import { EXTERIOR, type Room } from "./types";
 
 /** A permission set, as the building's data defines it. */
@@ -63,13 +67,17 @@ export function accessGroups(): AccessGroup[] {
  * their residents hold the intercom and nothing else, and the data says
  * so. Deriving it would have granted a key to a door that is not there.
  */
-export function devicesHeldBy(layer: VisualLayer, personId: string): string[] {
+export function devicesHeldBy(
+  layer: VisualLayer,
+  personId: string,
+  groups: readonly AccessGroup[] = GROUPS,
+): string[] {
   const held = new Set<string>();
 
   const person = allPeople(layer).find((x) => x.id === personId);
   for (const id of person?.accessPoints ?? []) held.add(id);
 
-  for (const group of GROUPS) {
+  for (const group of groups) {
     if (!group.people.includes(personId)) continue;
     for (const id of group.devices) held.add(id);
   }
@@ -251,4 +259,52 @@ export function accessBadges(
   }
 
   return out;
+}
+
+// ------------------------------------------------------------ membership
+
+/** The groups a person is in. */
+export function groupsOf(
+  groups: readonly AccessGroup[],
+  personId: string,
+): AccessGroup[] {
+  return groups.filter((g) => g.people.includes(personId));
+}
+
+/**
+ * Put a person in a group. From then on they hold its devices, which
+ * is the whole of what being in a group means here — the next look at
+ * where they can get already shows it.
+ */
+export function addPersonToGroup(
+  groups: readonly AccessGroup[],
+  groupId: string,
+  personId: string,
+): AccessGroup[] {
+  const group = groups.find((g) => g.id === groupId);
+  if (!group) throw new OperationRejected(`There is no group "${groupId}".`);
+  if (group.people.includes(personId)) {
+    throw new OperationRejected(`They are already in ${group.name}.`);
+  }
+  return groups.map((g) =>
+    g.id === groupId ? { ...g, people: [...g.people, personId] } : g,
+  );
+}
+
+/** Take a person out of a group. Its devices go with it. */
+export function removePersonFromGroup(
+  groups: readonly AccessGroup[],
+  groupId: string,
+  personId: string,
+): AccessGroup[] {
+  const group = groups.find((g) => g.id === groupId);
+  if (!group) throw new OperationRejected(`There is no group "${groupId}".`);
+  if (!group.people.includes(personId)) {
+    throw new OperationRejected(`They are not in ${group.name}.`);
+  }
+  return groups.map((g) =>
+    g.id === groupId
+      ? { ...g, people: g.people.filter((x) => x !== personId) }
+      : g,
+  );
 }

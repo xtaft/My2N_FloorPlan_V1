@@ -36,7 +36,9 @@ import {
   reachable,
   shaftMembers,
   unguardedDevices,
+  accessGroups,
   addStoreys,
+  type AccessGroup,
   type CreateMethod,
   type EditState,
   type FloorList,
@@ -60,6 +62,12 @@ export default function App() {
     "building",
   );
   const [hasPlan, setHasPlan] = useState(false);
+  /**
+   * Who is in which access group. Held here, above both screens, so a
+   * resident added to a group in the editor is in it on the building
+   * screen too. Seeded from the building's data and edited as a value.
+   */
+  const [groups, setGroups] = useState<AccessGroup[]>(() => accessGroups());
   /**
    * The check screen is reached twice over: from the building, when the
    * plan is first made, and from the editor, when floors are added to a
@@ -213,6 +221,8 @@ export default function App() {
           onCreatePlan={() => startWizard(null)}
           onCreatePlanWith={startWizard}
           onOpenPlan={() => setScreen("edit")}
+          groups={groups}
+          onGroupsChange={setGroups}
         />
         <ChooseMethodDialog
           open={step === "how"}
@@ -269,6 +279,8 @@ export default function App() {
             setScreen("building");
           }}
           onAddFloors={addFloors}
+          groups={groups}
+          onGroupsChange={setGroups}
         />
       </ThemeProvider>
     );

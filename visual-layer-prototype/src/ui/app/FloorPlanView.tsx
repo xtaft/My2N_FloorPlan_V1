@@ -46,6 +46,9 @@ import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
   accessPaint,
   accessShading,
+  addPersonToGroup,
+  removePersonFromGroup,
+  type AccessGroup,
   deviceRows,
   devicesHeldBy,
   facesExterior,
@@ -69,6 +72,9 @@ export interface FloorPlanViewProps {
    */
   selectedGroupId: string | null;
   onClearSelection: () => void;
+  /** Access groups, and the one write this screen makes: who is in them. */
+  groups: readonly AccessGroup[];
+  onGroupsChange: (next: AccessGroup[]) => void;
 }
 
 export function FloorPlanView({
@@ -77,6 +83,8 @@ export function FloorPlanView({
   onFloorChange,
   selectedGroupId,
   onClearSelection,
+  groups,
+  onGroupsChange,
 }: FloorPlanViewProps) {
   const [mode, setMode] = useState<PlanMode>("structure");
   /** The device the search found, drawn lit with its name out. */
@@ -112,8 +120,8 @@ export function FloorPlanView({
   } | null>(null);
 
   const allowed = useMemo(
-    () => (personId ? new Set(devicesHeldBy(layer, personId)) : picked),
-    [layer, personId, picked],
+    () => (personId ? new Set(devicesHeldBy(layer, personId, groups)) : picked),
+    [layer, personId, picked, groups],
   );
   const detailDevice = useMemo(
     () =>
@@ -299,6 +307,7 @@ export function FloorPlanView({
         {mode === "access" ? (
           <AccessDrawer
             layer={layer}
+            groups={groups}
             picked={picked}
             onPicked={(next) => {
               setPicked(next);
@@ -349,8 +358,19 @@ export function FloorPlanView({
       <PersonMenu
         open={Boolean(personMenu)}
         anchorEl={personMenu?.el ?? null}
-        inAGroup={false}
+        personId={personMenu?.personId ?? null}
+        groups={groups}
         onClose={() => setPersonMenu(null)}
+        onAddToGroup={(groupId) => {
+          if (personMenu) {
+            onGroupsChange(addPersonToGroup(groups, groupId, personMenu.personId));
+          }
+        }}
+        onRemoveFromGroup={(groupId) => {
+          if (personMenu) {
+            onGroupsChange(removePersonFromGroup(groups, groupId, personMenu.personId));
+          }
+        }}
       />
     </Box>
   );
