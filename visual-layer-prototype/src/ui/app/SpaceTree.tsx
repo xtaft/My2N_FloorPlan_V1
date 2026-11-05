@@ -109,7 +109,11 @@ export function SpaceTree({
     depth: number,
     floorId: string | null,
   ) => {
-    const expandable = !space.apartment && space.rooms.length > 1;
+    // Before the plan nothing opens. The customer's list has no rooms
+    // inside a space and no spaces inside a space; the plan is what
+    // puts them there, and until then a row is a row.
+    const expandable =
+      storeys !== null && !space.apartment && space.rooms.length > 1;
     const isOpen = open.has(space.id) || (matches && expandable);
     return (
       <Fragment key={space.id}>

@@ -15,6 +15,7 @@ import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
+import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
@@ -26,6 +27,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
@@ -310,5 +312,58 @@ export function StatusChip({
         borderColor: color,
       }}
     />
+  );
+}
+
+/**
+ * A filter chip that opens a menu of options to tick. Any number may
+ * be on; none on means the filter is not narrowing anything, and the
+ * chip says how many are when some are. The rows are the caller's to
+ * narrow — this only holds the choice.
+ */
+export function FilterMenu({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { id: string; label: string }[];
+  selected: ReadonlySet<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const on = selected.size > 0;
+  return (
+    <>
+      <Button
+        variant={on ? "contained" : "outlined"}
+        color={on ? "primary" : "inherit"}
+        size="small"
+        endIcon={<ArrowDropDown />}
+        onClick={(e) => setAnchor(e.currentTarget)}
+        sx={{ px: 1.5 }}
+      >
+        {label}
+        {on ? ` (${selected.size})` : ""}
+      </Button>
+      <Menu open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)}>
+        {options.map((o) => (
+          <MenuItem
+            key={o.id}
+            dense
+            onClick={() => {
+              const next = new Set(selected);
+              if (next.has(o.id)) next.delete(o.id);
+              else next.add(o.id);
+              onChange(next);
+            }}
+          >
+            <Checkbox size="small" checked={selected.has(o.id)} sx={{ p: 0.5, mr: 1 }} />
+            <Typography variant="body2">{o.label}</Typography>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }
