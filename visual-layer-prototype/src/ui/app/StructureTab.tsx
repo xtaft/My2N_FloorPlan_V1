@@ -1,48 +1,31 @@
 /**
- * The Structure tab.
+ * The Structure tab: the building's spaces, in the same table the
+ * Devices and Residents tabs use.
  *
- * Like Overview, this one has a tab in the design and no frame behind it,
- * so it is derived rather than copied. What it is for: the tree in the
- * sidebar shows the building's shape one row at a time, and this shows the
- * same shape all at once — every space, its category, which storey it is
- * on, and how much is in it.
+ * Before the plan the list is flat, because the building is. The
+ * customer's records have apartments and the common spaces people are
+ * admitted to, and nothing above or below them: no groups, no rooms
+ * inside a flat, no storey a flat is on. So the table has no Floor
+ * column and nothing to expand — a flat is one row.
  *
- * It reads two different buildings, because before the plan there are two.
- *
- * Without a plan, the only structure that exists is the customer's own
- * list: apartments and the common spaces somebody is admitted to. There
- * are no storeys, so there is nothing to say about which floor anything is
- * on — and no per-storey envelopes either. Listing five rows called
- * "Elevator" here would be reporting a fact that drawing the building is
- * what establishes.
- *
- * With a plan, every envelope lists, which is more than the sidebar shows.
- * The tree stays the administered list and leaves out the shafts, the
- * stairwells and the hallways nobody needs permission to walk down — but a
- * lift shaft is structure, and this is the Structure tab. Listing them is
- * also what makes the strip above the table and the table itself count the
- * same building: both run off `allEnvelopes`, through the same
- * `groupAccessType` the editor's structure drawer groups by. A category
- * panel that counted differently here than it does while you are drawing
- * would be a second opinion about the building.
+ * Once a plan exists the same table lists every envelope, shafts and
+ * stairwells and hallways included, and says which floor each is on.
+ * The tree in the sidebar stays the administered list; this is the
+ * structure.
  */
 import { useMemo } from "react";
 import Box from "@mui/material/Box";
-import Chip from "@mui/material/Chip";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
+import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
+import { Column, DataTable, FilterChip } from "./DataTable";
 import {
   allEnvelopes,
   buildingSpaces,
   groupAccessType,
+  residents,
   roomsInGroup,
-  spaceCategories,
   type VisualLayer,
 } from "../../model";
 
@@ -55,43 +38,30 @@ interface Row {
   id: string;
   name: string;
   space_type: string | null;
-  rooms: number;
-  /** The storey, which only a plan can say. */
+  /** Which storey, which only a plan can say. */
   floor: string | null;
+  residents: number;
   devices: number;
   apartment: boolean;
 }
 
 export function StructureTab({ layer, hasPlan }: StructureTabProps) {
-  const categories = useMemo(
-    () => (hasPlan ? spaceCategories(layer) : []),
-    [layer, hasPlan],
-  );
-
   const rows = useMemo<Row[]>(() => {
     const floorName = new Map(layer.floors.map((f) => [f.id, f.name]));
+    const people = residents(layer);
+    const living = (id: string) => people.filter((r) => r.apartment_id === id).length;
 
     /**
-     * What a space's devices are: the units standing in its rooms, plus
-     * the readers on its doors. A reader belongs to the space it checks
-     * the way in to, which is what `guards` names — not to whichever side
-     * of the wall it happens to be screwed on.
-     *
-     * Only once a plan exists, though. A door device is counted against
-     * the space it guards, and before the building is drawn there are no
-     * doors to hang one on — so counting it here would credit the Lobby
-     * with a reader the Devices tab rightly lists as waiting to be
-     * placed. Pre-plan, a space's devices are the units inside it.
+     * A space's devices: the units standing in its rooms, plus — once
+     * there are doors to hang one on — the readers on its doors, which
+     * belong to the space they check the way in to.
      */
-    const countDevices = (roomIds: Set<string>) => {
+    const devices = (roomIds: Set<string>) => {
       let n = 0;
-      for (const id of roomIds) {
-        n += (layer.devicesInRoom.get(id) ?? []).length;
-      }
+      for (const id of roomIds) n += (layer.devicesInRoom.get(id) ?? []).length;
       if (!hasPlan) return n;
-      for (const device of layer.file.devices) {
-        if (device.host_kind !== "door") continue;
-        if (device.guards.some((g) => roomIds.has(g))) n += 1;
+      for (const d of layer.file.devices) {
+        if (d.host_kind === "door" && d.guards.some((g) => roomIds.has(g))) n += 1;
       }
       return n;
     };
@@ -104,9 +74,9 @@ export function StructureTab({ layer, hasPlan }: StructureTabProps) {
             id: group.id,
             name: group.name,
             space_type: type,
-            rooms: rooms.length,
             floor: floorName.get(group.floor_id) ?? null,
-            devices: countDevices(new Set(rooms.map((r) => r.id))),
+            residents: living(group.id),
+            devices: devices(new Set(rooms.map((r) => r.id))),
             apartment: type === "apartment",
           };
         })
@@ -114,125 +84,93 @@ export function StructureTab({ layer, hasPlan }: StructureTabProps) {
           id: space.id,
           name: space.name,
           space_type: space.space_type,
-          rooms: space.rooms.length,
           floor: null,
-          devices: countDevices(new Set(space.rooms.map((r) => r.id))),
+          residents: living(space.id),
+          devices: devices(new Set(space.rooms.map((r) => r.id))),
           apartment: space.apartment,
         }));
 
-    // Common spaces first, then the units — the order the list is read in
-    // rather than the order the file happens to store.
+    // Common spaces first, then the units, each in reading order.
     return out.sort((a, b) => {
       if (a.apartment !== b.apartment) return a.apartment ? 1 : -1;
       return a.name.localeCompare(b.name, undefined, { numeric: true });
     });
   }, [layer, hasPlan]);
 
-  const columns = hasPlan
-    ? ["Space", "Category", "Floor", "Spaces inside", "Devices"]
-    : ["Space", "Category", "Spaces inside", "Devices"];
+  const typeName = (id: string | null) =>
+    id ? (layer.spaceTypes.get(id)?.name ?? id) : "Unassigned";
+  const typeColor = (id: string | null) =>
+    (id && layer.spaceTypes.get(id)?.color) || "#DADDE1";
+
+  const columns: Column<Row>[] = [
+    {
+      key: "name",
+      label: "Space name",
+      cell: (r) => (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          {r.apartment ? (
+            <MeetingRoomOutlined sx={{ fontSize: 20, color: "text.secondary" }} />
+          ) : (
+            <WidgetsOutlined sx={{ fontSize: 20, color: "text.secondary" }} />
+          )}
+          <Typography variant="body2" fontWeight={500} noWrap>
+            {r.name}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      key: "category",
+      label: "Category",
+      cell: (r) => (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: "2px",
+              bgcolor: typeColor(r.space_type),
+              flexShrink: 0,
+            }}
+          />
+          <Typography variant="body2" noWrap>
+            {typeName(r.space_type)}
+          </Typography>
+        </Stack>
+      ),
+    },
+    // Which storey a space is on is the first thing drawing the plan
+    // answers, so the column exists only once there is one.
+    ...(hasPlan
+      ? [{ key: "floor", label: "Floor", cell: (r: Row) => r.floor ?? "—" }]
+      : []),
+    {
+      key: "residents",
+      label: "Residents",
+      align: "right",
+      cell: (r) => (r.apartment ? `${r.residents}` : "—"),
+    },
+    {
+      key: "devices",
+      label: "Devices",
+      align: "right",
+      cell: (r) => `${r.devices}`,
+    },
+  ];
 
   return (
-    <Stack spacing={3}>
-      {hasPlan && (
-        <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Categories
-          </Typography>
-          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
-            {categories.map((c) => (
-              <Chip
-                key={c.id ?? "unassigned"}
-                label={`${c.name} · ${c.groups.length + c.rooms.length}`}
-                variant="outlined"
-                icon={
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: "2px",
-                      bgcolor: c.color,
-                      ml: 1,
-                    }}
-                  />
-                }
-                sx={{ height: 28 }}
-              />
-            ))}
-          </Stack>
-        </Box>
-      )}
-
-      <Paper variant="outlined">
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              {columns.map((h, i) => (
-                <TableCell
-                  key={h}
-                  align={i >= columns.length - 2 ? "right" : "left"}
-                >
-                  <Typography variant="body2" fontWeight={500}>
-                    {h}
-                  </Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => {
-              const type = row.space_type
-                ? layer.spaceTypes.get(row.space_type)
-                : undefined;
-              return (
-                <TableRow key={row.id} hover sx={{ height: 45 }}>
-                  <TableCell>
-                    <Typography variant="body2">{row.name}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "2px",
-                          bgcolor: type?.color ?? "#DADDE1",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {type?.name ?? row.space_type ?? "Unassigned"}
-                      </Typography>
-                    </Stack>
-                  </TableCell>
-                  {hasPlan && (
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {row.floor ?? "—"}
-                      </Typography>
-                    </TableCell>
-                  )}
-                  <TableCell align="right">
-                    <Typography variant="body2">{row.rooms}</Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2">{row.devices}</Typography>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Paper>
-
-      {!hasPlan && (
-        <Typography variant="caption" color="text.secondary">
-          This is the building as the customer's own records describe it:
-          apartments and the common spaces somebody is admitted to. Which
-          storey each is on, where the stairs and the lifts run, and the
-          hallways between them are what a floor plan adds.
-        </Typography>
-      )}
-    </Stack>
+    <DataTable
+      rows={rows}
+      columns={columns}
+      rowKey={(r) => r.id}
+      searchable={(r) => `${r.name} ${typeName(r.space_type)} ${r.floor ?? ""}`}
+      searchPlaceholder="Search"
+      filters={
+        <>
+          <FilterChip label="Category" />
+          {hasPlan && <FilterChip label="Floor" />}
+        </>
+      }
+    />
   );
 }

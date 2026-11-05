@@ -46,13 +46,16 @@ import { FloorPlanTab } from "./FloorPlanTab";
 import { OverviewTab } from "./OverviewTab";
 import { SpaceTree } from "./SpaceTree";
 import { StructureTab } from "./StructureTab";
+import { NewSpaceDialog, type NewFloorPage } from "../edit/NewSpaceDialog";
 import {
   buildingDevices,
   buildingSpaces,
   spacesByFloor,
   operators,
   residents,
+  createEnvelope,
   type AccessGroup,
+  type EditState,
   type VisualLayer,
 } from "../../model";
 
@@ -79,6 +82,14 @@ export interface BuildingScreenProps {
   /** Access groups, held above both screens so an edit in one shows in the other. */
   groups: readonly AccessGroup[];
   onGroupsChange: (next: AccessGroup[]) => void;
+  /**
+   * The editable plan, for the Structure tab's New space: a flat or a
+   * group is a regrouping of the model, and a floor goes off to be
+   * checked the same way it does from the editor.
+   */
+  editState: EditState;
+  onEditChange: (next: EditState) => void;
+  onAddFloors: (name: string, pages: NewFloorPage[]) => void;
 }
 
 const TABS: { id: BuildingTab; label: string }[] = [
@@ -103,7 +114,11 @@ export function BuildingScreen({
   onOpenPlan,
   groups,
   onGroupsChange,
+  editState,
+  onEditChange,
+  onAddFloors,
 }: BuildingScreenProps) {
+  const [newSpace, setNewSpace] = useState(false);
   const [tab, setTab] = useState<BuildingTab>("plan");
   const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
   /** What the tree is pointing at, for the plan to light up. */
@@ -135,6 +150,8 @@ export function BuildingScreen({
         ? { label: "Add resident" }
         : tab === "operators"
           ? { label: "Add operator" }
+          : tab === "structure"
+            ? { label: "New space", onClick: () => setNewSpace(true) }
           : tab === "plan"
             ? hasPlan
               ? { label: "Edit floor plan", onClick: onOpenPlan }
@@ -309,6 +326,22 @@ export function BuildingScreen({
           </Box>
         </Box>
       </Box>
+
+      <NewSpaceDialog
+        open={newSpace}
+        layer={layer}
+        buildingName={buildingName}
+        flat={!hasPlan}
+        onClose={() => setNewSpace(false)}
+        onCreateEnvelope={(kind, name, members) => {
+          setNewSpace(false);
+          onEditChange(createEnvelope(editState, { kind, name, members }));
+        }}
+        onCreateFloor={(name, pages) => {
+          setNewSpace(false);
+          onAddFloors(name, pages);
+        }}
+      />
     </Box>
   );
 }

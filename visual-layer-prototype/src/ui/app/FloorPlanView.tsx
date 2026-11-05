@@ -71,6 +71,9 @@ export type PlanMode = "structure" | "access";
 
 /** The right-hand panel, and the dropdown that sits over it. */
 const DRAWER = 320;
+/** The toolbar's side padding. The dropdown gives this up so that its
+ *  left edge lines up with the drawer's below it. */
+const TOOLBAR_PAD = 16;
 
 /**
  * What Error and Warning mean on a device. The statuses the data has
@@ -212,7 +215,7 @@ export function FloorPlanView({
       <Stack
         direction="row"
         alignItems="center"
-        sx={{ px: 2, height: 56, flexShrink: 0, flexWrap: "nowrap" }}
+        sx={{ px: `${TOOLBAR_PAD}px`, height: 56, flexShrink: 0, flexWrap: "nowrap" }}
       >
         <Stack
           direction="row"
@@ -367,7 +370,7 @@ export function FloorPlanView({
             size="small"
             value={mode}
             onChange={(e) => setMode(e.target.value as PlanMode)}
-            sx={{ width: DRAWER }}
+            sx={{ width: DRAWER - TOOLBAR_PAD }}
           >
             <MenuItem value="structure">Structure</MenuItem>
             <MenuItem value="access">Access</MenuItem>

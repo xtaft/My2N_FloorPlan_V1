@@ -223,6 +223,9 @@ export default function App() {
           onOpenPlan={() => setScreen("edit")}
           groups={groups}
           onGroupsChange={setGroups}
+          editState={edit}
+          onEditChange={setEdit}
+          onAddFloors={addFloors}
         />
         <ChooseMethodDialog
           open={step === "how"}

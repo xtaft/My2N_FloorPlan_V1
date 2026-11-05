@@ -44,6 +44,7 @@ import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import {
+  buildingSpaces,
   envelopeRefusal,
   floorEnvelopes,
   roomsInGroup,
@@ -72,6 +73,12 @@ export interface NewSpaceDialogProps {
    * decides which it was by whether `pages` holds anything.
    */
   onCreateFloor: (name: string, pages: NewFloorPage[]) => void;
+  /**
+   * Before there is a plan the building is flat: apartments and common
+   * spaces with nothing inside or above them. The tree then lists just
+   * those, and a flat — made of rooms — cannot be made yet.
+   */
+  flat?: boolean;
 }
 
 const KINDS: { kind: NewSpaceKind; label: string; hint: string }[] = [
@@ -108,6 +115,7 @@ export function NewSpaceDialog({
   onClose,
   onCreateEnvelope,
   onCreateFloor,
+  flat = false,
 }: NewSpaceDialogProps) {
   const [kind, setKind] = useState<NewSpaceKind>("group");
   const [name, setName] = useState("");
@@ -178,6 +186,7 @@ export function NewSpaceDialog({
               <Stack key={k.kind} direction="row" alignItems="center" spacing={1}>
                 <Chip
                   label={k.label}
+                  disabled={flat && k.kind === "apartment"}
                   onClick={() => choose(k.kind)}
                   onDelete={() => choose(k.kind)}
                   deleteIcon={<ArrowForward sx={{ fontSize: "16px !important" }} />}
@@ -185,7 +194,7 @@ export function NewSpaceDialog({
                   variant={kind === k.kind ? "filled" : "outlined"}
                   sx={{ borderRadius: 1, height: 28 }}
                 />
-                <Tooltip title={k.hint}>
+                <Tooltip title={flat && k.kind === "apartment" ? "Rooms come with the floor plan. Make one first." : k.hint}>
                   <InfoOutlined sx={{ fontSize: 18, color: "text.secondary" }} />
                 </Tooltip>
               </Stack>
@@ -235,6 +244,7 @@ export function NewSpaceDialog({
               kind={kind}
               picked={picked}
               onPicked={setPicked}
+              flat={flat}
             />
           )}
         </Box>
@@ -268,12 +278,14 @@ function MemberTree({
   kind,
   picked,
   onPicked,
+  flat,
 }: {
   layer: VisualLayer;
   buildingName: string;
   kind: NewEnvelopeKind;
   picked: Set<string>;
   onPicked: (next: Set<string>) => void;
+  flat: boolean;
 }) {
   const [open, setOpen] = useState<Set<string>>(
     () => new Set(layer.floors.map((f) => f.id)),
@@ -349,7 +361,19 @@ function MemberTree({
   return (
     <List dense disablePadding sx={{ py: 1 }}>
       <Row depth={0} icon={<ApartmentOutlined sx={iconSx} />} label={buildingName} bold />
-      {layer.floors.map((floor) => {
+      {flat &&
+        buildingSpaces(layer).map((space) => (
+          <Row
+            key={space.id}
+            depth={1}
+            icon={<WidgetsOutlined sx={iconSx} />}
+            label={space.name}
+            checked={picked.has(space.id)}
+            checkable={kind === "group"}
+            onTick={() => tick(space.id)}
+          />
+        ))}
+      {(flat ? [] : layer.floors).map((floor) => {
         const disabled = onFloor !== null && onFloor !== floor.id;
         const isOpen = open.has(floor.id);
         const loose = (layer.roomsByFloor.get(floor.id) ?? []).filter(
