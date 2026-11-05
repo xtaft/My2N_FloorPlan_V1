@@ -18,26 +18,33 @@
  * and each opens its card, so a third mode was a switch between two
  * screens showing the same devices. Finding one is the search box.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
 import Divider from "@mui/material/Divider";
 import InputAdornment from "@mui/material/InputAdornment";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import Add from "@mui/icons-material/Add";
+import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
+import CenterFocusStrongOutlined from "@mui/icons-material/CenterFocusStrongOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import Close from "@mui/icons-material/Close";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import Remove from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
 import { Fragment } from "react";
 import { DeviceGlyph } from "../DeviceMarker";
-import { FloorPlanCanvas } from "../FloorPlanCanvas";
+import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
 import { AccessDeviceMenu } from "../edit/AccessDeviceMenu";
 import { PersonMenu } from "../edit/PersonMenu";
@@ -50,7 +57,10 @@ import {
   removePersonFromGroup,
   type AccessGroup,
   deviceRows,
+  deviceTypes,
   devicesHeldBy,
+  productName,
+  type Device,
   facesExterior,
   roomsInGroup,
   spaceCategories,
@@ -58,6 +68,17 @@ import {
 } from "../../model";
 
 export type PlanMode = "structure" | "access";
+
+/** The right-hand panel, and the dropdown that sits over it. */
+const DRAWER = 320;
+
+/**
+ * What Error and Warning mean on a device. The statuses the data has
+ * are the three the Devices tab shows: a box that is off the network
+ * is the error, one that has not been verified is the warning.
+ */
+const ERROR_STATUS = "offline";
+const WARNING_STATUS = "not_verified";
 
 export interface FloorPlanViewProps {
   layer: VisualLayer;
@@ -89,6 +110,37 @@ export function FloorPlanView({
   const [mode, setMode] = useState<PlanMode>("structure");
   /** The device the search found, drawn lit with its name out. */
   const [found, setFound] = useState<string | null>(null);
+
+  /**
+   * The filters. Each narrows what is drawn; a device has to pass all
+   * of them. Error and Warning together show either, which is the
+   * question "what needs looking at" rather than two questions.
+   */
+  const [typeOn, setTypeOn] = useState<Set<string>>(new Set());
+  const [errorOn, setErrorOn] = useState(false);
+  const [warningOn, setWarningOn] = useState(false);
+  const [typeMenu, setTypeMenu] = useState<HTMLElement | null>(null);
+  const types = useMemo(() => deviceTypes(layer), [layer]);
+
+  const deviceFilter = useMemo(() => {
+    const statuses = new Set<string>();
+    if (errorOn) statuses.add(ERROR_STATUS);
+    if (warningOn) statuses.add(WARNING_STATUS);
+    if (typeOn.size === 0 && statuses.size === 0) return undefined;
+    return (d: Device) =>
+      (typeOn.size === 0 || typeOn.has(d.device_type)) &&
+      (statuses.size === 0 || statuses.has(d.status));
+  }, [typeOn, errorOn, warningOn]);
+  const filtering = deviceFilter !== undefined || found !== null;
+  const clearFilters = () => {
+    setTypeOn(new Set());
+    setErrorOn(false);
+    setWarningOn(false);
+    setFound(null);
+  };
+
+  /** The canvas's own zoom, driven from the toolbar. */
+  const controls = useRef<CanvasControls | null>(null);
 
   /**
    * What the search looks through: the devices that are on the plan.
@@ -236,20 +288,59 @@ export function FloorPlanView({
               />
             )}
           />
-          <Button variant="outlined" color="inherit" size="small" disabled>
-            Device type
+          <Button
+            variant={typeOn.size > 0 ? "contained" : "outlined"}
+            color={typeOn.size > 0 ? "primary" : "inherit"}
+            size="small"
+            endIcon={<ArrowDropDown />}
+            onClick={(e) => setTypeMenu(e.currentTarget)}
+          >
+            Device type{typeOn.size > 0 ? ` (${typeOn.size})` : ""}
           </Button>
-          <Button variant="outlined" color="inherit" size="small" disabled>
+          <Menu
+            open={Boolean(typeMenu)}
+            anchorEl={typeMenu}
+            onClose={() => setTypeMenu(null)}
+          >
+            {types.map((t) => (
+              <MenuItem
+                key={t}
+                dense
+                onClick={() =>
+                  setTypeOn((was) => {
+                    const next = new Set(was);
+                    if (next.has(t)) next.delete(t);
+                    else next.add(t);
+                    return next;
+                  })
+                }
+              >
+                <Checkbox size="small" checked={typeOn.has(t)} sx={{ p: 0.5, mr: 1 }} />
+                <Typography variant="body2">{productName(t)}</Typography>
+              </MenuItem>
+            ))}
+          </Menu>
+          <Button
+            variant={errorOn ? "contained" : "outlined"}
+            color={errorOn ? "primary" : "inherit"}
+            size="small"
+            onClick={() => setErrorOn((v) => !v)}
+          >
             Error
           </Button>
-          <Button variant="outlined" color="inherit" size="small" disabled>
+          <Button
+            variant={warningOn ? "contained" : "outlined"}
+            color={warningOn ? "primary" : "inherit"}
+            size="small"
+            onClick={() => setWarningOn((v) => !v)}
+          >
             Warning
           </Button>
           <Button
             size="small"
             startIcon={<Close sx={{ fontSize: 16 }} />}
-            disabled={found === null}
-            onClick={() => setFound(null)}
+            disabled={!filtering}
+            onClick={clearFilters}
             sx={{ color: "text.secondary" }}
           >
             Clear filters
@@ -262,12 +353,21 @@ export function FloorPlanView({
           spacing={1.5}
           sx={{ flexShrink: 0, pl: 1.5 }}
         >
+          <IconButton size="small" onClick={() => controls.current?.zoomOut()}>
+            <Remove sx={{ fontSize: 20 }} />
+          </IconButton>
+          <IconButton size="small" onClick={() => controls.current?.zoomIn()}>
+            <Add sx={{ fontSize: 20 }} />
+          </IconButton>
+          <IconButton size="small" onClick={() => controls.current?.reset()}>
+            <CenterFocusStrongOutlined sx={{ fontSize: 20 }} />
+          </IconButton>
           <TextField
             select
             size="small"
             value={mode}
             onChange={(e) => setMode(e.target.value as PlanMode)}
-            sx={{ width: 180 }}
+            sx={{ width: DRAWER }}
           >
             <MenuItem value="structure">Structure</MenuItem>
             <MenuItem value="access">Access</MenuItem>
@@ -301,6 +401,10 @@ export function FloorPlanView({
             showDevices
             paint={shading ? accessPaint(shading) : undefined}
             onDeviceMenu={(deviceId, at) => setDetail({ deviceId, at })}
+            deviceFilter={deviceFilter}
+            onControls={(c) => {
+              controls.current = c;
+            }}
           />
         </Box>
 
@@ -322,7 +426,7 @@ export function FloorPlanView({
               setAccessMenu({ el, deviceId, bulk: picked.size > 1 })
             }
             onPersonMenu={(el, id) => setPersonMenu({ el, personId: id })}
-            width={320}
+            width={DRAWER}
             onWidthChange={() => {}}
           />
         ) : (
@@ -392,7 +496,7 @@ function SpacePanel({ layer }: { layer: VisualLayer }) {
   return (
     <Box
       sx={{
-        width: 320,
+        width: DRAWER,
         flexShrink: 0,
         borderLeft: 1,
         borderColor: "divider",

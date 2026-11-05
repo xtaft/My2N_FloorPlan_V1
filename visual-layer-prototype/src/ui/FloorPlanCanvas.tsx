@@ -152,6 +152,13 @@ export interface FloorPlanCanvasProps {
    */
   showDevices?: boolean;
   /**
+   * Which devices to draw, of those on the floor. The view's filters:
+   * a device that fails it is not drawn and takes no click, but still
+   * counts towards the floor's frame, so filtering does not move the
+   * plan under the pointer.
+   */
+  deviceFilter?: (device: Device) => boolean;
+  /**
    * What colour to fill a room with, overriding its category's own.
    * Returning null leaves it bare — still clickable, but drawn as walls
    * alone. The check screen uses this so that the only colour on the plan
@@ -237,6 +244,7 @@ export function FloorPlanCanvas({
   onDropSpace,
   showDeviceStatus = true,
   showDevices = true,
+  deviceFilter,
   paint,
   overlay,
   onShowRoom,
@@ -387,6 +395,15 @@ export function FloorPlanCanvas({
       }`,
     };
   }, [layer, floorId]);
+
+  /** The devices drawn: the floor's, less what the filter hides. */
+  const shownGlyphs = useMemo(
+    () =>
+      deviceFilter
+        ? scene.glyphs.filter((g) => deviceFilter(g.device))
+        : scene.glyphs,
+    [scene.glyphs, deviceFilter],
+  );
 
   /**
    * Reading the CTM is the obvious way to learn the plan's scale and the
@@ -547,7 +564,7 @@ export function FloorPlanCanvas({
         const reach = (DEVICE_PX / 2) * unitScale;
         let near: string | null = null;
         let best = reach;
-        for (const glyph of scene.glyphs) {
+        for (const glyph of shownGlyphs) {
           const d = Math.hypot(pt.x - glyph.x, pt.y - glyph.y);
           if (d <= best) {
             best = d;
@@ -574,7 +591,7 @@ export function FloorPlanCanvas({
       toSvgPoint,
       layer,
       floorId,
-      scene.glyphs,
+      shownGlyphs,
       unitScale,
     ],
   );
@@ -968,7 +985,7 @@ export function FloorPlanCanvas({
               marker on an exterior door sits outside every room — so
               there is nothing else under it to carry the click. */}
           {onDeviceMenu &&
-            scene.glyphs.map((glyph) => (
+            shownGlyphs.map((glyph) => (
               <circle
                 key={`hit:${glyph.device.id}`}
                 cx={glyph.x}
@@ -1001,7 +1018,7 @@ export function FloorPlanCanvas({
               is drawn from the model rather than from the drawing: the
               direction is the device's own anchor offset, reversed. */}
           {showDevices &&
-            scene.glyphs.map((glyph) => {
+            shownGlyphs.map((glyph) => {
               const arrow = checkArrow(layer, glyph.device, glyph, unitScale);
               return arrow ? (
                 <path
@@ -1017,7 +1034,7 @@ export function FloorPlanCanvas({
               ) : null;
             })}
 
-          {(showDevices ? [...scene.glyphs] : [])
+          {(showDevices ? [...shownGlyphs] : [])
             .sort((a, b) =>
               Number(a.device.id === hoverDevice) -
               Number(b.device.id === hoverDevice),

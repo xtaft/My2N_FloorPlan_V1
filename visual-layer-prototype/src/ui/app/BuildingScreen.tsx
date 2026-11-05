@@ -83,12 +83,14 @@ export interface BuildingScreenProps {
 
 const TABS: { id: BuildingTab; label: string }[] = [
   { id: "overview", label: "Overview" },
+  // Second, before and after there is a plan: it is the thing this
+  // building screen exists to make, and then the thing it is about.
+  { id: "plan", label: "Floor Plan" },
   { id: "structure", label: "Structure" },
   { id: "residents", label: "Residents" },
   { id: "devices", label: "Devices" },
   { id: "operators", label: "Operators" },
   { id: "logs", label: "Logs & Events" },
-  { id: "plan", label: "Floor Plan" },
 ];
 
 export function BuildingScreen({
