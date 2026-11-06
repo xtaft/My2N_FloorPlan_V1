@@ -34,7 +34,6 @@ import SwapVert from "@mui/icons-material/SwapVert";
 import SyncOutlined from "@mui/icons-material/Sync";
 import {
   addBlankFloor,
-  fitToBuilding,
   addFloors,
   moveFloor,
   removeFloor,
@@ -191,10 +190,11 @@ export function AddFloorsDialog({
     const dropped = [...files]
       .filter((f) => pdfKind(f) !== null)
       .map((f) => ({ name: f.name, source: pdfKind(f)! }));
-    // However many pages arrive, the list settles on the building's
-    // storey count — see fitToBuilding. Upload three and two more are
-    // named for you; upload eight and the first five are kept.
-    if (dropped.length > 0) onFloors(fitToBuilding(addFloors(floors, dropped)));
+    // What was dropped is what is listed — however many pages, in the
+    // order they came. The building's storey count is settled later,
+    // when the check begins (see fitToBuilding): these two steps are
+    // about the files, and the check is about the floors.
+    if (dropped.length > 0) onFloors(addFloors(floors, dropped));
   };
 
   const accept = pdfOnly

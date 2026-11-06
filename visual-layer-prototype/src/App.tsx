@@ -242,10 +242,7 @@ export default function App() {
           onFloors={setPending}
           onBack={() => setStep("how")}
           onCancel={() => setStep("none")}
-          onNext={() => {
-            setPending(fitToBuilding(pending));
-            setStep("creating");
-          }}
+          onNext={() => setStep("creating")}
         />
         <CreatingDialog
           open={step === "creating"}
@@ -253,6 +250,11 @@ export default function App() {
           onBack={() => setStep("what")}
           onCancel={() => setStep("none")}
           onDone={() => {
+            // The upload and the build showed the pages that were really
+            // dropped. The check shows the building's floors — the drawn
+            // ones the prototype has — so this is where the list settles
+            // on that count: see fitToBuilding.
+            setPending(fitToBuilding(pending));
             setStep("none");
             setScreen("check");
           }}
