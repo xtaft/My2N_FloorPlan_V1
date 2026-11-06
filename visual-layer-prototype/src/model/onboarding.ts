@@ -111,6 +111,13 @@ export function storeyFromName(name: string): number | null {
  * out. Each page then knows its floor, and the ground floor is the
  * page at level 0 — which is where the marker ends up, not where it
  * started.
+ *
+ * The settled list is ground-first. The check walks it from the top,
+ * so the first floor checked is the ground floor and every floor after
+ * it is lined up with the one it stands on: floor 1 with the ground
+ * floor, floor 2 with floor 1. The upload list is the other way up —
+ * highest on top, as a building is drawn — and this is where the two
+ * part company.
  */
 export function fitToBuilding(
   floors: FloorList,
@@ -165,7 +172,7 @@ export function fitToBuilding(
     levels.set(out[out.length - 1].id, level);
   }
 
-  out.sort((a, b) => levels.get(b.id)! - levels.get(a.id)!);
+  out.sort((a, b) => levels.get(a.id)! - levels.get(b.id)!);
   return out.map((f) => ({ ...f, ground: levels.get(f.id) === 0 }));
 }
 
@@ -283,8 +290,15 @@ function withOneGround(floors: FloorList): FloorList {
  * counts upwards. Below ground goes negative, which is what a basement is.
  */
 export function storeyLevels(floors: FloorList): Map<string, number> {
-  const ground = floors.findIndex((f) => f.ground);
   const out = new Map<string, number>();
+  // A settled list says it outright: each page carries the drawn floor
+  // it stands for, and the floor's id carries its level. An upload list
+  // says it by position, highest-first.
+  if (floors.length > 0 && floors.every((f) => f.floor_id)) {
+    for (const f of floors) out.set(f.id, Number(f.floor_id!.split(":")[0]));
+    return out;
+  }
+  const ground = floors.findIndex((f) => f.ground);
   if (ground < 0) return out;
   floors.forEach((f, i) => out.set(f.id, ground - i));
   return out;

@@ -233,7 +233,7 @@ describe("matching pages to the building's storeys", () => {
     // No names to go on: the bottom page is the ground floor, the one
     // above it floor 1, and the storeys left over get pages of their own.
     const after = fitToBuilding(addFloors([], pdfs("a.pdf", "b.pdf")));
-    expect(names(after)).toEqual(["floor 4", "floor 3", "floor 2", "a.pdf", "b.pdf"]);
+    expect(names(after)).toEqual(["b.pdf", "a.pdf", "floor 2", "floor 3", "floor 4"]);
     expect(levelOf(after, "b.pdf")).toBe(0);
     expect(levelOf(after, "a.pdf")).toBe(1);
   });
@@ -243,19 +243,21 @@ describe("matching pages to the building's storeys", () => {
     expect(levelOf(after, "floor 2.pdf")).toBe(2);
     expect(levelOf(after, "b.pdf")).toBe(0);
     expect(levelOf(after, "a.pdf")).toBe(1);
-    expect(names(after)).toEqual(["floor 4", "floor 3", "floor 2.pdf", "a.pdf", "b.pdf"]);
+    expect(names(after)).toEqual(["b.pdf", "a.pdf", "floor 2.pdf", "floor 3", "floor 4"]);
   });
 
   it("leaves out the pages that would be above the roof", () => {
     const many = addFloors([], pdfs("1", "2", "3", "4", "5", "6", "7"));
     // Bare numbers name storeys; 5, 6 and 7 have no floor to stand for.
-    expect(names(fitToBuilding(many))).toEqual(["4", "3", "2", "1", "ground floor"]);
+    expect(names(fitToBuilding(many))).toEqual(["ground floor", "1", "2", "3", "4"]);
   });
 
   it("is a storey for every drawn floor, each knowing which", () => {
     const after = fitToBuilding(addFloors([], pdfs("a.pdf")));
     expect([...storeyLevels(after).values()].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
-    expect(after.map((f) => f.floor_id)).toEqual(["4:floor", "3:floor", "2:floor", "1:floor", "0:floor"]);
+    // Ground first: the check walks the list from the top.
+    expect(after.map((f) => f.floor_id)).toEqual(["0:floor", "1:floor", "2:floor", "3:floor", "4:floor"]);
+    expect(after[0].ground).toBe(true);
     expect(after.filter((f) => f.ground)).toHaveLength(1);
     for (const f of after) {
       expect(f.segmented).toBe(true);
