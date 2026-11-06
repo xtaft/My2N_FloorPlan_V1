@@ -55,8 +55,13 @@ export interface AccessDrawerProps {
   /** The one person being asked about, if any. */
   personId: string | null;
   onPerson: (personId: string | null) => void;
-  onDeviceMenu: (el: HTMLElement, deviceId: string) => void;
-  onPersonMenu: (el: HTMLElement, personId: string) => void;
+  /**
+   * Opens a row's options. Left out where nothing may be changed — the
+   * view — and then no row draws the button: an options button that
+   * opens nothing is a promise the screen cannot keep.
+   */
+  onDeviceMenu?: (el: HTMLElement, deviceId: string) => void;
+  onPersonMenu?: (el: HTMLElement, personId: string) => void;
   width: number;
   onWidthChange: (w: number) => void;
 }
@@ -149,16 +154,18 @@ export function AccessDrawer({
           primaryTypographyProps={{ variant: "body2", noWrap: true }}
           secondaryTypographyProps={{ variant: "caption", noWrap: true }}
         />
-        <IconButton
-          size="small"
-          edge="end"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeviceMenu(e.currentTarget, deviceId);
-          }}
-        >
-          <MoreVert sx={{ fontSize: 18 }} />
-        </IconButton>
+        {onDeviceMenu && (
+          <IconButton
+            size="small"
+            edge="end"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeviceMenu(e.currentTarget, deviceId);
+            }}
+          >
+            <MoreVert sx={{ fontSize: 18 }} />
+          </IconButton>
+        )}
       </ListItemButton>
     );
   };
@@ -191,16 +198,18 @@ export function AccessDrawer({
           primaryTypographyProps={{ variant: "body2", noWrap: true }}
           secondaryTypographyProps={{ variant: "caption", noWrap: true }}
         />
-        <IconButton
-          size="small"
-          edge="end"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPersonMenu(e.currentTarget, id);
-          }}
-        >
-          <MoreVert sx={{ fontSize: 18 }} />
-        </IconButton>
+        {onPersonMenu && (
+          <IconButton
+            size="small"
+            edge="end"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPersonMenu(e.currentTarget, id);
+            }}
+          >
+            <MoreVert sx={{ fontSize: 18 }} />
+          </IconButton>
+        )}
       </ListItemButton>
     );
   };
@@ -350,9 +359,11 @@ export function AccessDrawer({
                         noWrap: true,
                       }}
                     />
-                    <IconButton size="small" edge="end" disabled>
-                      <MoreVert sx={{ fontSize: 18 }} />
-                    </IconButton>
+                    {(onDeviceMenu || onPersonMenu) && (
+                      <IconButton size="small" edge="end" disabled>
+                        <MoreVert sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    )}
                   </ListItemButton>
 
                   {isOpen && (

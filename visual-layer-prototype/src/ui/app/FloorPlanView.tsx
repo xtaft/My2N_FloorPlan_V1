@@ -46,15 +46,11 @@ import { Fragment } from "react";
 import { DeviceGlyph } from "../DeviceMarker";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
-import { AccessDeviceMenu } from "../edit/AccessDeviceMenu";
-import { PersonMenu } from "../edit/PersonMenu";
 import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
   accessPaint,
   accessShading,
-  addPersonToGroup,
-  removePersonFromGroup,
   type AccessGroup,
   deviceRows,
   deviceTypes,
@@ -96,9 +92,8 @@ export interface FloorPlanViewProps {
    */
   selectedGroupId: string | null;
   onClearSelection: () => void;
-  /** Access groups, and the one write this screen makes: who is in them. */
+  /** Access groups, read: who holds what is what the shading answers. */
   groups: readonly AccessGroup[];
-  onGroupsChange: (next: AccessGroup[]) => void;
 }
 
 export function FloorPlanView({
@@ -108,7 +103,6 @@ export function FloorPlanView({
   selectedGroupId,
   onClearSelection,
   groups,
-  onGroupsChange,
 }: FloorPlanViewProps) {
   const [mode, setMode] = useState<PlanMode>("structure");
   /** The device the search found, drawn lit with its name out. */
@@ -162,16 +156,6 @@ export function FloorPlanView({
   const [detail, setDetail] = useState<{
     deviceId: string;
     at: { top: number; left: number };
-  } | null>(null);
-  const [accessMenu, setAccessMenu] = useState<{
-    el: HTMLElement | null;
-    at?: { top: number; left: number };
-    deviceId: string;
-    bulk: boolean;
-  } | null>(null);
-  const [personMenu, setPersonMenu] = useState<{
-    el: HTMLElement;
-    personId: string;
   } | null>(null);
 
   const allowed = useMemo(
@@ -425,10 +409,9 @@ export function FloorPlanView({
               setPersonId(id);
               if (id) setPicked(new Set());
             }}
-            onDeviceMenu={(el, deviceId) =>
-              setAccessMenu({ el, deviceId, bulk: picked.size > 1 })
-            }
-            onPersonMenu={(el, id) => setPersonMenu({ el, personId: id })}
+            // No options on the rows: this screen is for looking, and
+            // what the groups hold and who is in them is changed in the
+            // editor. Ticking a row is a question, not an edit, and stays.
             width={DRAWER}
             onWidthChange={() => {}}
           />
@@ -442,42 +425,6 @@ export function FloorPlanView({
         withCamera={detailDevice ? facesExterior(layer, detailDevice) : false}
         at={detail?.at ?? null}
         onClose={() => setDetail(null)}
-      />
-      <AccessDeviceMenu
-        open={Boolean(accessMenu)}
-        anchorEl={accessMenu?.el ?? null}
-        at={accessMenu?.at ?? null}
-        count={accessMenu?.bulk ? picked.size : 1}
-        inPath={accessMenu ? picked.has(accessMenu.deviceId) : false}
-        onClose={() => setAccessMenu(null)}
-        onShowInPath={() => {
-          if (!accessMenu) return;
-          setPersonId(null);
-          setPicked(new Set([...picked, accessMenu.deviceId]));
-        }}
-        onRemoveFromPath={() => {
-          if (!accessMenu) return;
-          const next = new Set(picked);
-          next.delete(accessMenu.deviceId);
-          setPicked(next);
-        }}
-      />
-      <PersonMenu
-        open={Boolean(personMenu)}
-        anchorEl={personMenu?.el ?? null}
-        personId={personMenu?.personId ?? null}
-        groups={groups}
-        onClose={() => setPersonMenu(null)}
-        onAddToGroup={(groupId) => {
-          if (personMenu) {
-            onGroupsChange(addPersonToGroup(groups, groupId, personMenu.personId));
-          }
-        }}
-        onRemoveFromGroup={(groupId) => {
-          if (personMenu) {
-            onGroupsChange(removePersonFromGroup(groups, groupId, personMenu.personId));
-          }
-        }}
       />
     </Box>
   );

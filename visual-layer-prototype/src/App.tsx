@@ -235,7 +235,6 @@ export default function App() {
           onCreatePlanWith={startWizard}
           onOpenPlan={() => setScreen("edit")}
           groups={groups}
-          onGroupsChange={setGroups}
           editState={edit}
           onEditChange={setEdit}
           onAddFloors={addFloors}

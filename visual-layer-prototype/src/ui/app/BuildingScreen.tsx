@@ -79,9 +79,8 @@ export interface BuildingScreenProps {
   /** The empty state, which has said how, so it goes straight there. */
   onCreatePlanWith: (method: "pdf" | "manual") => void;
   onOpenPlan: () => void;
-  /** Access groups, held above both screens so an edit in one shows in the other. */
+  /** Access groups, held above both screens so an edit in the editor shows here. */
   groups: readonly AccessGroup[];
-  onGroupsChange: (next: AccessGroup[]) => void;
   /**
    * The editable plan, for the Structure tab's New space: a flat or a
    * group is a regrouping of the model, and a floor goes off to be
@@ -113,7 +112,6 @@ export function BuildingScreen({
   onCreatePlanWith,
   onOpenPlan,
   groups,
-  onGroupsChange,
   editState,
   onEditChange,
   onAddFloors,
@@ -318,7 +316,6 @@ export function BuildingScreen({
                 selectedGroupId={spaceId}
                 onClearSelection={() => setSpaceId(null)}
                 groups={groups}
-                onGroupsChange={onGroupsChange}
                 hasPlan={hasPlan}
                 onCreate={onCreatePlanWith}
               />

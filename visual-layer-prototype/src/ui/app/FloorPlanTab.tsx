@@ -21,7 +21,6 @@ export interface FloorPlanTabProps {
   selectedGroupId: string | null;
   onClearSelection: () => void;
   groups: readonly AccessGroup[];
-  onGroupsChange: (next: AccessGroup[]) => void;
   hasPlan: boolean;
   /**
    * The empty state names the method, so it goes straight to that upload
@@ -38,7 +37,6 @@ export function FloorPlanTab({
   selectedGroupId,
   onClearSelection,
   groups,
-  onGroupsChange,
   hasPlan,
   onCreate,
 }: FloorPlanTabProps) {
@@ -53,7 +51,6 @@ export function FloorPlanTab({
         selectedGroupId={selectedGroupId}
         onClearSelection={onClearSelection}
         groups={groups}
-        onGroupsChange={onGroupsChange}
       />
     );
   }
