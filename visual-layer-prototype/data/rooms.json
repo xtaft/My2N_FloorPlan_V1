@@ -1,0 +1,1737 @@
+[
+  {
+    "id": "0:L",
+    "name": "Lobby",
+    "walls": [
+      "0:w19",
+      "0:w20",
+      "0:w21",
+      "0:w22",
+      "0:w23",
+      "0:w32",
+      "0:w34",
+      "0:w35",
+      "0:w42",
+      "0:w43",
+      "0:w47",
+      "0:w50"
+    ],
+    "group_id": "0:gL",
+    "space_type": "circulation",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:S",
+    "name": "Stairs",
+    "walls": [
+      "0:w33",
+      "0:w34",
+      "0:w35",
+      "0:w40",
+      "0:w41",
+      "0:w43"
+    ],
+    "group_id": "0:gS",
+    "space_type": "stairs",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:E",
+    "name": "Elevator",
+    "walls": [
+      "0:w21",
+      "0:w6",
+      "0:w7",
+      "0:w8"
+    ],
+    "group_id": "0:gE",
+    "space_type": "elevator",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:TECH",
+    "name": "Technical room",
+    "walls": [
+      "0:w10",
+      "0:w22",
+      "0:w24",
+      "0:w26",
+      "0:w8",
+      "0:w9"
+    ],
+    "group_id": "0:gTECH",
+    "space_type": "technical",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:CM1",
+    "name": "Shop floor",
+    "walls": [
+      "0:w30",
+      "0:w31",
+      "0:w32",
+      "0:w33",
+      "0:w38",
+      "0:w39",
+      "0:w46",
+      "0:w47",
+      "0:w49"
+    ],
+    "group_id": "0:C1",
+    "space_type": null,
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:CS1",
+    "name": "Storage",
+    "walls": [
+      "0:w38",
+      "0:w39",
+      "0:w40",
+      "0:w41",
+      "0:w42",
+      "0:w46"
+    ],
+    "group_id": "0:C1",
+    "space_type": null,
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:CM2",
+    "name": "Shop floor",
+    "walls": [
+      "0:w23",
+      "0:w24",
+      "0:w25",
+      "0:w36",
+      "0:w37",
+      "0:w51"
+    ],
+    "group_id": "0:C2",
+    "space_type": null,
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:CS2",
+    "name": "Storage",
+    "walls": [
+      "0:w25",
+      "0:w26",
+      "0:w27",
+      "0:w36"
+    ],
+    "group_id": "0:C2",
+    "space_type": null,
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:GB1",
+    "name": "Showers M",
+    "walls": [
+      "0:w11",
+      "0:w12",
+      "0:w13",
+      "0:w17"
+    ],
+    "group_id": "0:gGL1",
+    "space_type": "room",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:GB2",
+    "name": "Showers W",
+    "walls": [
+      "0:w16",
+      "0:w17",
+      "0:w18",
+      "0:w28"
+    ],
+    "group_id": "0:gGL2",
+    "space_type": "room",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:GL1",
+    "name": "Locker room M",
+    "walls": [
+      "0:w1",
+      "0:w11",
+      "0:w12",
+      "0:w15",
+      "0:w2",
+      "0:w3"
+    ],
+    "group_id": "0:gGL1",
+    "space_type": "locker_room",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:GL2",
+    "name": "Locker room W",
+    "walls": [
+      "0:w14",
+      "0:w15",
+      "0:w16",
+      "0:w28",
+      "0:w29",
+      "0:w45"
+    ],
+    "group_id": "0:gGL2",
+    "space_type": "locker_room",
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "0:GM",
+    "name": "Gym floor",
+    "walls": [
+      "0:w13",
+      "0:w18",
+      "0:w19",
+      "0:w20",
+      "0:w29",
+      "0:w3",
+      "0:w30",
+      "0:w31",
+      "0:w4",
+      "0:w44",
+      "0:w45",
+      "0:w48",
+      "0:w5",
+      "0:w6",
+      "0:w7",
+      "0:w9"
+    ],
+    "group_id": "0:GYM",
+    "space_type": null,
+    "floor_id": "0:floor",
+    "surfaced": true
+  },
+  {
+    "id": "1:H",
+    "name": "Hallway",
+    "walls": [
+      "1:w40",
+      "1:w41",
+      "1:w42",
+      "1:w43",
+      "1:w44",
+      "1:w45",
+      "1:w46",
+      "1:w55",
+      "1:w57",
+      "1:w59"
+    ],
+    "group_id": "1:gH",
+    "space_type": "circulation",
+    "floor_id": "1:floor",
+    "surfaced": true
+  },
+  {
+    "id": "1:S",
+    "name": "Stairs",
+    "walls": [
+      "1:w56",
+      "1:w57",
+      "1:w58",
+      "1:w70",
+      "1:w71",
+      "1:w74",
+      "1:w76"
+    ],
+    "group_id": "1:gS",
+    "space_type": "stairs",
+    "floor_id": "1:floor",
+    "surfaced": true
+  },
+  {
+    "id": "1:E",
+    "name": "Elevator",
+    "walls": [
+      "1:w23",
+      "1:w24",
+      "1:w25",
+      "1:w29",
+      "1:w44"
+    ],
+    "group_id": "1:gE",
+    "space_type": "elevator",
+    "floor_id": "1:floor",
+    "surfaced": true
+  },
+  {
+    "id": "1:B1",
+    "name": "Bedroom",
+    "walls": [
+      "1:w34",
+      "1:w35",
+      "1:w36",
+      "1:w37",
+      "1:w65",
+      "1:w66",
+      "1:w78"
+    ],
+    "group_id": "1:A1",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L1",
+    "name": "Living room",
+    "walls": [
+      "1:w37",
+      "1:w38",
+      "1:w39",
+      "1:w40",
+      "1:w53",
+      "1:w54",
+      "1:w67",
+      "1:w77",
+      "1:w78",
+      "1:w79",
+      "1:w86"
+    ],
+    "group_id": "1:A1",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T1",
+    "name": "Bathroom",
+    "walls": [
+      "1:w65",
+      "1:w66",
+      "1:w67",
+      "1:w79"
+    ],
+    "group_id": "1:A1",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:B2",
+    "name": "Bedroom",
+    "walls": [
+      "1:w1",
+      "1:w2",
+      "1:w3",
+      "1:w35"
+    ],
+    "group_id": "1:A2",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L2",
+    "name": "Living room",
+    "walls": [
+      "1:w14",
+      "1:w15",
+      "1:w26",
+      "1:w27",
+      "1:w3",
+      "1:w32",
+      "1:w36",
+      "1:w38",
+      "1:w39",
+      "1:w4",
+      "1:w41",
+      "1:w5"
+    ],
+    "group_id": "1:A2",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T2",
+    "name": "Bathroom",
+    "walls": [
+      "1:w14",
+      "1:w15",
+      "1:w16",
+      "1:w20",
+      "1:w26"
+    ],
+    "group_id": "1:A2",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L3",
+    "name": "Living room",
+    "walls": [
+      "1:w53",
+      "1:w54",
+      "1:w55",
+      "1:w56",
+      "1:w68",
+      "1:w69",
+      "1:w83",
+      "1:w84",
+      "1:w87"
+    ],
+    "group_id": "1:A3",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T3",
+    "name": "Bathroom",
+    "walls": [
+      "1:w68",
+      "1:w69",
+      "1:w70",
+      "1:w74",
+      "1:w75",
+      "1:w83"
+    ],
+    "group_id": "1:A3",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:B4",
+    "name": "Bedroom",
+    "walls": [
+      "1:w16",
+      "1:w21",
+      "1:w5",
+      "1:w6",
+      "1:w7"
+    ],
+    "group_id": "1:A4",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L4",
+    "name": "Living room",
+    "walls": [
+      "1:w17",
+      "1:w22",
+      "1:w23",
+      "1:w24",
+      "1:w27",
+      "1:w28",
+      "1:w33",
+      "1:w42",
+      "1:w43",
+      "1:w7",
+      "1:w8",
+      "1:w9"
+    ],
+    "group_id": "1:A4",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T4",
+    "name": "Bathroom",
+    "walls": [
+      "1:w20",
+      "1:w21",
+      "1:w22",
+      "1:w28"
+    ],
+    "group_id": "1:A4",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L5",
+    "name": "Living room",
+    "walls": [
+      "1:w58",
+      "1:w59",
+      "1:w60",
+      "1:w61",
+      "1:w72",
+      "1:w73",
+      "1:w84",
+      "1:w85",
+      "1:w88"
+    ],
+    "group_id": "1:A5",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T5",
+    "name": "Bathroom",
+    "walls": [
+      "1:w71",
+      "1:w72",
+      "1:w73",
+      "1:w75",
+      "1:w76",
+      "1:w85"
+    ],
+    "group_id": "1:A5",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:B6",
+    "name": "Bedroom",
+    "walls": [
+      "1:w11",
+      "1:w12",
+      "1:w13",
+      "1:w51"
+    ],
+    "group_id": "1:A6",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L6",
+    "name": "Living room",
+    "walls": [
+      "1:w10",
+      "1:w11",
+      "1:w18",
+      "1:w19",
+      "1:w29",
+      "1:w30",
+      "1:w31",
+      "1:w45",
+      "1:w47",
+      "1:w48",
+      "1:w50",
+      "1:w9"
+    ],
+    "group_id": "1:A6",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T6",
+    "name": "Bathroom",
+    "walls": [
+      "1:w17",
+      "1:w18",
+      "1:w19",
+      "1:w25",
+      "1:w30"
+    ],
+    "group_id": "1:A6",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:B7",
+    "name": "Bedroom",
+    "walls": [
+      "1:w49",
+      "1:w50",
+      "1:w51",
+      "1:w52",
+      "1:w63",
+      "1:w64",
+      "1:w81"
+    ],
+    "group_id": "1:A7",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:L7",
+    "name": "Living room",
+    "walls": [
+      "1:w46",
+      "1:w47",
+      "1:w48",
+      "1:w49",
+      "1:w60",
+      "1:w61",
+      "1:w62",
+      "1:w80",
+      "1:w81",
+      "1:w82",
+      "1:w89"
+    ],
+    "group_id": "1:A7",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "1:T7",
+    "name": "Bathroom",
+    "walls": [
+      "1:w62",
+      "1:w63",
+      "1:w64",
+      "1:w80"
+    ],
+    "group_id": "1:A7",
+    "space_type": null,
+    "floor_id": "1:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:H",
+    "name": "Hallway",
+    "walls": [
+      "2:w40",
+      "2:w41",
+      "2:w42",
+      "2:w43",
+      "2:w44",
+      "2:w45",
+      "2:w46",
+      "2:w55",
+      "2:w57",
+      "2:w59"
+    ],
+    "group_id": "2:gH",
+    "space_type": "circulation",
+    "floor_id": "2:floor",
+    "surfaced": true
+  },
+  {
+    "id": "2:S",
+    "name": "Stairs",
+    "walls": [
+      "2:w56",
+      "2:w57",
+      "2:w58",
+      "2:w70",
+      "2:w71",
+      "2:w74",
+      "2:w76"
+    ],
+    "group_id": "2:gS",
+    "space_type": "stairs",
+    "floor_id": "2:floor",
+    "surfaced": true
+  },
+  {
+    "id": "2:E",
+    "name": "Elevator",
+    "walls": [
+      "2:w23",
+      "2:w24",
+      "2:w25",
+      "2:w29",
+      "2:w44"
+    ],
+    "group_id": "2:gE",
+    "space_type": "elevator",
+    "floor_id": "2:floor",
+    "surfaced": true
+  },
+  {
+    "id": "2:B21",
+    "name": "Bedroom",
+    "walls": [
+      "2:w34",
+      "2:w35",
+      "2:w36",
+      "2:w37",
+      "2:w65",
+      "2:w66",
+      "2:w78"
+    ],
+    "group_id": "2:A21",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L21",
+    "name": "Living room",
+    "walls": [
+      "2:w37",
+      "2:w38",
+      "2:w39",
+      "2:w40",
+      "2:w53",
+      "2:w54",
+      "2:w67",
+      "2:w77",
+      "2:w78",
+      "2:w79",
+      "2:w86"
+    ],
+    "group_id": "2:A21",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T21",
+    "name": "Bathroom",
+    "walls": [
+      "2:w65",
+      "2:w66",
+      "2:w67",
+      "2:w79"
+    ],
+    "group_id": "2:A21",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:B22",
+    "name": "Bedroom",
+    "walls": [
+      "2:w1",
+      "2:w2",
+      "2:w3",
+      "2:w35"
+    ],
+    "group_id": "2:A22",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L22",
+    "name": "Living room",
+    "walls": [
+      "2:w14",
+      "2:w15",
+      "2:w26",
+      "2:w27",
+      "2:w3",
+      "2:w32",
+      "2:w36",
+      "2:w38",
+      "2:w39",
+      "2:w4",
+      "2:w41",
+      "2:w5"
+    ],
+    "group_id": "2:A22",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T22",
+    "name": "Bathroom",
+    "walls": [
+      "2:w14",
+      "2:w15",
+      "2:w16",
+      "2:w20",
+      "2:w26"
+    ],
+    "group_id": "2:A22",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L23",
+    "name": "Living room",
+    "walls": [
+      "2:w53",
+      "2:w54",
+      "2:w55",
+      "2:w56",
+      "2:w68",
+      "2:w69",
+      "2:w83",
+      "2:w84",
+      "2:w87"
+    ],
+    "group_id": "2:A23",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T23",
+    "name": "Bathroom",
+    "walls": [
+      "2:w68",
+      "2:w69",
+      "2:w70",
+      "2:w74",
+      "2:w75",
+      "2:w83"
+    ],
+    "group_id": "2:A23",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:B24",
+    "name": "Bedroom",
+    "walls": [
+      "2:w16",
+      "2:w21",
+      "2:w5",
+      "2:w6",
+      "2:w7"
+    ],
+    "group_id": "2:A24",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L24",
+    "name": "Living room",
+    "walls": [
+      "2:w17",
+      "2:w22",
+      "2:w23",
+      "2:w24",
+      "2:w27",
+      "2:w28",
+      "2:w33",
+      "2:w42",
+      "2:w43",
+      "2:w7",
+      "2:w8",
+      "2:w9"
+    ],
+    "group_id": "2:A24",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T24",
+    "name": "Bathroom",
+    "walls": [
+      "2:w20",
+      "2:w21",
+      "2:w22",
+      "2:w28"
+    ],
+    "group_id": "2:A24",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L25",
+    "name": "Living room",
+    "walls": [
+      "2:w58",
+      "2:w59",
+      "2:w60",
+      "2:w61",
+      "2:w72",
+      "2:w73",
+      "2:w84",
+      "2:w85",
+      "2:w88"
+    ],
+    "group_id": "2:A25",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T25",
+    "name": "Bathroom",
+    "walls": [
+      "2:w71",
+      "2:w72",
+      "2:w73",
+      "2:w75",
+      "2:w76",
+      "2:w85"
+    ],
+    "group_id": "2:A25",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:B26",
+    "name": "Bedroom",
+    "walls": [
+      "2:w11",
+      "2:w12",
+      "2:w13",
+      "2:w51"
+    ],
+    "group_id": "2:A26",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L26",
+    "name": "Living room",
+    "walls": [
+      "2:w10",
+      "2:w11",
+      "2:w18",
+      "2:w19",
+      "2:w29",
+      "2:w30",
+      "2:w31",
+      "2:w45",
+      "2:w47",
+      "2:w48",
+      "2:w50",
+      "2:w9"
+    ],
+    "group_id": "2:A26",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T26",
+    "name": "Bathroom",
+    "walls": [
+      "2:w17",
+      "2:w18",
+      "2:w19",
+      "2:w25",
+      "2:w30"
+    ],
+    "group_id": "2:A26",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:B27",
+    "name": "Bedroom",
+    "walls": [
+      "2:w49",
+      "2:w50",
+      "2:w51",
+      "2:w52",
+      "2:w63",
+      "2:w64",
+      "2:w81"
+    ],
+    "group_id": "2:A27",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:L27",
+    "name": "Living room",
+    "walls": [
+      "2:w46",
+      "2:w47",
+      "2:w48",
+      "2:w49",
+      "2:w60",
+      "2:w61",
+      "2:w62",
+      "2:w80",
+      "2:w81",
+      "2:w82",
+      "2:w89"
+    ],
+    "group_id": "2:A27",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "2:T27",
+    "name": "Bathroom",
+    "walls": [
+      "2:w62",
+      "2:w63",
+      "2:w64",
+      "2:w80"
+    ],
+    "group_id": "2:A27",
+    "space_type": null,
+    "floor_id": "2:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:H",
+    "name": "Hallway",
+    "walls": [
+      "3:w40",
+      "3:w41",
+      "3:w42",
+      "3:w43",
+      "3:w44",
+      "3:w45",
+      "3:w46",
+      "3:w55",
+      "3:w57",
+      "3:w59"
+    ],
+    "group_id": "3:gH",
+    "space_type": "circulation",
+    "floor_id": "3:floor",
+    "surfaced": true
+  },
+  {
+    "id": "3:S",
+    "name": "Stairs",
+    "walls": [
+      "3:w56",
+      "3:w57",
+      "3:w58",
+      "3:w70",
+      "3:w71",
+      "3:w74",
+      "3:w76"
+    ],
+    "group_id": "3:gS",
+    "space_type": "stairs",
+    "floor_id": "3:floor",
+    "surfaced": true
+  },
+  {
+    "id": "3:E",
+    "name": "Elevator",
+    "walls": [
+      "3:w23",
+      "3:w24",
+      "3:w25",
+      "3:w29",
+      "3:w44"
+    ],
+    "group_id": "3:gE",
+    "space_type": "elevator",
+    "floor_id": "3:floor",
+    "surfaced": true
+  },
+  {
+    "id": "3:B31",
+    "name": "Bedroom",
+    "walls": [
+      "3:w34",
+      "3:w35",
+      "3:w36",
+      "3:w37",
+      "3:w65",
+      "3:w66",
+      "3:w78"
+    ],
+    "group_id": "3:A31",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L31",
+    "name": "Living room",
+    "walls": [
+      "3:w37",
+      "3:w38",
+      "3:w39",
+      "3:w40",
+      "3:w53",
+      "3:w54",
+      "3:w67",
+      "3:w77",
+      "3:w78",
+      "3:w79",
+      "3:w86"
+    ],
+    "group_id": "3:A31",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T31",
+    "name": "Bathroom",
+    "walls": [
+      "3:w65",
+      "3:w66",
+      "3:w67",
+      "3:w79"
+    ],
+    "group_id": "3:A31",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:B32",
+    "name": "Bedroom",
+    "walls": [
+      "3:w1",
+      "3:w2",
+      "3:w3",
+      "3:w35"
+    ],
+    "group_id": "3:A32",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L32",
+    "name": "Living room",
+    "walls": [
+      "3:w14",
+      "3:w15",
+      "3:w26",
+      "3:w27",
+      "3:w3",
+      "3:w32",
+      "3:w36",
+      "3:w38",
+      "3:w39",
+      "3:w4",
+      "3:w41",
+      "3:w5"
+    ],
+    "group_id": "3:A32",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T32",
+    "name": "Bathroom",
+    "walls": [
+      "3:w14",
+      "3:w15",
+      "3:w16",
+      "3:w20",
+      "3:w26"
+    ],
+    "group_id": "3:A32",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L33",
+    "name": "Living room",
+    "walls": [
+      "3:w53",
+      "3:w54",
+      "3:w55",
+      "3:w56",
+      "3:w68",
+      "3:w69",
+      "3:w83",
+      "3:w84",
+      "3:w87"
+    ],
+    "group_id": "3:A33",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T33",
+    "name": "Bathroom",
+    "walls": [
+      "3:w68",
+      "3:w69",
+      "3:w70",
+      "3:w74",
+      "3:w75",
+      "3:w83"
+    ],
+    "group_id": "3:A33",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:B34",
+    "name": "Bedroom",
+    "walls": [
+      "3:w16",
+      "3:w21",
+      "3:w5",
+      "3:w6",
+      "3:w7"
+    ],
+    "group_id": "3:A34",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L34",
+    "name": "Living room",
+    "walls": [
+      "3:w17",
+      "3:w22",
+      "3:w23",
+      "3:w24",
+      "3:w27",
+      "3:w28",
+      "3:w33",
+      "3:w42",
+      "3:w43",
+      "3:w7",
+      "3:w8",
+      "3:w9"
+    ],
+    "group_id": "3:A34",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T34",
+    "name": "Bathroom",
+    "walls": [
+      "3:w20",
+      "3:w21",
+      "3:w22",
+      "3:w28"
+    ],
+    "group_id": "3:A34",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L35",
+    "name": "Living room",
+    "walls": [
+      "3:w58",
+      "3:w59",
+      "3:w60",
+      "3:w61",
+      "3:w72",
+      "3:w73",
+      "3:w84",
+      "3:w85",
+      "3:w88"
+    ],
+    "group_id": "3:A35",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T35",
+    "name": "Bathroom",
+    "walls": [
+      "3:w71",
+      "3:w72",
+      "3:w73",
+      "3:w75",
+      "3:w76",
+      "3:w85"
+    ],
+    "group_id": "3:A35",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:B36",
+    "name": "Bedroom",
+    "walls": [
+      "3:w11",
+      "3:w12",
+      "3:w13",
+      "3:w51"
+    ],
+    "group_id": "3:A36",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L36",
+    "name": "Living room",
+    "walls": [
+      "3:w10",
+      "3:w11",
+      "3:w18",
+      "3:w19",
+      "3:w29",
+      "3:w30",
+      "3:w31",
+      "3:w45",
+      "3:w47",
+      "3:w48",
+      "3:w50",
+      "3:w9"
+    ],
+    "group_id": "3:A36",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T36",
+    "name": "Bathroom",
+    "walls": [
+      "3:w17",
+      "3:w18",
+      "3:w19",
+      "3:w25",
+      "3:w30"
+    ],
+    "group_id": "3:A36",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:B37",
+    "name": "Bedroom",
+    "walls": [
+      "3:w49",
+      "3:w50",
+      "3:w51",
+      "3:w52",
+      "3:w63",
+      "3:w64",
+      "3:w81"
+    ],
+    "group_id": "3:A37",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:L37",
+    "name": "Living room",
+    "walls": [
+      "3:w46",
+      "3:w47",
+      "3:w48",
+      "3:w49",
+      "3:w60",
+      "3:w61",
+      "3:w62",
+      "3:w80",
+      "3:w81",
+      "3:w82",
+      "3:w89"
+    ],
+    "group_id": "3:A37",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "3:T37",
+    "name": "Bathroom",
+    "walls": [
+      "3:w62",
+      "3:w63",
+      "3:w64",
+      "3:w80"
+    ],
+    "group_id": "3:A37",
+    "space_type": null,
+    "floor_id": "3:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:H",
+    "name": "Hallway",
+    "walls": [
+      "4:w40",
+      "4:w41",
+      "4:w42",
+      "4:w43",
+      "4:w44",
+      "4:w45",
+      "4:w46",
+      "4:w55",
+      "4:w57",
+      "4:w59"
+    ],
+    "group_id": "4:gH",
+    "space_type": "circulation",
+    "floor_id": "4:floor",
+    "surfaced": true
+  },
+  {
+    "id": "4:S",
+    "name": "Stairs",
+    "walls": [
+      "4:w56",
+      "4:w57",
+      "4:w58",
+      "4:w70",
+      "4:w71",
+      "4:w74",
+      "4:w76"
+    ],
+    "group_id": "4:gS",
+    "space_type": "stairs",
+    "floor_id": "4:floor",
+    "surfaced": true
+  },
+  {
+    "id": "4:E",
+    "name": "Elevator",
+    "walls": [
+      "4:w23",
+      "4:w24",
+      "4:w25",
+      "4:w29",
+      "4:w44"
+    ],
+    "group_id": "4:gE",
+    "space_type": "elevator",
+    "floor_id": "4:floor",
+    "surfaced": true
+  },
+  {
+    "id": "4:B41",
+    "name": "Bedroom",
+    "walls": [
+      "4:w34",
+      "4:w35",
+      "4:w36",
+      "4:w37",
+      "4:w65",
+      "4:w66",
+      "4:w78"
+    ],
+    "group_id": "4:A41",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L41",
+    "name": "Living room",
+    "walls": [
+      "4:w37",
+      "4:w38",
+      "4:w39",
+      "4:w40",
+      "4:w53",
+      "4:w54",
+      "4:w67",
+      "4:w77",
+      "4:w78",
+      "4:w79",
+      "4:w86"
+    ],
+    "group_id": "4:A41",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T41",
+    "name": "Bathroom",
+    "walls": [
+      "4:w65",
+      "4:w66",
+      "4:w67",
+      "4:w79"
+    ],
+    "group_id": "4:A41",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:B42",
+    "name": "Bedroom",
+    "walls": [
+      "4:w1",
+      "4:w2",
+      "4:w3",
+      "4:w35"
+    ],
+    "group_id": "4:A42",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L42",
+    "name": "Living room",
+    "walls": [
+      "4:w14",
+      "4:w15",
+      "4:w26",
+      "4:w27",
+      "4:w3",
+      "4:w32",
+      "4:w36",
+      "4:w38",
+      "4:w39",
+      "4:w4",
+      "4:w41",
+      "4:w5"
+    ],
+    "group_id": "4:A42",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T42",
+    "name": "Bathroom",
+    "walls": [
+      "4:w14",
+      "4:w15",
+      "4:w16",
+      "4:w20",
+      "4:w26"
+    ],
+    "group_id": "4:A42",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L43",
+    "name": "Living room",
+    "walls": [
+      "4:w53",
+      "4:w54",
+      "4:w55",
+      "4:w56",
+      "4:w68",
+      "4:w69",
+      "4:w83",
+      "4:w84",
+      "4:w87"
+    ],
+    "group_id": "4:A43",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T43",
+    "name": "Bathroom",
+    "walls": [
+      "4:w68",
+      "4:w69",
+      "4:w70",
+      "4:w74",
+      "4:w75",
+      "4:w83"
+    ],
+    "group_id": "4:A43",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:B44",
+    "name": "Bedroom",
+    "walls": [
+      "4:w16",
+      "4:w21",
+      "4:w5",
+      "4:w6",
+      "4:w7"
+    ],
+    "group_id": "4:A44",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L44",
+    "name": "Living room",
+    "walls": [
+      "4:w17",
+      "4:w22",
+      "4:w23",
+      "4:w24",
+      "4:w27",
+      "4:w28",
+      "4:w33",
+      "4:w42",
+      "4:w43",
+      "4:w7",
+      "4:w8",
+      "4:w9"
+    ],
+    "group_id": "4:A44",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T44",
+    "name": "Bathroom",
+    "walls": [
+      "4:w20",
+      "4:w21",
+      "4:w22",
+      "4:w28"
+    ],
+    "group_id": "4:A44",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L45",
+    "name": "Living room",
+    "walls": [
+      "4:w58",
+      "4:w59",
+      "4:w60",
+      "4:w61",
+      "4:w72",
+      "4:w73",
+      "4:w84",
+      "4:w85",
+      "4:w88"
+    ],
+    "group_id": "4:A45",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T45",
+    "name": "Bathroom",
+    "walls": [
+      "4:w71",
+      "4:w72",
+      "4:w73",
+      "4:w75",
+      "4:w76",
+      "4:w85"
+    ],
+    "group_id": "4:A45",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:B46",
+    "name": "Bedroom",
+    "walls": [
+      "4:w11",
+      "4:w12",
+      "4:w13",
+      "4:w51"
+    ],
+    "group_id": "4:A46",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L46",
+    "name": "Living room",
+    "walls": [
+      "4:w10",
+      "4:w11",
+      "4:w18",
+      "4:w19",
+      "4:w29",
+      "4:w30",
+      "4:w31",
+      "4:w45",
+      "4:w47",
+      "4:w48",
+      "4:w50",
+      "4:w9"
+    ],
+    "group_id": "4:A46",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T46",
+    "name": "Bathroom",
+    "walls": [
+      "4:w17",
+      "4:w18",
+      "4:w19",
+      "4:w25",
+      "4:w30"
+    ],
+    "group_id": "4:A46",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:B47",
+    "name": "Bedroom",
+    "walls": [
+      "4:w49",
+      "4:w50",
+      "4:w51",
+      "4:w52",
+      "4:w63",
+      "4:w64",
+      "4:w81"
+    ],
+    "group_id": "4:A47",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:L47",
+    "name": "Living room",
+    "walls": [
+      "4:w46",
+      "4:w47",
+      "4:w48",
+      "4:w49",
+      "4:w60",
+      "4:w61",
+      "4:w62",
+      "4:w80",
+      "4:w81",
+      "4:w82",
+      "4:w89"
+    ],
+    "group_id": "4:A47",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  },
+  {
+    "id": "4:T47",
+    "name": "Bathroom",
+    "walls": [
+      "4:w62",
+      "4:w63",
+      "4:w64",
+      "4:w80"
+    ],
+    "group_id": "4:A47",
+    "space_type": null,
+    "floor_id": "4:floor",
+    "surfaced": false
+  }
+]

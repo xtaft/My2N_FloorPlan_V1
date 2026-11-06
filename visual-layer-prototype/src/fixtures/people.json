@@ -1,0 +1,1120 @@
+{
+  "note": "fictional people for prototype/testing; emails use the reserved example.com domain. workplace: C1/C2 = commercial units, GYM = gym, empty = whole building",
+  "counts": {
+    "people": 59,
+    "residents": 44,
+    "apartments": 28,
+    "single_apartments": 12,
+    "staff_property_manager": 1,
+    "staff_maintenance": 2,
+    "staff_employee": 12,
+    "employees_C1": 3,
+    "employees_C2": 3,
+    "employees_GYM": 6
+  },
+  "people": [
+    {
+      "id": "R001",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Grace",
+      "last_name": "Collins",
+      "full_name": "Grace Collins",
+      "floor": 1,
+      "apartment": "A1",
+      "main_contact": true,
+      "email": "grace.collins@example.com",
+      "answering_unit": "AN-A1",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R002",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Oliver",
+      "last_name": "Collins",
+      "full_name": "Oliver Collins",
+      "floor": 1,
+      "apartment": "A1",
+      "main_contact": false,
+      "email": "oliver.collins@example.com",
+      "answering_unit": "AN-A1",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R003",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Carlos",
+      "last_name": "García",
+      "full_name": "Carlos García",
+      "floor": 1,
+      "apartment": "A2",
+      "main_contact": true,
+      "email": "carlos.garcia@example.com",
+      "answering_unit": "AN-A2",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R004",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Daniel",
+      "last_name": "Hughes",
+      "full_name": "Daniel Hughes",
+      "floor": 1,
+      "apartment": "A2",
+      "main_contact": false,
+      "email": "daniel.hughes@example.com",
+      "answering_unit": "AN-A2",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R005",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Amelia",
+      "last_name": "Wilson",
+      "full_name": "Amelia Wilson",
+      "floor": 1,
+      "apartment": "A3",
+      "main_contact": true,
+      "email": "amelia.wilson@example.com",
+      "answering_unit": "AN-A3",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d12"
+      ],
+      "note": null
+    },
+    {
+      "id": "R006",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lukas",
+      "last_name": "Fischer",
+      "full_name": "Lukas Fischer",
+      "floor": 1,
+      "apartment": "A3",
+      "main_contact": false,
+      "email": "lukas.fischer@example.com",
+      "answering_unit": "AN-A3",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d12"
+      ],
+      "note": null
+    },
+    {
+      "id": "R007",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Thomas",
+      "last_name": "Johnson",
+      "full_name": "Thomas Johnson",
+      "floor": 1,
+      "apartment": "A4",
+      "main_contact": true,
+      "email": "thomas.johnson@example.com",
+      "answering_unit": "AN-A4",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R008",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Olivia",
+      "last_name": "Johnson",
+      "full_name": "Olivia Johnson",
+      "floor": 1,
+      "apartment": "A4",
+      "main_contact": false,
+      "email": "olivia.johnson@example.com",
+      "answering_unit": "AN-A4",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R009",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Katharina",
+      "last_name": "Wagner",
+      "full_name": "Katharina Wagner",
+      "floor": 1,
+      "apartment": "A5",
+      "main_contact": true,
+      "email": "katharina.wagner@example.com",
+      "answering_unit": "AN-A5",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d13"
+      ],
+      "note": null
+    },
+    {
+      "id": "R010",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Maximilian",
+      "last_name": "Schmidt",
+      "full_name": "Maximilian Schmidt",
+      "floor": 1,
+      "apartment": "A6",
+      "main_contact": true,
+      "email": "maximilian.schmidt@example.com",
+      "answering_unit": "AN-A6",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R011",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Isabel",
+      "last_name": "Torres",
+      "full_name": "Isabel Torres",
+      "floor": 1,
+      "apartment": "A6",
+      "main_contact": false,
+      "email": "isabel.torres@example.com",
+      "answering_unit": "AN-A6",
+      "access_points": [
+        "IC-0-d10",
+        "AC-1-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R012",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lorenzo",
+      "last_name": "Ricci",
+      "full_name": "Lorenzo Ricci",
+      "floor": 1,
+      "apartment": "A7",
+      "main_contact": true,
+      "email": "lorenzo.ricci@example.com",
+      "answering_unit": "AN-A7",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "R013",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Sabine",
+      "last_name": "Weber",
+      "full_name": "Sabine Weber",
+      "floor": 1,
+      "apartment": "A7",
+      "main_contact": false,
+      "email": "sabine.weber@example.com",
+      "answering_unit": "AN-A7",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "R014",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Petr",
+      "last_name": "Schwarz",
+      "full_name": "Petr Schwarz",
+      "floor": 2,
+      "apartment": "A21",
+      "main_contact": true,
+      "email": "petr.schwarz@example.com",
+      "answering_unit": "AN-A21",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R015",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Francesca",
+      "last_name": "Romano",
+      "full_name": "Francesca Romano",
+      "floor": 2,
+      "apartment": "A22",
+      "main_contact": true,
+      "email": "francesca.romano@example.com",
+      "answering_unit": "AN-A22",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R016",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Matteo",
+      "last_name": "Romano",
+      "full_name": "Matteo Romano",
+      "floor": 2,
+      "apartment": "A22",
+      "main_contact": false,
+      "email": "matteo.romano@example.com",
+      "answering_unit": "AN-A22",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R017",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Valentina",
+      "last_name": "Bianchi",
+      "full_name": "Valentina Bianchi",
+      "floor": 2,
+      "apartment": "A23",
+      "main_contact": true,
+      "email": "valentina.bianchi@example.com",
+      "answering_unit": "AN-A23",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d12"
+      ],
+      "note": null
+    },
+    {
+      "id": "R018",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Samuel",
+      "last_name": "Wilson",
+      "full_name": "Samuel Wilson",
+      "floor": 2,
+      "apartment": "A24",
+      "main_contact": true,
+      "email": "samuel.wilson@example.com",
+      "answering_unit": "AN-A24",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R019",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Ella",
+      "last_name": "Wilson",
+      "full_name": "Ella Wilson",
+      "floor": 2,
+      "apartment": "A24",
+      "main_contact": false,
+      "email": "ella.wilson@example.com",
+      "answering_unit": "AN-A24",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R020",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Sabine",
+      "last_name": "Müller",
+      "full_name": "Sabine Müller",
+      "floor": 2,
+      "apartment": "A25",
+      "main_contact": true,
+      "email": "sabine.muller@example.com",
+      "answering_unit": "AN-A25",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d13"
+      ],
+      "note": null
+    },
+    {
+      "id": "R021",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Maximilian",
+      "last_name": "Wagner",
+      "full_name": "Maximilian Wagner",
+      "floor": 2,
+      "apartment": "A26",
+      "main_contact": true,
+      "email": "maximilian.wagner@example.com",
+      "answering_unit": "AN-A26",
+      "access_points": [
+        "IC-0-d10",
+        "AC-2-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R022",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lucy",
+      "last_name": "Walker",
+      "full_name": "Lucy Walker",
+      "floor": 2,
+      "apartment": "A27",
+      "main_contact": true,
+      "email": "lucy.walker@example.com",
+      "answering_unit": "AN-A27",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "R023",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Daniel",
+      "last_name": "Collins",
+      "full_name": "Daniel Collins",
+      "floor": 3,
+      "apartment": "A31",
+      "main_contact": true,
+      "email": "daniel.collins@example.com",
+      "answering_unit": "AN-A31",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R024",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Carmen",
+      "last_name": "Navarro",
+      "full_name": "Carmen Navarro",
+      "floor": 3,
+      "apartment": "A31",
+      "main_contact": false,
+      "email": "carmen.navarro@example.com",
+      "answering_unit": "AN-A31",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R025",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Felix",
+      "last_name": "Braun",
+      "full_name": "Felix Braun",
+      "floor": 3,
+      "apartment": "A32",
+      "main_contact": true,
+      "email": "felix.braun@example.com",
+      "answering_unit": "AN-A32",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R026",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Julia",
+      "last_name": "Braun",
+      "full_name": "Julia Braun",
+      "floor": 3,
+      "apartment": "A32",
+      "main_contact": false,
+      "email": "julia.braun@example.com",
+      "answering_unit": "AN-A32",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R027",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Felix",
+      "last_name": "Fischer",
+      "full_name": "Felix Fischer",
+      "floor": 3,
+      "apartment": "A33",
+      "main_contact": true,
+      "email": "felix.fischer@example.com",
+      "answering_unit": "AN-A33",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d12"
+      ],
+      "note": null
+    },
+    {
+      "id": "R028",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Leo",
+      "last_name": "Bennett",
+      "full_name": "Leo Bennett",
+      "floor": 3,
+      "apartment": "A34",
+      "main_contact": true,
+      "email": "leo.bennett@example.com",
+      "answering_unit": "AN-A34",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R029",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Ella",
+      "last_name": "Bennett",
+      "full_name": "Ella Bennett",
+      "floor": 3,
+      "apartment": "A34",
+      "main_contact": false,
+      "email": "ella.bennett@example.com",
+      "answering_unit": "AN-A34",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R030",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Marco",
+      "last_name": "Moretti",
+      "full_name": "Marco Moretti",
+      "floor": 3,
+      "apartment": "A35",
+      "main_contact": true,
+      "email": "marco.moretti@example.com",
+      "answering_unit": "AN-A35",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d13"
+      ],
+      "note": null
+    },
+    {
+      "id": "R031",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Sophie",
+      "last_name": "Brown",
+      "full_name": "Sophie Brown",
+      "floor": 3,
+      "apartment": "A36",
+      "main_contact": true,
+      "email": "sophie.brown@example.com",
+      "answering_unit": "AN-A36",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R032",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Alejandro",
+      "last_name": "Romero",
+      "full_name": "Alejandro Romero",
+      "floor": 3,
+      "apartment": "A36",
+      "main_contact": false,
+      "email": "alejandro.romero@example.com",
+      "answering_unit": "AN-A36",
+      "access_points": [
+        "IC-0-d10",
+        "AC-3-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R033",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Jonas",
+      "last_name": "Braun",
+      "full_name": "Jonas Braun",
+      "floor": 3,
+      "apartment": "A37",
+      "main_contact": true,
+      "email": "jonas.braun@example.com",
+      "answering_unit": "AN-A37",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "R034",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Chiara",
+      "last_name": "Greco",
+      "full_name": "Chiara Greco",
+      "floor": 3,
+      "apartment": "A37",
+      "main_contact": false,
+      "email": "chiara.greco@example.com",
+      "answering_unit": "AN-A37",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "R035",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Pablo",
+      "last_name": "García",
+      "full_name": "Pablo García",
+      "floor": 4,
+      "apartment": "A41",
+      "main_contact": true,
+      "email": "pablo.garcia@example.com",
+      "answering_unit": "AN-A41",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R036",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Emily",
+      "last_name": "Foster",
+      "full_name": "Emily Foster",
+      "floor": 4,
+      "apartment": "A41",
+      "main_contact": false,
+      "email": "emily.foster@example.com",
+      "answering_unit": "AN-A41",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "R037",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lukas",
+      "last_name": "Schmidt",
+      "full_name": "Lukas Schmidt",
+      "floor": 4,
+      "apartment": "A42",
+      "main_contact": true,
+      "email": "lukas.schmidt@example.com",
+      "answering_unit": "AN-A42",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R038",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lea",
+      "last_name": "Schmidt",
+      "full_name": "Lea Schmidt",
+      "floor": 4,
+      "apartment": "A42",
+      "main_contact": false,
+      "email": "lea.schmidt@example.com",
+      "answering_unit": "AN-A42",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d7"
+      ],
+      "note": null
+    },
+    {
+      "id": "R039",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Tobias",
+      "last_name": "Fischer",
+      "full_name": "Tobias Fischer",
+      "floor": 4,
+      "apartment": "A43",
+      "main_contact": true,
+      "email": "tobias.fischer@example.com",
+      "answering_unit": "AN-A43",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d12"
+      ],
+      "note": null
+    },
+    {
+      "id": "R040",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Lena",
+      "last_name": "Wagner",
+      "full_name": "Lena Wagner",
+      "floor": 4,
+      "apartment": "A44",
+      "main_contact": true,
+      "email": "lena.wagner@example.com",
+      "answering_unit": "AN-A44",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "R041",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Stefan",
+      "last_name": "Weber",
+      "full_name": "Stefan Weber",
+      "floor": 4,
+      "apartment": "A45",
+      "main_contact": true,
+      "email": "stefan.weber@example.com",
+      "answering_unit": "AN-A45",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d13"
+      ],
+      "note": null
+    },
+    {
+      "id": "R042",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Martina",
+      "last_name": "Greco",
+      "full_name": "Martina Greco",
+      "floor": 4,
+      "apartment": "A45",
+      "main_contact": false,
+      "email": "martina.greco@example.com",
+      "answering_unit": "AN-A45",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d13"
+      ],
+      "note": null
+    },
+    {
+      "id": "R043",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Hannah",
+      "last_name": "Johnson",
+      "full_name": "Hannah Johnson",
+      "floor": 4,
+      "apartment": "A46",
+      "main_contact": true,
+      "email": "hannah.johnson@example.com",
+      "answering_unit": "AN-A46",
+      "access_points": [
+        "IC-0-d10",
+        "AC-4-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "R044",
+      "role": "resident",
+      "job_title": null,
+      "workplace": null,
+      "first_name": "Carlos",
+      "last_name": "Martínez",
+      "full_name": "Carlos Martínez",
+      "floor": 4,
+      "apartment": "A47",
+      "main_contact": true,
+      "email": "carlos.martinez@example.com",
+      "answering_unit": "AN-A47",
+      "access_points": [
+        "IC-0-d10"
+      ],
+      "note": "apartment has no entrance door yet, so no apartment access unit"
+    },
+    {
+      "id": "S001",
+      "role": "property_manager",
+      "job_title": "Property manager",
+      "workplace": null,
+      "first_name": "James",
+      "last_name": "Foster",
+      "full_name": "James Foster",
+      "floor": null,
+      "apartment": null,
+      "main_contact": null,
+      "email": "james.foster@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "IC-0-d10",
+        "RD-0-d3"
+      ],
+      "note": null
+    },
+    {
+      "id": "S002",
+      "role": "maintenance",
+      "job_title": "Maintenance technician",
+      "workplace": null,
+      "first_name": "Hannah",
+      "last_name": "Wilson",
+      "full_name": "Hannah Wilson",
+      "floor": null,
+      "apartment": null,
+      "main_contact": null,
+      "email": "hannah.wilson@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "IC-0-d10",
+        "RD-0-d3"
+      ],
+      "note": null
+    },
+    {
+      "id": "S003",
+      "role": "maintenance",
+      "job_title": "Maintenance technician",
+      "workplace": null,
+      "first_name": "Katharina",
+      "last_name": "Keller",
+      "full_name": "Katharina Keller",
+      "floor": null,
+      "apartment": null,
+      "main_contact": null,
+      "email": "katharina.keller@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "IC-0-d10",
+        "RD-0-d3"
+      ],
+      "note": null
+    },
+    {
+      "id": "S004",
+      "role": "employee",
+      "job_title": "Store manager",
+      "workplace": "C1",
+      "first_name": "Lorenzo",
+      "last_name": "Conti",
+      "full_name": "Lorenzo Conti",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "lorenzo.conti@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "S005",
+      "role": "employee",
+      "job_title": "Sales assistant",
+      "workplace": "C1",
+      "first_name": "Samuel",
+      "last_name": "Clarke",
+      "full_name": "Samuel Clarke",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "samuel.clarke@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "S006",
+      "role": "employee",
+      "job_title": "Sales assistant",
+      "workplace": "C1",
+      "first_name": "Isabel",
+      "last_name": "García",
+      "full_name": "Isabel García",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "isabel.garcia@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d9"
+      ],
+      "note": null
+    },
+    {
+      "id": "S007",
+      "role": "employee",
+      "job_title": "Store manager",
+      "workplace": "C2",
+      "first_name": "Thomas",
+      "last_name": "Mitchell",
+      "full_name": "Thomas Mitchell",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "thomas.mitchell@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "S008",
+      "role": "employee",
+      "job_title": "Sales assistant",
+      "workplace": "C2",
+      "first_name": "Pablo",
+      "last_name": "López",
+      "full_name": "Pablo López",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "pablo.lopez@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "S009",
+      "role": "employee",
+      "job_title": "Sales assistant",
+      "workplace": "C2",
+      "first_name": "Isabel",
+      "last_name": "Martínez",
+      "full_name": "Isabel Martínez",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "isabel.martinez@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d11"
+      ],
+      "note": null
+    },
+    {
+      "id": "S010",
+      "role": "employee",
+      "job_title": "Gym manager",
+      "workplace": "GYM",
+      "first_name": "Sabine",
+      "last_name": "Braun",
+      "full_name": "Sabine Braun",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "sabine.braun@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "S011",
+      "role": "employee",
+      "job_title": "Receptionist",
+      "workplace": "GYM",
+      "first_name": "Henry",
+      "last_name": "Foster",
+      "full_name": "Henry Foster",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "henry.foster@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "S012",
+      "role": "employee",
+      "job_title": "Personal trainer",
+      "workplace": "GYM",
+      "first_name": "Jack",
+      "last_name": "Bennett",
+      "full_name": "Jack Bennett",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "jack.bennett@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "S013",
+      "role": "employee",
+      "job_title": "Personal trainer",
+      "workplace": "GYM",
+      "first_name": "Stefan",
+      "last_name": "Keller",
+      "full_name": "Stefan Keller",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "stefan.keller@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "S014",
+      "role": "employee",
+      "job_title": "Personal trainer",
+      "workplace": "GYM",
+      "first_name": "Marta",
+      "last_name": "Ortega",
+      "full_name": "Marta Ortega",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "marta.ortega@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    },
+    {
+      "id": "S015",
+      "role": "employee",
+      "job_title": "Cleaner",
+      "workplace": "GYM",
+      "first_name": "Chloe",
+      "last_name": "Taylor",
+      "full_name": "Chloe Taylor",
+      "floor": 0,
+      "apartment": null,
+      "main_contact": null,
+      "email": "chloe.taylor@example.com",
+      "answering_unit": null,
+      "access_points": [
+        "AC-0-d8"
+      ],
+      "note": null
+    }
+  ]
+}
