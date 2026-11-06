@@ -26,6 +26,7 @@ import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
 import { TREE_DEFAULT } from "./StructureTree";
 import { DRAWER_DEFAULT } from "./CategoriesDrawer";
 import { DoorMenu } from "./DoorMenu";
+import { DiscardChangesDialog } from "./DiscardChangesDialog";
 import { NewSpaceDialog, type NewFloorPage } from "./NewSpaceDialog";
 import { ImportSpaceList } from "./ImportSpaceList";
 import { CANVAS_BACKGROUND } from "../theme";
@@ -107,6 +108,8 @@ export interface EditModeScreenProps {
   onFloorChange: (floorId: string) => void;
   onClose: () => void;
   onSave: () => void;
+  /** Leave without the changes: the plan goes back to its saved state. */
+  onDiscard: () => void;
   /** True once anything has been edited since entering edit mode. */
   dirty: boolean;
   /**
@@ -143,12 +146,15 @@ export function EditModeScreen({
   onFloorChange,
   onClose,
   onSave,
+  onDiscard,
   dirty,
   onAddFloors,
   groups,
   onGroupsChange,
 }: EditModeScreenProps) {
   const [newSpace, setNewSpace] = useState(false);
+  /** Close was pressed with changes unsaved, and the question is up. */
+  const [leaving, setLeaving] = useState(false);
   const [tool, setTool] = useState<EditTool>("select");
   const [importing, setImporting] = useState(false);
   /** The menu on a space that has no shape yet. */
@@ -506,7 +512,8 @@ export function EditModeScreen({
         onZoomIn={() => controls.current?.zoomIn()}
         onZoomOut={() => controls.current?.zoomOut()}
         onZoomFit={() => controls.current?.reset()}
-        onClose={onClose}
+        // With nothing changed there is nothing to ask about.
+        onClose={() => (dirty ? setLeaving(true) : onClose())}
         onSave={onSave}
       />
 
@@ -823,6 +830,19 @@ export function EditModeScreen({
             Cancel
           </Button>
         }
+      />
+
+      <DiscardChangesDialog
+        open={leaving}
+        onStay={() => setLeaving(false)}
+        onDiscard={() => {
+          setLeaving(false);
+          onDiscard();
+        }}
+        onSaveAndClose={() => {
+          setLeaving(false);
+          onSave();
+        }}
       />
 
       <NewSpaceDialog

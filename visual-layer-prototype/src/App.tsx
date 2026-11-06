@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -52,7 +52,13 @@ export default function App() {
   // One editable model, shared by the viewer and edit mode, so an edit made
   // in one is visible in the other.
   const [edit, setEdit] = useState<EditState>(() => initEditState(fixture));
-  const [savedAt, setSavedAt] = useState(0);
+  /**
+   * The plan as it was last saved. Dirty is "the file is not this one";
+   * discarding is "make it this one again". A depth in the undo stack
+   * was used before, and it lied once the stack was trimmed or undone
+   * past the save.
+   */
+  const [saved, setSaved] = useState<EditState | null>(null);
   /**
    * Where the product starts is the building, not the plan: the customer
    * has their apartments, residents and devices already, and the plan is
@@ -139,6 +145,13 @@ export default function App() {
     setMethod(picked);
     setStep("what");
   };
+
+  // Entering the editor is what fixes the baseline: whatever the plan is
+  // at that moment is what Close will offer to go back to.
+  useEffect(() => {
+    if (screen === "edit") setSaved(edit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   const layer = edit.layer;
   const [floorId, setFloorId] = useState(layer.floors[0].id);
@@ -274,13 +287,17 @@ export default function App() {
           place={PLACE}
           floorId={floorId}
           onFloorChange={setFloorId}
-          dirty={edit.undo.length > savedAt}
+          dirty={saved !== null && edit.file !== saved.file}
           // Leaving the editor goes back to the building, where the
           // Floor Plan tab now holds the plan itself.
           onClose={() => setScreen("building")}
           onSave={() => {
-            setSavedAt(edit.undo.length);
+            setSaved(edit);
             setHasPlan(true);
+            setScreen("building");
+          }}
+          onDiscard={() => {
+            if (saved) setEdit(saved);
             setScreen("building");
           }}
           onAddFloors={addFloors}
