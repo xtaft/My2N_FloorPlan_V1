@@ -89,6 +89,9 @@ export interface StructureTreeProps {
   onFloorChange: (floorId: string) => void;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string | null) => void;
+  /** Pointing at an envelope lights the whole of it, the way a flat is one shape. */
+  onSelectGroup?: (groupId: string | null) => void;
+  selectedGroupId?: string | null;
   /** Opens the row menu. Rows with nothing to offer get no button. */
   /**
    * Left out in devices mode. Every item on a row's menu edits the
@@ -126,6 +129,8 @@ export function StructureTree({
   onFloorChange,
   selectedRoomId,
   onSelectRoom,
+  onSelectGroup,
+  selectedGroupId = null,
   onRowMenu,
   badges = null,
   renaming,
@@ -300,7 +305,12 @@ export function StructureTree({
       room.name,
       {
         selected: room.id === selectedRoomId,
-        onClick: () => onSelectRoom(room.id),
+        // Pointing at a space turns the plan to its storey as well:
+        // a highlight on a floor you are not looking at is no highlight.
+        onClick: () => {
+          onFloorChange(room.floor_id);
+          onSelectRoom(room.id);
+        },
         tint: roomColor(layer, room),
         onMenu:
           onRowMenu && ((el: HTMLElement) =>
@@ -372,7 +382,19 @@ export function StructureTree({
             expandable,
             expanded: isOpen,
             onToggle: () => toggle(group.id),
-            onClick: () => expandable && toggle(group.id),
+            selected: group.id === selectedGroupId,
+            // The row points at the envelope — turning the plan to its
+            // storey and lighting the whole of it — and the chevron is
+            // what folds it. Without anything to point with, the row
+            // folds, which is all it could do.
+            onClick: () => {
+              if (onSelectGroup) {
+                onFloorChange(group.floor_id);
+                onSelectGroup(group.id);
+              } else if (expandable) {
+                toggle(group.id);
+              }
+            },
             onMenu:
               onRowMenu && ((el: HTMLElement) =>
                 onRowMenu(el, { kind: "group", group })),

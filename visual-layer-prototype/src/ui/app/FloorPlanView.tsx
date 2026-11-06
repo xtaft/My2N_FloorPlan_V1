@@ -376,10 +376,9 @@ export function FloorPlanView({
             // the highlight answers "where is A32", and once you have
             // looked somewhere else the question has been answered.
             onSelectRoom={() => onClearSelection()}
-            // Not in access mode: there the rooms are already red and
-            // green for who gets in, and a red badge on a reader would
-            // read as part of that answer rather than as its health.
-            showDeviceStatus={mode !== "access"}
+            // In both modes: how a device is doing is worth seeing
+            // whatever question the plan is being asked.
+            showDeviceStatus
             selectedDeviceId={found}
             // The devices are on the plan whichever question is being
             // asked of it. This screen is for looking, and a reader

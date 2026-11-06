@@ -537,6 +537,8 @@ export function EditModeScreen({
           onFloorChange={onFloorChange}
           selectedRoomId={selectedRoomId}
           onSelectRoom={selectRoom}
+          onSelectGroup={selectGroup}
+          selectedGroupId={selectedGroupId}
           onRowMenu={
             mode === "structure"
               ? (el, target) => setRowMenu({ el, target })
@@ -594,7 +596,10 @@ export function EditModeScreen({
             // about its shape, so it is not shown while editing the shape.
             // A device's status is what the devices mode is about, and
             // noise in the mode that is about walls.
-            showDeviceStatus={mode === "devices"}
+            // Status in every mode that is about the devices: how a reader
+            // is doing matters whether you are placing it or asking what
+            // it opens. Structure mode is about walls and names.
+            showDeviceStatus={mode !== "structure"}
             onPlaceDoor={handlePlaceDoor}
             onAddWall={handleAddWall}
             addWallError={addWallError}

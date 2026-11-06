@@ -716,7 +716,7 @@ export function FloorPlanCanvas({
                   fill={fill}
                   fillOpacity={selected ? 1 : fillOpacity}
                   fillRule="evenodd"
-                  stroke={selected ? "#17406B" : "none"}
+                  stroke={selected ? "#2196F3" : "none"}
                   strokeWidth={selected ? 6 : 0}
                   style={{ cursor: aiming ? "crosshair" : "pointer" }}
                   // Rooms are the only drop target. The highlight that
