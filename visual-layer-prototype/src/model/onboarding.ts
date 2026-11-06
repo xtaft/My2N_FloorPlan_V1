@@ -63,38 +63,110 @@ export type FloorList = PendingFloor[];
 export const BUILDING_FLOORS = 5;
 
 /**
- * Bring the list to the building's storey count.
+ * Which storey a page's name says it is, if it says.
  *
- * Short lists are padded with floors of their own, named in sequence;
- * long ones keep the pages that came first. The ground floor is settled
- * afterwards, since padding changes which row is at the bottom.
+ * "ground", "first", "2nd", "floor 3", "level 4", "L2", "F1", a bare
+ * number — the ways a plan's page gets named. Null when the name says
+ * nothing, which "a.pdf" and "scan 2024" do not.
+ */
+export function storeyFromName(name: string): number | null {
+  const n = name
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/, "")
+    .replace(/[_\-]+/g, " ")
+    .trim();
+  if (/\b(ground|gf|g)\b/.test(n)) return 0;
+  // "basement", "basement 2", "b1" — but not a bare "b", which is
+  // what a page called b.pdf is, and says nothing.
+  const base = n.match(/\bbasement\s*(\d+)?\b/) ?? n.match(/\bb(\d+)\b/);
+  if (base) return -(Number(base[1] ?? 1));
+  const words: Record<string, number> = {
+    first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
+    sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10,
+  };
+  for (const [w, v] of Object.entries(words)) {
+    if (new RegExp(`\\b${w}\\b`).test(n)) return v;
+  }
+  const tagged = n.match(/\b(?:floor|level|storey|story|l|f|p)\s*(\d+)(?:st|nd|rd|th)?\b/);
+  if (tagged) return Number(tagged[1]);
+  const ordinal = n.match(/\b(\d+)(?:st|nd|rd|th)\b/);
+  if (ordinal) return Number(ordinal[1]);
+  const bare = n.match(/^(\d+)$/);
+  if (bare) return Number(bare[1]);
+  return null;
+}
+
+/**
+ * Match the pages to the building's storeys.
+ *
+ * The check screen shows the drawn floors the prototype has, and each
+ * page has to stand for one of them — the right one, and in the right
+ * order, whether or not the ground floor was marked correctly in the
+ * upload. So the match is read off the pages rather than off the
+ * marker: a page whose name says which storey it is goes to that
+ * storey, and the rest fill the storeys left over, from the ground up,
+ * in the order the list has them from the bottom. A storey no page
+ * stands for gets a page of its own, named for the storey. More pages
+ * than storeys, and the ones that would be above the roof are left
+ * out. Each page then knows its floor, and the ground floor is the
+ * page at level 0 — which is where the marker ends up, not where it
+ * started.
  */
 export function fitToBuilding(
   floors: FloorList,
   count = BUILDING_FLOORS,
 ): FloorList {
-  if (floors.length === count) return floors;
-  if (floors.length > count) return withOneGround(floors.slice(0, count));
+  const levels = new Map<string, number>();
+  const taken = new Set<number>();
+  /** Pages whose names say where they go — even somewhere there is not. */
+  const named = new Set<string>();
 
-  let out = floors;
-  while (out.length < count) {
+  // Pages that say where they go, first come first placed. One that
+  // names a storey the building does not have is left out rather than
+  // put somewhere it did not say: "7" is not a page of the ground floor.
+  for (const f of floors) {
+    const said = storeyFromName(f.name);
+    if (said === null) continue;
+    named.add(f.id);
+    if (said < 0 || said >= count || taken.has(said)) continue;
+    levels.set(f.id, said);
+    taken.add(said);
+  }
+  // The rest fill in from the ground up, reading the list from the
+  // bottom — the list is highest-first, so its bottom is its ground.
+  let next = 0;
+  for (const f of [...floors].reverse()) {
+    if (levels.has(f.id) || named.has(f.id)) continue;
+    while (taken.has(next)) next += 1;
+    if (next >= count) break;
+    levels.set(f.id, next);
+    taken.add(next);
+  }
+
+  let out: FloorList = floors
+    .filter((f) => levels.has(f.id))
+    .map((f) => ({ ...f, ground: false, floor_id: `${levels.get(f.id)}:floor` }));
+  for (let level = 0; level < count; level += 1) {
+    if (taken.has(level)) continue;
     out = [
       ...out,
       {
         id: freeId(out),
-        name: `Floor ${out.length + 1}`,
-        // Padded floors stand for pages, so they are checked like pages.
+        name: storeyName(level),
+        // A page of the storey's own stands for a page, and is checked
+        // like one.
         source: "pdf" as const,
         segmented: true,
         ground: false,
         checked: false,
+        floor_id: `${level}:floor`,
       },
     ];
+    levels.set(out[out.length - 1].id, level);
   }
-  // Padding adds rows underneath, so the bottom of the list has moved and
-  // the ground floor moves with it. Without this, uploading one page
-  // leaves that page at ground level with four basements below it.
-  return setGroundFloor(out, out[out.length - 1].id);
+
+  out.sort((a, b) => levels.get(b.id)! - levels.get(a.id)!);
+  return out.map((f) => ({ ...f, ground: levels.get(f.id) === 0 }));
 }
 
 function freeId(taken: FloorList): string {

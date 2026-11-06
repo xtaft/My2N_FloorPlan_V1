@@ -581,13 +581,34 @@ export function CheckFloorsScreen({
                 </Step>
                 <Step
                   n={3}
-                  title="Check the floor orientation"
+                  title="Floor alignment"
                   body={
                     previousId
-                      ? `This floor should line up with ${layer.floors.find((f) => f.id === previousId)?.name ?? "the floor below"}, which you checked last. The dashed outlines are its lift shafts and stairs — use Align floor to move this one until they sit over each other.`
+                      ? `This floor should line up with ${layer.floors.find((f) => f.id === previousId)?.name ?? "the floor below"}, which you checked last. Use Align floor to move this one until its lift shafts and stairs sit over the outline.`
                       : "This is the first floor you have looked at, so there is nothing yet to line it up with. The floors you check after it will line up with this one."
                   }
-                />
+                >
+                  {previousId && (
+                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mt: 1 }}>
+                      <svg width={44} height={10} aria-hidden>
+                        <line
+                          x1={2}
+                          y1={5}
+                          x2={42}
+                          y2={5}
+                          stroke="#2196f3"
+                          strokeWidth={3}
+                          strokeDasharray="8 5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <Typography variant="caption" color="text.secondary">
+                        Where the floor below's lifts and stairs are. This is
+                        the place to match this floor to.
+                      </Typography>
+                    </Stack>
+                  )}
+                </Step>
               </>
             )}
           </Box>

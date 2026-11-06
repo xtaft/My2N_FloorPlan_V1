@@ -6,6 +6,7 @@ import {
   addBlankFloor,
   addFloors,
   fitToBuilding,
+  storeyFromName,
   BUILDING_FLOORS,
   allChecked,
   markChecked,
@@ -197,59 +198,69 @@ describe("checking floors", () => {
   });
 });
 
-describe("settling on the building's storeys", () => {
-  it("pads a short list with floors of its own", () => {
-    const after = fitToBuilding(addFloors([], pdfs("a.pdf", "b.pdf")));
+describe("matching pages to the building's storeys", () => {
+  const names = (l: FloorList) => l.map((f) => f.name);
+  const levelOf = (l: FloorList, name: string) =>
+    storeyLevels(l).get(l.find((f) => f.name === name)!.id);
+
+  it("reads the storey off a page's name", () => {
+    expect(storeyFromName("ground.pdf")).toBe(0);
+    expect(storeyFromName("Ground Floor.pdf")).toBe(0);
+    expect(storeyFromName("first.pdf")).toBe(1);
+    expect(storeyFromName("2nd floor.pdf")).toBe(2);
+    expect(storeyFromName("floor 3.pdf")).toBe(3);
+    expect(storeyFromName("Level-4.PDF")).toBe(4);
+    expect(storeyFromName("L2.pdf")).toBe(2);
+    expect(storeyFromName("3.pdf")).toBe(3);
+    expect(storeyFromName("basement.pdf")).toBe(-1);
+    expect(storeyFromName("a.pdf")).toBeNull();
+    expect(storeyFromName("scan 2024.pdf")).toBeNull();
+  });
+
+  it("puts named pages on their storeys whatever the marker said", () => {
+    // Dropped ground first, so it sits on top of the list, and the
+    // marker left on the bottom page — the wrong one. The names win.
+    const after = fitToBuilding(addFloors([], pdfs("ground.pdf", "first.pdf")));
     expect(after).toHaveLength(BUILDING_FLOORS);
-    expect(after.map((f) => f.name)).toEqual([
-      "a.pdf",
-      "b.pdf",
-      "Floor 3",
-      "Floor 4",
-      "Floor 5",
-    ]);
+    expect(levelOf(after, "ground.pdf")).toBe(0);
+    expect(levelOf(after, "first.pdf")).toBe(1);
+    expect(after.find((f) => f.ground)!.name).toBe("ground.pdf");
+    expect(after.find((f) => f.name === "ground.pdf")!.floor_id).toBe("0:floor");
+    expect(after.find((f) => f.name === "first.pdf")!.floor_id).toBe("1:floor");
   });
 
-  it("keeps the pages that came first when there are too many", () => {
+  it("fills the rest from the ground up, reading the list from the bottom", () => {
+    // No names to go on: the bottom page is the ground floor, the one
+    // above it floor 1, and the storeys left over get pages of their own.
+    const after = fitToBuilding(addFloors([], pdfs("a.pdf", "b.pdf")));
+    expect(names(after)).toEqual(["floor 4", "floor 3", "floor 2", "a.pdf", "b.pdf"]);
+    expect(levelOf(after, "b.pdf")).toBe(0);
+    expect(levelOf(after, "a.pdf")).toBe(1);
+  });
+
+  it("mixes the two: named pages pinned, the rest around them", () => {
+    const after = fitToBuilding(addFloors([], pdfs("a.pdf", "floor 2.pdf", "b.pdf")));
+    expect(levelOf(after, "floor 2.pdf")).toBe(2);
+    expect(levelOf(after, "b.pdf")).toBe(0);
+    expect(levelOf(after, "a.pdf")).toBe(1);
+    expect(names(after)).toEqual(["floor 4", "floor 3", "floor 2.pdf", "a.pdf", "b.pdf"]);
+  });
+
+  it("leaves out the pages that would be above the roof", () => {
     const many = addFloors([], pdfs("1", "2", "3", "4", "5", "6", "7"));
-    expect(fitToBuilding(many).map((f) => f.name)).toEqual([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-    ]);
+    // Bare numbers name storeys; 5, 6 and 7 have no floor to stand for.
+    expect(names(fitToBuilding(many))).toEqual(["4", "3", "2", "1", "ground floor"]);
   });
 
-  it("leaves a list that is already the right length alone", () => {
-    const five = addFloors([], pdfs("1", "2", "3", "4", "5"));
-    expect(fitToBuilding(five)).toBe(five);
-  });
-
-  it("pads with floors the check screen can check", () => {
-    // A padded floor stands for a page, so it is read like a page rather
-    // than turning up as one nothing could be detected on.
-    for (const f of fitToBuilding(addFloors([], pdfs("a.pdf")))) {
+  it("is a storey for every drawn floor, each knowing which", () => {
+    const after = fitToBuilding(addFloors([], pdfs("a.pdf")));
+    expect([...storeyLevels(after).values()].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+    expect(after.map((f) => f.floor_id)).toEqual(["4:floor", "3:floor", "2:floor", "1:floor", "0:floor"]);
+    expect(after.filter((f) => f.ground)).toHaveLength(1);
+    for (const f of after) {
       expect(f.segmented).toBe(true);
       expect(f.checked).toBe(false);
     }
-  });
-
-  it("still ends up with exactly one ground floor", () => {
-    const one = (l: FloorList) => l.filter((f) => f.ground).length;
-    expect(one(fitToBuilding(addFloors([], pdfs("a.pdf"))))).toBe(1);
-    expect(one(fitToBuilding(addFloors([], pdfs("1", "2", "3", "4", "5", "6"))))).toBe(1);
     expect(fitToBuilding([])).toHaveLength(BUILDING_FLOORS);
-  });
-
-  it("makes every floor a storey with a name", () => {
-    const floors = fitToBuilding(addFloors([], pdfs("a.pdf")));
-    const levels = storeyLevels(floors);
-    expect([...levels.values()].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
-    expect(storeyName(levels.get(floors[0].id)!)).toBe("floor 4");
-    // The page that was uploaded keeps its place; the padding went under
-    // it, so the bottom of the list is the ground floor.
-    expect(floors[0].name).toBe("a.pdf");
-    expect(floors.at(-1)!.ground).toBe(true);
   });
 });
