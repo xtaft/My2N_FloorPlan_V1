@@ -63,7 +63,8 @@ export type OperationKind =
   | "place_device"
   | "create_envelope"
   | "add_floor"
-  | "add_wall";
+  | "add_wall"
+  | "flip_device";
 
 export interface EditOperation {
   kind: OperationKind;

@@ -89,6 +89,7 @@ import {
   addPersonToGroup,
   removePersonFromGroup,
   type AccessGroup,
+  flipDeviceSide,
   placeDeviceInSpace,
   placeDeviceOnDoor,
   renameDevice,
@@ -898,6 +899,9 @@ export function EditModeScreen({
         anchorEl={deviceMenu?.el ?? null}
         onClose={() => setDeviceMenu(null)}
         onRename={() => setRenamingDeviceId(deviceMenu?.deviceId ?? null)}
+        onFlipSide={() => {
+          if (deviceMenu) run(() => flipDeviceSide(state, deviceMenu.deviceId));
+        }}
         onUnassign={() =>
           deviceMenu && run(() => unassignDevice(state, deviceMenu.deviceId))
         }

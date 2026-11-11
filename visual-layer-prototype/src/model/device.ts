@@ -140,6 +140,64 @@ export function facesExterior(layer: VisualLayer, device: Device): boolean {
   return isExterior(wall.room_a) || isExterior(wall.room_b);
 }
 
+/**
+ * Move a device to the other side of its door.
+ *
+ * A reader stands on one side and checks the way in to the other, so
+ * changing sides turns it round: it now checks the room it stood in.
+ * Nothing moves but `guards` — which side it is drawn on is derived
+ * from that, never stored.
+ *
+ * Refused where the other side is the street, which no reader checks
+ * the way in to; where the other side already has a reader; and for a
+ * device that is not on a door.
+ */
+export function flipDeviceSide(state: EditState, deviceId: string): EditState {
+  const { layer, file } = state;
+  const device = must(layer, deviceId);
+  if (device.host_kind !== "door" || device.host_id === null) {
+    throw new OperationRejected(`${device.name} is not on a door.`);
+  }
+  const door = layer.doors.get(device.host_id);
+  if (!door || door.wall_id === null) {
+    throw new OperationRejected(`${device.name} is not on a door with two sides.`);
+  }
+  const here = deviceSide(layer, device);
+  const other = here === "a" ? "b" : "a";
+  const target = doorSides(layer, door.id).find((s) => s.side === other);
+  if (!target) {
+    throw new OperationRejected(`${door.name} has no other side.`);
+  }
+  if (isExterior(target.guardsRoomId)) {
+    throw new OperationRejected(
+      `The other side of ${door.name} is outside. A reader cannot check the way in to the street.`,
+    );
+  }
+  if (target.takenBy !== null && target.takenBy !== deviceId) {
+    const taken = file.devices.find((d) => d.id === target.takenBy);
+    throw new OperationRejected(
+      `${taken?.name ?? "A device"} is already on that side of ${door.name}.`,
+    );
+  }
+
+  const devices = file.devices.map((d) =>
+    d.id === deviceId ? { ...d, guards: [target.guardsRoomId] } : d,
+  );
+  // The room it now checks the way into has to be visible, as when it
+  // was placed.
+  const guarded = layer.rooms.get(target.guardsRoomId);
+  const rooms =
+    guarded && !guarded.surfaced
+      ? file.rooms.map((r) => (r.id === guarded.id ? { ...r, surfaced: true } : r))
+      : file.rooms;
+
+  return commit(state, "flip_device", `Change door side — ${device.name}`, {
+    ...file,
+    rooms,
+    devices,
+  });
+}
+
 export function placedOn(layer: VisualLayer, device: Device): string | null {
   if (device.host_id === null) return null;
   const floor = layer.floors.find((f) => f.id === device.floor_id);

@@ -8,6 +8,8 @@ import {
   EXTERIOR,
   deviceAnchor,
   facesExterior,
+  flipDeviceSide,
+  deviceSide,
   doorSides,
   freeDoorSides,
   goesOnDoors,
@@ -348,5 +350,38 @@ describe("facesExterior", () => {
     const layer = state().layer;
     const unit = layer.file.devices.find((d) => d.id === "AN-A1")!;
     expect(facesExterior(layer, unit)).toBe(false);
+  });
+});
+
+describe("flipDeviceSide", () => {
+  it("turns a reader round: it now checks the room it stood in", () => {
+    const st = state();
+    const before = st.layer.file.devices.find((d) => d.id === READER)!;
+    const sideBefore = deviceSide(st.layer, before);
+    const [a, b] = roomsOf(st.layer, st.layer.doors.get(before.host_id!)!);
+    const stoodIn = before.guards[0] === a ? b : a;
+
+    const next = flipDeviceSide(st, READER);
+    const after = next.layer.file.devices.find((d) => d.id === READER)!;
+    expect(after.guards).toEqual([stoodIn]);
+    expect(deviceSide(next.layer, after)).not.toBe(sideBefore);
+    expect(after.host_id).toBe(before.host_id);
+
+    // And back again.
+    const back = flipDeviceSide(next, READER);
+    expect(back.layer.file.devices.find((d) => d.id === READER)!.guards).toEqual(before.guards);
+    expect(undo(next).file).toBe(st.file);
+  });
+
+  it("refuses to face the street, a taken side, and a device not on a door", () => {
+    const st = state();
+    const lobby = st.layer.file.devices.find((d) => d.name === "Lobby Entrance")!;
+    expect(() => flipDeviceSide(st, lobby.id)).toThrow(/outside/);
+    expect(() => flipDeviceSide(st, UNIT)).toThrow(/not on a door/);
+    // Put a second reader on the other side first, then try to flip onto it.
+    const reader = st.layer.file.devices.find((d) => d.id === READER)!;
+    const other = deviceSide(st.layer, reader) === "a" ? "b" : "a";
+    const crowded = placeDeviceOnDoor(st, "AC-U1", reader.host_id!, other);
+    expect(() => flipDeviceSide(crowded, READER)).toThrow(/already on that side/);
   });
 });

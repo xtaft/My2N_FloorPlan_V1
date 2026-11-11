@@ -1,18 +1,21 @@
 /**
  * The menu a device opens, on the plan or in the devices panel.
  *
- * Figma 2:53230 — Rename device, then Unassign from door or Unassign from
- * space depending on what it is on, with that second item greyed when the
- * device is on nothing. The design draws the disabled variant rather than
+ * Figma 2:53231 — Rename device, Change door side, then after a rule
+ * Unassign from door or Unassign from space depending on what it is on.
+ * Change door side is for a reader on a door and greyed otherwise; the
+ * last item is greyed when the device is on nothing. The design draws the disabled variant rather than
  * dropping the row, which is right: an item that disappears is harder to
  * find than one that is visibly unavailable.
  */
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import LinkOffOutlined from "@mui/icons-material/LinkOff";
+import SwapHorizOutlined from "@mui/icons-material/SwapHorizOutlined";
 import { deviceHost, type Device } from "../../model";
 
 export interface DeviceMenuProps {
@@ -21,6 +24,8 @@ export interface DeviceMenuProps {
   anchorEl?: HTMLElement | null;
   onClose: () => void;
   onRename: () => void;
+  /** The reader moves to the other side of its door and checks the other way. */
+  onFlipSide: () => void;
   onUnassign: () => void;
 }
 
@@ -32,6 +37,7 @@ export function DeviceMenu({
   anchorEl,
   onClose,
   onRename,
+  onFlipSide,
   onUnassign,
 }: DeviceMenuProps) {
   // What it is on, or — once it is on nothing — what it was on. The kind
@@ -64,6 +70,24 @@ export function DeviceMenu({
           Rename device
         </ListItemText>
       </MenuItem>
+
+      <MenuItem
+        sx={{ minHeight: 36 }}
+        disabled={!(attached && host === "door")}
+        onClick={() => {
+          onFlipSide();
+          onClose();
+        }}
+      >
+        <ListItemIcon sx={iconSx}>
+          <SwapHorizOutlined sx={{ fontSize: 20 }} />
+        </ListItemIcon>
+        <ListItemText primaryTypographyProps={{ variant: "body2" }}>
+          Change door side
+        </ListItemText>
+      </MenuItem>
+
+      <Divider />
 
       <MenuItem
         sx={{ minHeight: 36 }}

@@ -28,7 +28,7 @@ import {
   snapEnd,
   ringsToPath,
   roomColor,
-  freeDoorSides,
+  doorSides,
   goesOnDoors,
   normal,
   negate,
@@ -297,6 +297,9 @@ export function FloorPlanCanvas({
    * highlights whole; a surfaced room highlights alone.
    */
   const highlight = useMemo(() => {
+    // Over a door, the door is what is lit, and nothing else: a room
+    // lighting up under a doorway says the click is going to the room.
+    if (hoverDoor) return null;
     if (!hoverRoom) return null;
     const room = layer.rooms.get(hoverRoom);
     if (!room) return null;
@@ -312,7 +315,7 @@ export function FloorPlanCanvas({
         ? groupOuterWalls(layer, room.group_id)
         : [];
     return { rooms, outline, single: rooms.size === 1 };
-  }, [layer, hoverRoom, revealAll]);
+  }, [layer, hoverRoom, hoverDoor, revealAll]);
 
   const scene = useMemo(() => {
     const rooms = layer.roomsByFloor.get(floorId) ?? [];
@@ -728,6 +731,10 @@ export function FloorPlanCanvas({
                     // than at a doorway.
                     const unit =
                       dragging && !goesOnDoors(dragging.deviceType);
+                    // A reader in the air is for a doorway, and the
+                    // halves on the doorways are what light for it; a
+                    // room lighting under it would say the room takes it.
+                    if (dragging && !unit) return;
                     if (!onDropSpace && !unit) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
@@ -946,32 +953,39 @@ export function FloorPlanCanvas({
               unit is not something you badge at. */}
           {dragging && goesOnDoors(dragging.deviceType) &&
             scene.doors.map((door) =>
-              freeDoorSides(layer, door.id).map((free) => {
-                const half = doorHalf(layer, door, free.side);
+              doorSides(layer, door.id).map((side) => {
+                const half = doorHalf(layer, door, side.side);
                 if (!half) return null;
+                const over =
+                  dropTarget?.doorId === door.id && dropTarget.side === side.side;
+                const taken = side.takenBy !== null;
+                // A free half is offered, and lights when the device is
+                // over it. A taken half is not drawn at all until the
+                // device is over it, and then it is red: the one thing
+                // it can say is no, and it says it where the device is.
+                const ink = taken ? "#C62828" : "#2196f3";
                 return (
                   <path
-                    key={`drop:${door.id}:${free.side}`}
+                    key={`drop:${door.id}:${side.side}`}
                     d={half}
-                    fill="#2196f3"
-                    fillOpacity={
-                      dropTarget?.doorId === door.id &&
-                      dropTarget.side === free.side
-                        ? 0.55
-                        : 0.2
-                    }
-                    stroke="#2196f3"
+                    fill={ink}
+                    fillOpacity={taken ? (over ? 0.4 : 0) : over ? 0.55 : 0.2}
+                    stroke={ink}
+                    strokeOpacity={taken && !over ? 0 : 1}
                     strokeWidth={2}
                     onDragOver={(e) => {
-                      e.preventDefault();
-                      setDropTarget({ doorId: door.id, side: free.side });
+                      // Not preventing the default is what makes the
+                      // browser show the drop as refused.
+                      if (!taken) e.preventDefault();
+                      setDropTarget({ doorId: door.id, side: side.side });
                     }}
                     onDragLeave={() => setDropTarget(null)}
                     onDrop={(e) => {
+                      if (taken) return;
                       e.preventDefault();
                       e.stopPropagation();
                       setDropTarget(null);
-                      onDropOnDoor?.(dragging.id, door.id, free.side);
+                      onDropOnDoor?.(dragging.id, door.id, side.side);
                     }}
                   />
                 );
@@ -1330,22 +1344,26 @@ function DoorSymbol({
     (closed.y - g.hingePoint.y) * (open.x - g.hingePoint.x);
   const sweep = cross > 0 ? 1 : 0;
 
+  // Lit, the whole door lights: the opening, the swing and the leaf, so
+  // what the pointer is over reads as one thing.
+  const ink = lit ? "#2196f3" : DOOR_COLOR;
   return (
     <g pointerEvents="none">
       {band}
       <path
         d={`M ${closed.x} ${closed.y} A ${g.width} ${g.width} 0 0 ${sweep} ${open.x} ${open.y}`}
-        fill="none"
-        stroke={DOOR_COLOR}
-        strokeWidth={2}
+        fill={lit ? "#2196f3" : "none"}
+        fillOpacity={lit ? 0.12 : 1}
+        stroke={ink}
+        strokeWidth={lit ? 3 : 2}
       />
       <line
         x1={g.hingePoint.x}
         y1={g.hingePoint.y}
         x2={open.x}
         y2={open.y}
-        stroke={DOOR_COLOR}
-        strokeWidth={3}
+        stroke={ink}
+        strokeWidth={lit ? 4 : 3}
       />
     </g>
   );

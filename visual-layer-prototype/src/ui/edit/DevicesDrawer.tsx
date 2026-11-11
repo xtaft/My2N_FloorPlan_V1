@@ -209,6 +209,26 @@ export function DevicesDrawer({
               onDragStart={(e) => {
                 e.dataTransfer.setData(DEVICE_MIME, device.id);
                 e.dataTransfer.effectAllowed = "move";
+                // The browser's own drag image is the whole row — its
+                // highlight, its place line, its button. What is being
+                // moved is one device, so that is what travels with the
+                // pointer: a chip with its name.
+                const ghost = document.createElement("div");
+                ghost.textContent = device.name;
+                Object.assign(ghost.style, {
+                  position: "fixed",
+                  top: "-1000px",
+                  left: "-1000px",
+                  padding: "6px 12px",
+                  background: "#ffffff",
+                  border: "1px solid rgba(0,0,0,0.23)",
+                  borderRadius: "4px",
+                  font: "14px Roboto, Helvetica, Arial, sans-serif",
+                  whiteSpace: "nowrap",
+                });
+                document.body.appendChild(ghost);
+                e.dataTransfer.setDragImage(ghost, 12, 16);
+                setTimeout(() => ghost.remove(), 0);
                 onDragStart(device.id);
               }}
               onDragEnd={() => onDragEnd()}
