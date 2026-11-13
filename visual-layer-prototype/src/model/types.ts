@@ -42,6 +42,15 @@ export interface Room {
   surfaced: boolean;
   /** Free text from an imported space list. Nothing derived reads it. */
   note?: string | null;
+  /**
+   * The platform's room entity, where the platform has one. A building
+   * may already have rooms before anyone draws it — a reception, a
+   * meeting room — and the plan binds its shapes to those rather than
+   * inventing them. A room the plan drew carries none until it is
+   * bound. Display and binding only: residents, devices and permissions
+   * belong to the envelope.
+   */
+  domain_ref?: string | null;
 }
 
 /**
@@ -108,7 +117,11 @@ export interface Device {
   name: string;
   device_type: string;
   host_kind: "room" | "door" | null;
-  /** null means orphaned — the device sits in the unplaced list. */
+  /**
+   * null means orphaned — the device sits in the unplaced list. A
+   * room-hosted device needs only a room: a unit at a reception desk
+   * sits in a room that belongs to no envelope, and that is a placement.
+   */
   host_id: string | null;
   /** room-hosted only. */
   position: [number, number] | null;
@@ -134,6 +147,13 @@ export interface Floor {
   sort_index: number;
   /** dx, dy, rotation, scale — never baked into the vertices. */
   transform: [number, number, number, number];
+  /**
+   * The platform's floor entity, where the platform has one. A storey
+   * may exist in the platform before its plan does, and a page checked
+   * against it is bound to it; a storey added from a page alone carries
+   * none until it is bound.
+   */
+  domain_ref?: string | null;
 }
 
 /** Colour belongs to the type, never to a room or an envelope. */

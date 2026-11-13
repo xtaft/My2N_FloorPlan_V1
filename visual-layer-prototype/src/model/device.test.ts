@@ -14,6 +14,8 @@ import {
   freeDoorSides,
   goesOnDoors,
   placeDeviceInSpace,
+  detachRoom,
+  placeOf,
   placeDeviceOnDoor,
   roomsOf,
   deviceHost,
@@ -383,5 +385,24 @@ describe("flipDeviceSide", () => {
     const other = deviceSide(st.layer, reader) === "a" ? "b" : "a";
     const crowded = placeDeviceOnDoor(st, "AC-U1", reader.host_id!, other);
     expect(() => flipDeviceSide(crowded, READER)).toThrow(/already on that side/);
+  });
+});
+
+describe("a unit in a room of no envelope", () => {
+  it("is placed there, and the place is the room's own name", () => {
+    // A reception desk: a room the platform may well have had before
+    // the plan, inside no flat and no group. Made here by taking a room
+    // out of its flat, since the fixture has none loose.
+    const st = state();
+    const unit = st.layer.file.devices.find((d) => d.id === UNIT)!;
+    const roomId = unit.host_id!;
+    const loose = detachRoom(unassignDevice(st, UNIT), roomId);
+    expect(loose.layer.rooms.get(roomId)!.group_id).toBeNull();
+
+    const placed = placeDeviceInSpace(loose, UNIT, roomId);
+    const after = placed.layer.file.devices.find((d) => d.id === UNIT)!;
+    expect(after.host_kind).toBe("room");
+    expect(after.host_id).toBe(roomId);
+    expect(placeOf(placed.layer, after)).toBe(placed.layer.rooms.get(roomId)!.name);
   });
 });

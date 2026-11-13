@@ -211,8 +211,9 @@ export function placeOf(layer: VisualLayer, device: Device): string | null {
     const room = layer.rooms.get(device.host_id);
     if (!room) return null;
     const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
-    // The flat, not the living room inside it: the unit is the thing the
-    // building is administered by.
+    // The envelope when there is one — the flat, not the living room
+    // inside it, since the flat is what the building is administered by.
+    // A room in no envelope, a reception say, is named for itself.
     return group?.name ?? room.name;
   }
 

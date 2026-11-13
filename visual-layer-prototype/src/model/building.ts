@@ -274,11 +274,12 @@ export function productName(deviceType: string): string {
  * every reader showing an em dash in the tab while the plan drew it on
  * a door with a name and a storey.
  *
- * An answering unit is the flat's, so it is placed from the day the flat
- * exists. A reader or an intercom is on a door, and until the building
- * has been drawn there are no doors to put one on — so before the plan
- * it is genuinely unplaced, and placing it is one of the things the
- * floor plan is for.
+ * An answering unit is the space's — a flat's, or a reception's — so it
+ * is placed from the day the space exists, whether or not the space has
+ * a shape yet. A reader or an intercom is on a door, and until the
+ * building has been drawn there are no doors to put one on — so before
+ * the plan it is genuinely unplaced, and placing it is one of the things
+ * the floor plan is for.
  */
 export function buildingDevices(
   layer: VisualLayer,
