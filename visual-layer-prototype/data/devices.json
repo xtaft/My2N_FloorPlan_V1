@@ -1,0 +1,849 @@
+[
+  {
+    "id": "AC-0-d8",
+    "name": "Gym Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d8",
+    "position": null,
+    "guards": [
+      "0:GM"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-0-d9",
+    "name": "C1 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d9",
+    "position": null,
+    "guards": [
+      "0:CM1"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "IC-0-d10",
+    "name": "Lobby Entrance",
+    "device_type": "intercom",
+    "host_kind": "door",
+    "host_id": "0:d10",
+    "position": null,
+    "guards": [
+      "0:L"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-0-d11",
+    "name": "C2 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d11",
+    "position": null,
+    "guards": [
+      "0:CM2"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "RD-0-d3",
+    "name": "Technical Reader",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d3",
+    "position": null,
+    "guards": [
+      "0:TECH"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A1",
+    "name": "A1 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L1",
+    "position": [
+      676.3,
+      643.5
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d11",
+    "name": "A1 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d11",
+    "position": null,
+    "guards": [
+      "1:L1"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A2",
+    "name": "A2 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L2",
+    "position": [
+      700.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d7",
+    "name": "A2 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d7",
+    "position": null,
+    "guards": [
+      "1:L2"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A3",
+    "name": "A3 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L3",
+    "position": [
+      847.5,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d12",
+    "name": "A3 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d12",
+    "position": null,
+    "guards": [
+      "1:L3"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A4",
+    "name": "A4 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L4",
+    "position": [
+      868.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d8",
+    "name": "A4 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d8",
+    "position": null,
+    "guards": [
+      "1:L4"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A5",
+    "name": "A5 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L5",
+    "position": [
+      1146.0,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d13",
+    "name": "A5 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d13",
+    "position": null,
+    "guards": [
+      "1:L5"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A6",
+    "name": "A6 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L6",
+    "position": [
+      1312.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-d9",
+    "name": "A6 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:d9",
+    "position": null,
+    "guards": [
+      "1:L6"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A7",
+    "name": "A7 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "1:L7",
+    "position": [
+      1464.1,
+      914.0
+    ],
+    "guards": [],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A21",
+    "name": "A21 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L21",
+    "position": [
+      676.3,
+      643.5
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d11",
+    "name": "A21 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d11",
+    "position": null,
+    "guards": [
+      "2:L21"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A22",
+    "name": "A22 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L22",
+    "position": [
+      700.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d7",
+    "name": "A22 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d7",
+    "position": null,
+    "guards": [
+      "2:L22"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A23",
+    "name": "A23 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L23",
+    "position": [
+      847.5,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d12",
+    "name": "A23 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d12",
+    "position": null,
+    "guards": [
+      "2:L23"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A24",
+    "name": "A24 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L24",
+    "position": [
+      868.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d8",
+    "name": "A24 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d8",
+    "position": null,
+    "guards": [
+      "2:L24"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A25",
+    "name": "A25 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L25",
+    "position": [
+      1146.0,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d13",
+    "name": "A25 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d13",
+    "position": null,
+    "guards": [
+      "2:L25"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A26",
+    "name": "A26 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L26",
+    "position": [
+      1312.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-d9",
+    "name": "A26 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:d9",
+    "position": null,
+    "guards": [
+      "2:L26"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A27",
+    "name": "A27 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "2:L27",
+    "position": [
+      1464.1,
+      914.0
+    ],
+    "guards": [],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A31",
+    "name": "A31 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L31",
+    "position": [
+      676.3,
+      643.5
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d11",
+    "name": "A31 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d11",
+    "position": null,
+    "guards": [
+      "3:L31"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A32",
+    "name": "A32 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L32",
+    "position": [
+      700.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d7",
+    "name": "A32 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d7",
+    "position": null,
+    "guards": [
+      "3:L32"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A33",
+    "name": "A33 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L33",
+    "position": [
+      847.5,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d12",
+    "name": "A33 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d12",
+    "position": null,
+    "guards": [
+      "3:L33"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A34",
+    "name": "A34 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L34",
+    "position": [
+      868.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d8",
+    "name": "A34 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d8",
+    "position": null,
+    "guards": [
+      "3:L34"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A35",
+    "name": "A35 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L35",
+    "position": [
+      1146.0,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d13",
+    "name": "A35 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d13",
+    "position": null,
+    "guards": [
+      "3:L35"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A36",
+    "name": "A36 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L36",
+    "position": [
+      1312.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-d9",
+    "name": "A36 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:d9",
+    "position": null,
+    "guards": [
+      "3:L36"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A37",
+    "name": "A37 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "3:L37",
+    "position": [
+      1464.1,
+      914.0
+    ],
+    "guards": [],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A41",
+    "name": "A41 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L41",
+    "position": [
+      676.3,
+      643.5
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d11",
+    "name": "A41 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d11",
+    "position": null,
+    "guards": [
+      "4:L41"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A42",
+    "name": "A42 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L42",
+    "position": [
+      700.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d7",
+    "name": "A42 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d7",
+    "position": null,
+    "guards": [
+      "4:L42"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A43",
+    "name": "A43 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L43",
+    "position": [
+      847.5,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d12",
+    "name": "A43 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d12",
+    "position": null,
+    "guards": [
+      "4:L43"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A44",
+    "name": "A44 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L44",
+    "position": [
+      868.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d8",
+    "name": "A44 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d8",
+    "position": null,
+    "guards": [
+      "4:L44"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A45",
+    "name": "A45 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L45",
+    "position": [
+      1146.0,
+      728.1
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d13",
+    "name": "A45 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d13",
+    "position": null,
+    "guards": [
+      "4:L45"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A46",
+    "name": "A46 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L46",
+    "position": [
+      1312.5,
+      620.0
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-d9",
+    "name": "A46 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:d9",
+    "position": null,
+    "guards": [
+      "4:L46"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AN-A47",
+    "name": "A47 IndoorView",
+    "device_type": "answering_unit",
+    "host_kind": "room",
+    "host_id": "4:L47",
+    "position": [
+      1464.1,
+      914.0
+    ],
+    "guards": [],
+    "floor_id": "4:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-U1",
+    "name": "Locker Room W",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d6",
+    "position": null,
+    "guards": [
+      "0:GL2"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-U2",
+    "name": "Locker Room M",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "0:d1",
+    "position": null,
+    "guards": [
+      "0:GL1"
+    ],
+    "floor_id": "0:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-1-dA7",
+    "name": "A7 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "1:dA7",
+    "position": null,
+    "guards": [
+      "1:L7"
+    ],
+    "floor_id": "1:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-2-dA7",
+    "name": "A27 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "2:dA7",
+    "position": null,
+    "guards": [
+      "2:L27"
+    ],
+    "floor_id": "2:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-3-dA7",
+    "name": "A37 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "3:dA7",
+    "position": null,
+    "guards": [
+      "3:L37"
+    ],
+    "floor_id": "3:floor",
+    "status": "ok"
+  },
+  {
+    "id": "AC-4-dA7",
+    "name": "A47 Entrance",
+    "device_type": "access_unit",
+    "host_kind": "door",
+    "host_id": "4:dA7",
+    "position": null,
+    "guards": [
+      "4:L47"
+    ],
+    "floor_id": "4:floor",
+    "status": "ok"
+  }
+]
