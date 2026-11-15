@@ -144,15 +144,19 @@ export function accessShading(
  * drawn here, a green and a red of equal lightness, measured almost
  * identical under deuteranopia.
  *
- * So the green is a turquoise: still on the green side, with enough
- * blue in it to survive losing the red-green axis. The red is a shade
- * darker than a pastel, so the two differ in lightness as well as hue.
- * And "no question asked" is a paler grey, clear of both.
+ * So the green leans a little toward blue — a sea green, plainly green
+ * to look at, with just enough blue in it to survive losing the
+ * red-green axis. How far to lean is a trade: a turquoise measured
+ * further from the red under deuteranopia (about 10 against 7 here) and
+ * read less clearly as "go". The red is a shade darker than a pastel,
+ * so the two differ in lightness as well as hue, which is most of what
+ * a colour-blind reader has left. And "no question asked" is a paler
+ * grey, clear of both.
  */
 export const ACCESS_COLORS: Record<AccessShade, string | null> = {
   // No question asked, so no answer drawn.
   none: "#DDDDDD",
-  open: "#4FC3C7",
+  open: "#69C6A7",
   closed: "#E57373",
 };
 
@@ -161,7 +165,7 @@ export const ACCESS_COLORS: Record<AccessShade, string | null> = {
  * tree. A patch of fill can be pale; eight pixels of it cannot, so this
  * is the same hue with more ink in it.
  */
-export const ACCESS_OPEN_MARK = "#1F9AA0";
+export const ACCESS_OPEN_MARK = "#339377";
 
 /** What to fill a room with, for the canvas's `paint`. */
 export function accessPaint(

@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  roomColor,
   EXTERIOR,
   accessType,
   buildAdjacency,
@@ -530,6 +531,22 @@ describe("type inheritance", () => {
     const bedroom = layer.rooms.get("1:B1")!;
     expect(bedroom.space_type).toBeNull();
     expect(accessType(layer, bedroom)).toBe("apartment");
+  });
+
+  it("draws every room of a group in the group's colour", () => {
+    // The locker room keeps its own category, and wears the gym's colour:
+    // on the plan the gym is one thing.
+    const gym = layer.spaceTypes.get("gym")!.color;
+    const locker = layer.rooms.get("0:GL1")!;
+    expect(accessType(layer, locker)).toBe("locker_room");
+    expect(roomColor(layer, locker)).toBe(gym);
+    expect(roomColor(layer, layer.rooms.get("0:GM")!)).toBe(gym);
+    for (const room of roomsInGroup(layer, "0:GYM")) {
+      expect(roomColor(layer, room)).toBe(gym);
+    }
+    // A room in no group still wears its own.
+    const loose = { ...locker, group_id: null };
+    expect(roomColor(layer, loose)).toBe(layer.spaceTypes.get("locker_room")!.color);
   });
 
   it("gives every room a resolvable type", () => {

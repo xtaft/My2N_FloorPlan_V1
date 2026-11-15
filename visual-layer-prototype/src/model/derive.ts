@@ -434,9 +434,23 @@ export function isWallVisible(
   return a.group_id !== b.group_id;
 }
 
-/** A room or group holds no colour of its own; the type owns it. */
+/**
+ * A room or group holds no colour of its own; the type owns it.
+ *
+ * A room of a group is drawn in the group's colour, whatever category
+ * the room has for itself. The gym's locker rooms are locker rooms —
+ * that is still their category, and still what the access check reads —
+ * but on the plan the gym is one thing, and a group drawn in two colours
+ * reads as two things. The colour says which group a room belongs to;
+ * the name on it says what kind of room it is.
+ *
+ * A group with no category of its own or above it has no colour to
+ * give, and its rooms keep theirs.
+ */
 export function roomColor(layer: VisualLayer, room: Room): string {
-  const type = accessType(layer, room);
+  const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
+  const type =
+    (group ? groupAccessType(layer, group) : null) ?? accessType(layer, room);
   if (!type) return UNBOUND_COLOR; // unbound is a valid state, rendered distinctly
   return layer.spaceTypes.get(type)?.color ?? UNBOUND_COLOR;
 }
