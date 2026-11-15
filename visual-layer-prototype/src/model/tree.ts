@@ -2,12 +2,17 @@
  * The navigation tree: what is listed under what, in which order, and
  * what may be dragged where.
  *
- * The tree lists what is drawn. Containment is derived, as it always
+ * The tree lists what the building has: what is drawn, and what a
+ * rooms list says is on a floor. Containment is derived, as it always
  * was — a room is under the group its `group_id` names, a group under
- * its parent — and a space that has no shape on the plan is not in it
- * at all: unassigned from the map, it is the anonymous room left
- * behind that the tree lists, under its floor, and the named space
- * waits in the categories drawer.
+ * its parent.
+ *
+ * A space with no shape is in the tree only when a rooms list put it
+ * there. One that was unassigned from the map is not: the anonymous
+ * room it left behind is its row, under its floor, and the named space
+ * waits in the categories drawer. One that a list named, with a floor,
+ * and that matched nothing drawn, has no other row to stand for it, so
+ * it is listed under that floor.
  *
  * One thing is not derivable and is stored: the order a person put the
  * rows in. `tree_order` holds, per parent, the ids of its children in
@@ -16,9 +21,9 @@
  * reordered needs no entry and a child added later does not need the
  * list rewritten.
  *
- * A row is an envelope or a room. An envelope that is just its one
- * room — a stairwell, the technical room — is listed as that room,
- * standing in for it.
+ * A row is an envelope, a room, or a space from a list. An envelope
+ * that is just its one room — a stairwell, the technical room — is
+ * listed as that room, standing in for it.
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import { topGroups, type VisualLayer } from "./load";
@@ -29,17 +34,19 @@ import {
   passThroughRoom,
 } from "./derive";
 import { liveGroups } from "./groups";
-import type { Group, Room, VisualLayerFile } from "./types";
+import type { Group, Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 export type TreeNode =
   /** `id` is what `tree_order` knows the row by. */
   | { kind: "group"; id: string; group: Group }
   /** `envelope` is the group this room stands in for, if it does. */
-  | { kind: "room"; id: string; room: Room; envelope: Group | null };
+  | { kind: "room"; id: string; room: Room; envelope: Group | null }
+  /** A space a rooms list named that the plan does not have. */
+  | { kind: "space"; id: string; space: UnplacedSpace };
 
 /** A row, named the way a drag names it. */
 export interface TreeRef {
-  kind: "group" | "room";
+  kind: "group" | "room" | "space";
   id: string;
 }
 
@@ -71,11 +78,38 @@ function floorContainers(layer: VisualLayer, floorId: string): Group[] {
 function listedGroup(
   layer: VisualLayer,
   floorId: string,
-  groupId: string | null,
+  groupId: string | null | undefined,
 ): string | null {
   if (!groupId) return null;
+  const group = layer.groups.get(groupId);
+  // A group that has gone, or is on another floor, is no place to be
+  // listed: the row falls back to the floor rather than vanishing.
+  if (!group || group.floor_id !== floorId) return null;
   if (floorContainers(layer, floorId).some((g) => g.id === groupId)) return null;
   return groupId;
+}
+
+/**
+ * Whether the tree lists this space: a rooms list named it, and said
+ * which floor. Without a floor there is nowhere in the tree to put it,
+ * and it stays in the drawer until it has one.
+ */
+export function isSpaceListed(layer: VisualLayer, space: UnplacedSpace): boolean {
+  return (
+    space.from_list === true &&
+    space.floor_id !== null &&
+    layer.floors.some((f) => f.id === space.floor_id)
+  );
+}
+
+/** The list's spaces that are listed at this place. */
+function spacesAt(layer: VisualLayer, place: TreePlace): UnplacedSpace[] {
+  return (layer.file.unplaced_spaces ?? []).filter(
+    (s) =>
+      isSpaceListed(layer, s) &&
+      s.floor_id === place.floorId &&
+      listedGroup(layer, place.floorId, s.group_id) === place.groupId,
+  );
 }
 
 /** The room an envelope is listed as, when it is listed as one. */
@@ -108,6 +142,7 @@ export function treeChildren(layer: VisualLayer, place: TreePlace): TreeNode[] {
         : { kind: "group", id: group.id, group };
     }),
     ...rooms.map((room): TreeNode => ({ kind: "room", id: room.id, room, envelope: null })),
+    ...spacesAt(layer, place).map((space): TreeNode => ({ kind: "space", id: space.id, space })),
   ];
 
   const order = layer.file.tree_order?.[groupId ?? floorId];
@@ -128,6 +163,14 @@ export function treePlaceOf(layer: VisualLayer, ref: TreeRef): TreePlace | null 
     return {
       floorId: group.floor_id,
       groupId: listedGroup(layer, group.floor_id, group.parent_group_id),
+    };
+  }
+  if (ref.kind === "space") {
+    const space = (layer.file.unplaced_spaces ?? []).find((s) => s.id === ref.id);
+    if (!space || !isSpaceListed(layer, space)) return null;
+    return {
+      floorId: space.floor_id!,
+      groupId: listedGroup(layer, space.floor_id!, space.group_id),
     };
   }
   const room = layer.rooms.get(ref.id);
@@ -169,10 +212,10 @@ const floorName = (layer: VisualLayer, id: string) =>
 /**
  * Why a row cannot be dropped there, or null if it can.
  *
- * Two rules, and both are about what the plan already says. Everything
- * in the tree is drawn, and what is drawn stays on the floor it is
- * drawn on — its walls are there, and the tree cannot move walls. And
- * an apartment holds rooms: not groups, not other apartments.
+ * Two rules, and both are about what the plan already says. What is
+ * drawn stays on the floor it is drawn on — its walls are there, and
+ * the tree cannot move walls — so only a space with no shape changes
+ * floor. And an apartment holds rooms: not groups, not other apartments.
  */
 export function treeMoveRefusal(
   layer: VisualLayer,
@@ -186,6 +229,13 @@ export function treeMoveRefusal(
   }
   const drawnElsewhere = (name: string, on: string) =>
     `${name} is drawn on ${floorName(layer, on)}, and what is drawn stays on its floor.`;
+
+  if (moving.kind === "space") {
+    const space = (layer.file.unplaced_spaces ?? []).find((s) => s.id === moving.id);
+    if (!space) return "That space is not in the building.";
+    // Nothing holds it anywhere: it goes to any floor, and into any group.
+    return null;
+  }
 
   if (moving.kind === "room") {
     const room = layer.rooms.get(moving.id);
@@ -208,7 +258,8 @@ export function treeMoveRefusal(
 
 /**
  * Drag a row somewhere else in the tree: to another position among its
- * siblings, into a group, or out to the floor.
+ * siblings, into a group, out to the floor, or — for a space with no
+ * shape — onto another floor.
  */
 export function moveInTree(
   state: EditState,
@@ -251,6 +302,17 @@ export function moveInTree(
                 space_type: intoApartment ? null : r.space_type,
               }
             : r,
+        ),
+      };
+    }
+  } else if (moving.kind === "space") {
+    const space = (file.unplaced_spaces ?? []).find((s) => s.id === moving.id)!;
+    name = space.name;
+    if (!stays) {
+      next = {
+        ...file,
+        unplaced_spaces: (file.unplaced_spaces ?? []).map((s) =>
+          s.id === space.id ? { ...s, floor_id: to.floorId, group_id: to.groupId } : s,
         ),
       };
     }

@@ -301,6 +301,9 @@ export function applySpaceList(
     if (!m) return space;
     return {
       ...space,
+      // The list names it now, whatever it was before: a space taken
+      // off the map and then found in a list is in the list.
+      from_list: true,
       name: m.row.name,
       floor_id: m.floorId ?? space.floor_id,
       space_type: m.row.type === "" ? space.space_type : m.typeId,
@@ -319,6 +322,8 @@ export function applySpaceList(
       floor_id: m.floorId,
       space_type: m.typeId,
       note: m.row.note === "" ? null : m.row.note,
+      // What puts it in the navigation tree, under the floor the row gave.
+      from_list: true,
     });
   }
 
@@ -458,6 +463,28 @@ export function placeSpace(
       .map((d) => d.id),
     groups: pruneGroups(file, rooms, remaining),
     unplaced_spaces: remaining,
+  });
+}
+
+/** Rename a space that has no shape: where it is a row, a row has a name. */
+export function renameUnplacedSpace(
+  state: EditState,
+  spaceId: string,
+  name: string,
+): EditState {
+  const { file } = state;
+  const space = (file.unplaced_spaces ?? []).find((s) => s.id === spaceId);
+  if (!space) {
+    throw new OperationRejected("That space is not waiting to be placed.");
+  }
+  const next = name.trim();
+  if (next.length === 0) throw new OperationRejected("A name cannot be blank.");
+  if (next === space.name) return state;
+  return commit(state, "rename", "Rename", {
+    ...file,
+    unplaced_spaces: (file.unplaced_spaces ?? []).map((s) =>
+      s.id === spaceId ? { ...s, name: next } : s,
+    ),
   });
 }
 

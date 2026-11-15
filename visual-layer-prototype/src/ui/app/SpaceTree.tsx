@@ -30,6 +30,7 @@ import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { BuildingSpace, BuildingStorey } from "../../model";
 import { PANEL_BACKGROUND } from "../theme";
+import { AttentionBadge } from "../AttentionBadge";
 
 /**
  * Row geometry, taken from the design's frames rather than guessed.
@@ -218,7 +219,12 @@ export function SpaceTree({
             // own call and carry different objects for the same spaces.
             const shown = new Set(visible.map((x) => x.id));
             const inside = storey.spaces.filter((x) => shown.has(x.id));
-            if (matches && inside.length === 0) return null;
+            // What a rooms list put on this storey and the plan lacks.
+            const q = query.trim().toLowerCase();
+            const waiting = storey.unplaced.filter(
+              (x) => !matches || x.name.toLowerCase().includes(q),
+            );
+            if (matches && inside.length === 0 && waiting.length === 0) return null;
             const isOpen = !closed.has(storey.id) || Boolean(matches);
             return (
               <Fragment key={storey.id}>
@@ -255,6 +261,20 @@ export function SpaceTree({
                 />
                 {isOpen &&
                   inside.map((space) => renderSpace(space, 2, storey.id))}
+                {/* Named by the list, not drawn on the plan: listed,
+                    greyed, with nothing to point at but the storey. */}
+                {isOpen &&
+                  waiting.map((space) => (
+                    <Row
+                      key={space.id}
+                      depth={2}
+                      icon={<MeetingRoomOutlined sx={iconSx} />}
+                      label={space.name}
+                      unplaced
+                      menu={false}
+                      onClick={onSelectFloor ? () => onSelectFloor(storey.id) : undefined}
+                    />
+                  ))}
               </Fragment>
             );
           })}
@@ -278,6 +298,7 @@ function Row({
   onToggle,
   menu = true,
   selected = false,
+  unplaced = false,
   onClick,
 }: {
   depth: number;
@@ -289,6 +310,8 @@ function Row({
   onToggle?: () => void;
   menu?: boolean;
   selected?: boolean;
+  /** In the rooms list but not on the plan: greyed and marked. */
+  unplaced?: boolean;
   onClick?: () => void;
 }) {
   // With somewhere to go, the row goes there and the chevron is left to
@@ -342,8 +365,17 @@ function Row({
           variant: "body2",
           noWrap: true,
           fontWeight: bold ? 500 : 400,
+          color: unplaced ? "text.secondary" : undefined,
         }}
       />
+      {unplaced && (
+        <Box sx={{ display: "flex", mr: 1 }}>
+          <AttentionBadge
+            label="Unplaced"
+            hint="In the rooms list, not placed on the plan yet"
+          />
+        </Box>
+      )}
       {menu && (
         <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
           <MoreVert sx={{ fontSize: 20 }} />

@@ -6,7 +6,11 @@ import { describe, expect, it } from "vitest";
 import { fixture } from "./load";
 import {
   OperationRejected,
+  applySpaceList,
   initEditState,
+  isSpaceListed,
+  matchSpaceList,
+  renameUnplacedSpace,
   moveInTree,
   placeSpace,
   removeUnplacedSpace,
@@ -28,7 +32,9 @@ const GROUND = { floorId: "0:floor", groupId: null };
 const FIRST = { floorId: "1:floor", groupId: null };
 const C1 = { floorId: "0:floor", groupId: "0:C1" };
 
-const label = (n: TreeNode) => (n.kind === "group" ? n.group.name : n.room.name);
+/** A row's name; a star marks a space from a rooms list, with no shape. */
+const label = (n: TreeNode) =>
+  n.kind === "group" ? n.group.name : n.kind === "room" ? n.room.name : n.space.name + "*";
 const names = (st: EditState, place: { floorId: string; groupId: string | null }) =>
   treeChildren(st.layer, place).map(label);
 const roomNamed = (st: EditState, floorId: string, name: string) =>
@@ -303,5 +309,97 @@ describe("dragging a row", () => {
       { floorId: "0:floor", groupId: "0:C2", beforeId: null },
     );
     expect(after.layer.groups.has("0:C1")).toBe(true);
+  });
+});
+
+describe("spaces a rooms list names that the plan does not have", () => {
+  const row = (name: string, floor: string, type: string, line: number) => ({
+    name, floor, type, note: "", line,
+  });
+  const imported = (st: EditState, rows: ReturnType<typeof row>[]) =>
+    applySpaceList(st, matchSpaceList(st.layer, rows));
+  const spaceNamed = (st: EditState, name: string) =>
+    st.file.unplaced_spaces!.find((x) => x.name === name)!;
+
+  it("are listed in the tree under the floor the list gave", () => {
+    const st = imported(state(), [row("Bike room", "ground floor", "Technical", 2)]);
+    expect(names(st, GROUND).at(-1)).toBe("Bike room*");
+    expect(names(st, FIRST)).not.toContain("Bike room*");
+  });
+
+  it("wait under the category the list gave", () => {
+    const st = imported(state(), [
+      row("Bike room", "ground floor", "Technical", 2),
+      row("Cellar", "ground floor", "", 3),
+    ]);
+    expect(unplacedCategory(st.layer, spaceNamed(st, "Bike room"))).toBe("technical");
+    // No category in the list: Unknown, in the tree all the same.
+    expect(unplacedCategory(st.layer, spaceNamed(st, "Cellar"))).toBeNull();
+    expect(names(st, GROUND).slice(-2)).toEqual(["Bike room*", "Cellar*"]);
+  });
+
+  it("are not in the tree without a floor: there is nowhere to list them", () => {
+    const st = imported(state(), [row("Loft", "", "Technical", 2)]);
+    const loft = spaceNamed(st, "Loft");
+    expect(isSpaceListed(st.layer, loft)).toBe(false);
+    for (const floor of st.layer.floors) {
+      expect(names(st, { floorId: floor.id, groupId: null })).not.toContain("Loft*");
+    }
+  });
+
+  it("leave a space unassigned from the map out, until a list names it", () => {
+    const st = state();
+    const GYM = { floorId: "0:floor", groupId: "0:GYM" };
+    const away = unassignRoom(st, roomIn(st, "0:GYM", "Gym floor").id);
+    expect(isSpaceListed(away.layer, away.file.unplaced_spaces![0])).toBe(false);
+    expect(names(away, GYM)).toEqual(["Locker room M", "Locker room W"]);
+
+    // The list finds it waiting, and from then on the list names it —
+    // in the group it never stopped being a room of.
+    const listed = imported(away, [row("Gym floor", "ground floor", "", 2)]);
+    expect(listed.file.unplaced_spaces!.length).toBe(1);
+    expect(names(listed, GYM)).toEqual(["Locker room M", "Locker room W", "Gym floor*"]);
+  });
+
+  it("can be dragged to another floor, and into a group there", () => {
+    const st = imported(state(), [row("Bike room", "ground floor", "Technical", 2)]);
+    const bike = spaceNamed(st, "Bike room");
+    expect(
+      treeMoveRefusal(st.layer, { kind: "space", id: bike.id }, { floorId: "3:floor", groupId: null }),
+    ).toBeNull();
+    const moved = moveInTree(
+      st,
+      { kind: "space", id: bike.id },
+      { floorId: "1:floor", groupId: "1:A2", beforeId: null },
+    );
+    expect(spaceNamed(moved, "Bike room")).toMatchObject({ floor_id: "1:floor", group_id: "1:A2" });
+    expect(names(moved, { floorId: "1:floor", groupId: "1:A2" })).toEqual(["Bike room*"]);
+    expect(names(moved, GROUND)).not.toContain("Bike room*");
+    expect(moved.undo.at(-1)!.label).toBe("Move Bike room");
+  });
+
+  it("can be reordered among the rows of their floor", () => {
+    const st = imported(state(), [row("Bike room", "ground floor", "Technical", 2)]);
+    const bike = spaceNamed(st, "Bike room");
+    const after = moveInTree(st, { kind: "space", id: bike.id }, { ...GROUND, beforeId: "0:C1" });
+    expect(names(after, GROUND)[0]).toBe("Bike room*");
+  });
+
+  it("can be renamed", () => {
+    const st = imported(state(), [row("Bike room", "ground floor", "Technical", 2)]);
+    const bike = spaceNamed(st, "Bike room");
+    const renamed = renameUnplacedSpace(st, bike.id, "  Bicycle store ");
+    expect(names(renamed, GROUND).at(-1)).toBe("Bicycle store*");
+    expect(() => renameUnplacedSpace(st, bike.id, "  ")).toThrow(OperationRejected);
+  });
+
+  it("leave the tree for the room they are placed on", () => {
+    const st = imported(state(), [row("Bike room", "ground floor", "Technical", 2)]);
+    const bike = spaceNamed(st, "Bike room");
+    const tech = roomNamed(st, "0:floor", "Technical room");
+    const placed = placeSpace(st, bike.id, tech.id);
+    expect(names(placed, GROUND)).not.toContain("Bike room*");
+    expect(names(placed, GROUND)).toContain("Bike room");
+    expect(placed.file.unplaced_spaces).toEqual([]);
   });
 });

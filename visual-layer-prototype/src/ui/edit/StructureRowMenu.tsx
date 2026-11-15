@@ -13,9 +13,10 @@
  * Reorder is on every row of the tree: it turns the tree into something
  * that can be dragged, and any row is a fair place to ask for that.
  *
- * A space with no shape is not in the tree; its menu opens from the
- * drawer, and offers the two things that can be done with it: put it on
- * the plan, or drop it.
+ * A space with no shape can be put on the plan, or dropped. One that a
+ * rooms list put in the tree has a row there as well, so it can also be
+ * renamed and reordered; one that is only in the drawer cannot, having
+ * no row to type into or to drag.
  *
  * Changing the category opens in place rather than as a nested menu. A
  * submenu that has to be kept open while the pointer crosses a gap is the
@@ -42,6 +43,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   groupAccessType,
+  isSpaceListed,
   roomsInGroup,
   type Floor,
   type Group,
@@ -189,6 +191,7 @@ export function StructureRowMenu({
     if (target.kind === "floor") return [reorder()];
     if (target.kind === "space") {
       return [
+        ...(isSpaceListed(layer, target.space) ? [rename(), reorder()] : []),
         item("place", <PlaceOutlined sx={ICON} />, "Place on the plan", onPlace),
         divider(),
         remove(),

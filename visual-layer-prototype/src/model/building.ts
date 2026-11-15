@@ -315,6 +315,12 @@ export interface BuildingStorey {
   id: string;
   name: string;
   spaces: BuildingSpace[];
+  /**
+   * Spaces a rooms list put on this storey that the plan does not
+   * have. Named, so they are listed; shapeless, so there is nothing to
+   * point the plan at.
+   */
+  unplaced: { id: string; name: string }[];
 }
 
 /**
@@ -334,5 +340,8 @@ export function spacesByFloor(layer: VisualLayer): BuildingStorey[] {
     id: floor.id,
     name: floor.name,
     spaces: spaces.filter((s) => floorOf.get(s.id) === floor.id),
+    unplaced: (layer.file.unplaced_spaces ?? [])
+      .filter((s) => s.from_list === true && s.floor_id === floor.id)
+      .map((s) => ({ id: s.id, name: s.name })),
   }));
 }

@@ -90,6 +90,20 @@ export interface UnplacedSpace {
   kind?: "apartment";
   /** The platform unit an unassigned apartment pointed at, kept for when it is placed. */
   domain_ref?: string | null;
+  /**
+   * Named by a rooms list, rather than taken off the map.
+   *
+   * The two are the same record and differ in what the navigation tree
+   * does with them. A space unassigned from the map is represented in
+   * the tree already, by the unnamed room it left behind, so listing its
+   * name as well would show one place twice. A space a list named and
+   * the plan never had is represented nowhere else: the list says the
+   * building has it, on this floor, so the tree lists it there.
+   *
+   * Not derivable — nothing else about the record says where it came
+   * from — so it is stored.
+   */
+  from_list?: boolean;
 }
 
 export interface Group {

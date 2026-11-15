@@ -14,14 +14,17 @@
  * floor collapsed the last one, and an open floor could not be folded at all.
  *
  * What is listed, and in which order, is the model's to say (`treeChildren`):
- * the tree draws rows and does not decide them. It lists what is drawn. A
- * space unassigned from the map is here as the unnamed room it left on its
- * floor; the named space, which has no shape, is in the drawer on the right.
+ * the tree draws rows and does not decide them. Mostly that is what is
+ * drawn. A space unassigned from the map is here as the unnamed room it
+ * left on its floor, and its name waits in the drawer on the right. A space
+ * a rooms list named, with a floor, that matched nothing on the plan has no
+ * room to stand for it, so it is a row of its own: greyed, and marked as
+ * not placed.
  *
  * Reorder (Figma 153:304964) is a mode, entered from any row's menu. In it
- * the rows drag: up and down among their siblings, into a group, or out to
- * the floor. The model says what may go where; the tree only asks it, and
- * shows the answer while the row is held.
+ * the rows drag: up and down among their siblings, into a group, and — for
+ * a space with no shape — onto another floor. The model says what may go
+ * where; the tree only asks it, and shows the answer while the row is held.
  */
 import { Fragment, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
@@ -67,6 +70,7 @@ import {
   type TreeNode,
   type TreePlace,
   type TreeRef,
+  type UnplacedSpace,
   type VisualLayer,
 } from "../../model";
 
@@ -164,7 +168,11 @@ interface RowDnd {
 type Zone = "before" | "after" | "into";
 
 const nameOf = (node: TreeNode) =>
-  node.kind === "group" ? node.group.name : node.room.name;
+  node.kind === "group"
+    ? node.group.name
+    : node.kind === "room"
+      ? node.room.name
+      : node.space.name;
 
 export function StructureTree({
   layer,
@@ -326,6 +334,8 @@ export function StructureTree({
       onMenu?: (el: HTMLElement) => void;
       /** Says what is wrong with the row, on the orange mark. */
       attention?: string;
+      /** A mark after the name: what state the row is in. */
+      trailing?: React.ReactNode;
       dnd?: RowDnd;
     } = {},
   ) => {
@@ -387,7 +397,7 @@ export function StructureTree({
           pl: 1 + depth * 2,
           pr: 1,
           minHeight: 48,
-          opacity: held ? 0.35 : opts.muted ? 0.6 : 1,
+          opacity: held ? 0.35 : 1,
           cursor: draggable && dnd?.ref ? "grab" : undefined,
           ...(zone === "into"
             ? { bgcolor: PRESSED_BACKGROUND, boxShadow: `inset 0 0 0 2px ${DROP_COLOR}` }
@@ -432,6 +442,7 @@ export function StructureTree({
             // carry: the icon wears it instead, so the row says what kind of
             // space it is and what category it is in at once.
             color: opts.tint ?? "action.active",
+            opacity: opts.muted ? 0.6 : 1,
           }}
         >
           {icon}
@@ -450,9 +461,11 @@ export function StructureTree({
               variant: "body1",
               fontWeight: opts.bold ? 700 : 400,
               noWrap: true,
+              color: opts.muted ? "text.secondary" : undefined,
             }}
           />
         )}
+        {opts.trailing}
         {/* Every row carries the same mark, and the row's own id is
             what decides: a floor, an envelope and a room are all just
             keys the selection either reaches or does not. */}
@@ -512,6 +525,33 @@ export function StructureTree({
     });
 
   /**
+   * A space a rooms list says is on this floor, that the plan does not
+   * have. It gets a row — greyed, and marked with the same badge the
+   * drawer puts on it — because the list is a statement about the
+   * building, and the tree is the list of what the building has.
+   */
+  const renderSpace = (space: UnplacedSpace, depth: number, place: TreePlace) =>
+    row(space.id, depth, <MeetingRoomOutlined sx={{ fontSize: 20 }} />, space.name, {
+      muted: true,
+      tint: layer.spaceTypes.get(space.space_type ?? "")?.color,
+      // There is no shape to point at, but there is a floor to turn to.
+      onClick: () => {
+        if (space.floor_id) onFloorChange(space.floor_id);
+      },
+      trailing: (
+        <Box sx={{ display: "flex", ml: 1, mr: 0.5 }}>
+          <AttentionBadge
+            label="Unplaced"
+            hint="In the rooms list, not placed on the plan yet"
+          />
+        </Box>
+      ),
+      onMenu:
+        onRowMenu && ((el: HTMLElement) => onRowMenu(el, { kind: "space", space })),
+      dnd: { ref: { kind: "space", id: space.id }, place, orderId: space.id },
+    });
+
+  /**
    * A flat is a unit, and a unit is a door off the hallway — the same thing
    * a room is, one level up. Envelopes that are not units keep the generic
    * mark, since a gym is not a door.
@@ -536,6 +576,7 @@ export function StructureTree({
   ): React.ReactNode => {
     if (q && !all && !shows(node)) return null;
     if (node.kind === "room") return renderRoom(node.room, depth, place, node.id);
+    if (node.kind === "space") return renderSpace(node.space, depth, place);
 
     const { group } = node;
     const inside: TreePlace = { floorId: group.floor_id, groupId: group.id };
@@ -580,7 +621,8 @@ export function StructureTree({
   /** A floor's own rows, without the connective tissue. */
   const floorRows = (id: string) =>
     treeChildren(layer, { floorId: id, groupId: null }).filter((node) => {
-      const envelope = node.kind === "group" ? node.group : node.envelope;
+      const envelope =
+        node.kind === "group" ? node.group : node.kind === "room" ? node.envelope : null;
       return !(envelope && HIDDEN_FROM_TREE.has(groupAccessType(layer, envelope) ?? ""));
     });
 
