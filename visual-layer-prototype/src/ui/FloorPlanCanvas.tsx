@@ -52,12 +52,16 @@ import {
 } from "../model";
 import { roomAccessState } from "../model";
 import { DEVICE_PX, DeviceMarker } from "./DeviceMarker";
+import { WheelZoom } from "./wheelZoom";
 import { SPACE_MIME } from "./edit/spaceDrag";
 
 /** However far out the plan goes, a marker stays readable. */
 const MIN_DEVICE_PX = 20;
 
 const WALL_COLOR = "#2E3338";
+/** How far out and in the plan zooms. */
+const MIN_SCALE = 0.4;
+const MAX_SCALE = 8;
 const DOOR_COLOR = "#5A646E";
 const GHOST_OK = "#2196f3";
 const GHOST_BAD = "#C62828";
@@ -637,11 +641,13 @@ export function FloorPlanCanvas({
 
   return (
     <TransformWrapper
-      minScale={0.4}
-      maxScale={8}
+      minScale={MIN_SCALE}
+      maxScale={MAX_SCALE}
       limitToBounds={false}
       doubleClick={{ mode: "reset" }}
-      wheel={{ step: 0.08 }}
+      // The library's wheel jumps to a limit in one notch; WheelZoom,
+      // below, does it instead.
+      wheel={{ disabled: true }}
       // While the door tool is armed a drag must not pan the map, or every
       // attempt to place a door slides the plan instead.
       panning={{ disabled: aiming }}
@@ -1195,6 +1201,7 @@ export function FloorPlanCanvas({
           )}
         </svg>
       </TransformComponent>
+      <WheelZoom utils={utils} minScale={MIN_SCALE} maxScale={MAX_SCALE} />
       </>
       )}
     </TransformWrapper>
@@ -1424,7 +1431,7 @@ function DoorSymbol({
  * Both are clipped to the room, so an L-shaped stairwell gets treads that
  * stop at its walls instead of a rectangle of lines laid over the top.
  */
-function ShaftMark({
+export function ShaftMark({
   room,
   kind,
   rings,

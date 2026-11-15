@@ -2,7 +2,9 @@
  * Aligning a floor, and the shaft pairing it records.
  *
  * The fixture's five floors are drawn in one coordinate system already, so
- * every transform is the identity and every shaft sits over its neighbour.
+ * under the identity every shaft sits over its neighbour. (Floor 1 is
+ * stored slid out of place, so there is something to align; the tests
+ * that need it in place say so.)
  * That makes it a good test of the paired case and a useless one for scale,
  * so the scale tests build a floor that is genuinely drawn larger.
  */
@@ -17,6 +19,7 @@ import {
   alignWarnings,
   applyTransform,
   floorTransform,
+  floorsNeedingAlignment,
   initEditState,
   invertTransform,
   landingsFor,
@@ -467,5 +470,49 @@ describe("rotateAbout", () => {
       .filter((v) => v.id.startsWith("1:"))
       .map((v) => v.x);
     expect(c.x).toBeCloseTo((Math.min(...xs) + Math.max(...xs)) / 2, 9);
+  });
+});
+
+describe("which floors need aligning", () => {
+  /** The building with one floor's drawing slid somewhere else. */
+  function slid(st: EditState, floorId: string, dx: number, dy: number): EditState {
+    const file = JSON.parse(JSON.stringify(st.file)) as VisualLayerFile;
+    const f = file.floors.find((x) => x.id === floorId)!;
+    f.transform = [dx, dy, 0, 1];
+    return initEditState(file);
+  }
+
+  it("flags the fixture's first floor, which arrives out of place", () => {
+    expect([...floorsNeedingAlignment(state().layer)]).toEqual(["1:floor"]);
+  });
+
+  it("does not blame the floor above the one that is out", () => {
+    // Floor 2 is over the ground floor, where it belongs. Measured
+    // against floor 1 it would look wrong, and it is not the one to fix.
+    expect(floorsNeedingAlignment(state().layer).has("2:floor")).toBe(false);
+  });
+
+  it("clears once the floor is put over the one below", () => {
+    const st = state();
+    const fixed = alignFloor(st, {
+      floorId: "1:floor",
+      transform: IDENTITY,
+      landings: landingsFor(st.layer, "1:floor", IDENTITY),
+    });
+    expect(floorsNeedingAlignment(fixed.layer).size).toBe(0);
+    expect(floorsNeedingAlignment(undo(fixed).layer).has("1:floor")).toBe(true);
+  });
+
+  it("flags every floor that is out, each on its own account", () => {
+    const st = slid(state(), "3:floor", 900, 700);
+    expect([...floorsNeedingAlignment(st.layer)].sort()).toEqual([
+      "1:floor",
+      "3:floor",
+    ]);
+  });
+
+  it("never flags the lowest floor: it is what the rest are fitted to", () => {
+    const st = slid(state(), "0:floor", 900, 700);
+    expect(floorsNeedingAlignment(st.layer).has("0:floor")).toBe(false);
   });
 });

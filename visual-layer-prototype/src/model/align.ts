@@ -196,8 +196,18 @@ export function landingsFor(
   transform: Transform,
 ): Map<string, string | null> {
   const below = referenceFloor(layer, floorId);
+  if (!below) return new Map<string, string | null>();
+  return landingsOnto(layer, floorId, transform, below);
+}
+
+/** The same, against a floor of the caller's choosing. */
+function landingsOnto(
+  layer: VisualLayer,
+  floorId: string,
+  transform: Transform,
+  below: Floor,
+): Map<string, string | null> {
   const out = new Map<string, string | null>();
-  if (!below) return out;
 
   const targets = shaftSpaces(layer, below.id).map((s) => ({
     space: s,
@@ -219,6 +229,46 @@ export function landingsFor(
       }
     }
     out.set(space.groupId, landed);
+  }
+  return out;
+}
+
+/**
+ * The floors that do not sit over the building below them.
+ *
+ * Derived, not recorded: there is no "has been aligned" flag to forget
+ * to clear. A floor is out when fewer of its shafts rest on a shaft
+ * below than could — fewer than the smaller of the two counts, so a
+ * lift that really does stop a storey short is not a fault.
+ *
+ * Each floor is measured against the nearest storey under it that sits
+ * right, not simply the one below. Otherwise one floor out of place
+ * would flag the floor above it as well, which is where it should be,
+ * and the mark would send somebody to fix the wrong drawing. The lowest
+ * floor with a shaft is where the chain starts: it is what everything
+ * else is fitted to. A floor with no stairs and no lift cannot be
+ * judged, and is neither flagged nor used as a reference.
+ */
+export function floorsNeedingAlignment(layer: VisualLayer): Set<string> {
+  const out = new Set<string>();
+  let reference: Floor | null = null;
+  let referenceShafts = 0;
+  for (const floor of [...layer.floors].sort((a, b) => a.level - b.level)) {
+    const mine = shaftSpaces(layer, floor.id).length;
+    if (mine === 0) continue;
+    if (reference) {
+      const landed = new Set(
+        [
+          ...landingsOnto(layer, floor.id, floorTransform(floor), reference).values(),
+        ].filter(Boolean),
+      );
+      if (landed.size < Math.min(mine, referenceShafts)) {
+        out.add(floor.id);
+        continue;
+      }
+    }
+    reference = floor;
+    referenceShafts = mine;
   }
   return out;
 }

@@ -16,6 +16,7 @@
  * the two cannot count the same category differently.
  */
 import Box from "@mui/material/Box";
+import { AttentionBadge } from "./AttentionBadge";
 
 export function CategoryTally({
   spaces,
@@ -39,26 +40,7 @@ export function CategoryTally({
             sx={{ width: "1px", height: 16, bgcolor: "divider" }}
           />
           <span>{unplaced} unplaced</span>
-          <Box
-            component="span"
-            aria-label="Has unplaced spaces"
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              bgcolor: "#ef6c00",
-              color: "#ffffff",
-              fontSize: 12,
-              fontWeight: 500,
-              lineHeight: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            !
-          </Box>
+          <AttentionBadge label="Has unplaced spaces" />
         </>
       )}
     </Box>

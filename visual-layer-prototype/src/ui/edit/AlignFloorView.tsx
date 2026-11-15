@@ -12,6 +12,13 @@
  * the targets. A stair core can land perfectly while the floor plate is two
  * metres out, and only the faint walls show that.
  *
+ * This floor's stairs and lifts keep the colour and the mark they had
+ * on the screen this was opened from — the category's in the editor,
+ * the legend's in the segmentation review — rather than a colour of
+ * this mode's own: they are what gets lined up, and they are found by
+ * being the same shapes that were on screen a moment ago. The targets are
+ * drawn over them, so the dashes stay visible once a shaft has landed.
+ *
  * The bar sets position and scale. Rotation stays in the transform, is drawn
  * and committed like the rest of it, and keeps whatever value the floor
  * already had — there is just no control for it, since plans drawn at an
@@ -32,6 +39,7 @@ import Typography from "@mui/material/Typography";
 import {
   applyTransform,
   floorShaftRings,
+  accessType,
   floorTransform,
   interiorRings,
   landingsFor,
@@ -42,15 +50,19 @@ import {
   shaftSpaces,
   wallEnds,
   type Point,
+  type Room,
   type Transform,
   type VisualLayer,
 } from "../../model";
+import { ShaftMark } from "../FloorPlanCanvas";
+import { WheelZoom } from "../wheelZoom";
 
 const UNDER = "#8A93A0";
 const TARGET = "#2196f3";
-const LANDED = "#2e7d32";
 const WALL = "#2E3338";
 const PAD = 80;
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 8;
 
 export interface AlignFloorViewProps {
   layer: VisualLayer;
@@ -61,6 +73,12 @@ export interface AlignFloorViewProps {
   onCancel: () => void;
   /** Align against this floor instead of the storey below. */
   referenceFloorId?: string;
+  /**
+   * What colour to fill a room with, as the map takes it: null leaves
+   * the room bare. The screen this opens from passes the paint its own
+   * plan uses, so going into align mode does not recolour the floor.
+   */
+  paint?: (room: Room) => string | null;
 }
 
 /** SVG applies these right to left, which is scale, then turn, then slide. */
@@ -75,6 +93,7 @@ export function AlignFloorView({
   transform,
   onTransformChange,
   referenceFloorId,
+  paint,
   onApply,
   onCancel,
 }: AlignFloorViewProps) {
@@ -265,14 +284,17 @@ export function AlignFloorView({
 
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <TransformWrapper
-          minScale={0.3}
-          maxScale={8}
+          minScale={MIN_SCALE}
+          maxScale={MAX_SCALE}
           limitToBounds={false}
           doubleClick={{ mode: "reset" }}
-          wheel={{ step: 0.08 }}
+          // WheelZoom, below, zooms; the library's wheel is too coarse.
+          wheel={{ disabled: true }}
           // Dragging moves the floor, not the view; the wheel still zooms.
           panning={{ disabled: true }}
         >
+          {(utils) => (
+          <>
           <TransformComponent
             wrapperStyle={{ width: "100%", height: "100%" }}
             contentStyle={{ width: "100%", height: "100%" }}
@@ -308,7 +330,37 @@ export function AlignFloorView({
                 ))}
               </g>
 
-              {/* Its shafts: the things to land on. */}
+              {/* This floor, where the transform currently puts it. */}
+              <g transform={svgTransform(transform)}>
+                {scene.mine.map(({ room, rings }) => {
+                  if (rings.length === 0) return null;
+                  const isShaft =
+                    room.group_id !== null && scene.myShafts.has(room.group_id);
+                  const type = accessType(layer, room);
+                  const painted = paint ? paint(room) : roomColor(layer, room);
+                  return (
+                    <g key={room.id}>
+                      <path
+                        d={ringsToPath(rings)}
+                        fill={painted ?? "transparent"}
+                        // The rest of the floor is thinned so the one
+                        // below shows through; a shaft is as solid as
+                        // it is on the plan.
+                        fillOpacity={isShaft ? 0.85 : 0.5}
+                        fillRule="evenodd"
+                        stroke={WALL}
+                        strokeWidth={isShaft ? 4 : 2}
+                      />
+                      {isShaft && (type === "stairs" || type === "elevator") && (
+                        <ShaftMark room={room} kind={type} rings={rings} />
+                      )}
+                    </g>
+                  );
+                })}
+              </g>
+
+              {/* The shafts below: the things to land on, over this floor's
+                  own so they are never hidden by what has landed. */}
               {scene.targets.map((t) => (
                 <path
                   key={t.groupId}
@@ -320,28 +372,11 @@ export function AlignFloorView({
                   strokeDasharray="16 12"
                 />
               ))}
-
-              {/* This floor, where the transform currently puts it. */}
-              <g transform={svgTransform(transform)}>
-                {scene.mine.map(({ room, rings }) => {
-                  if (rings.length === 0) return null;
-                  const isShaft =
-                    room.group_id !== null && scene.myShafts.has(room.group_id);
-                  return (
-                    <path
-                      key={room.id}
-                      d={ringsToPath(rings)}
-                      fill={isShaft ? LANDED : roomColor(layer, room)}
-                      fillOpacity={isShaft ? 0.75 : 0.5}
-                      fillRule="evenodd"
-                      stroke={isShaft ? LANDED : WALL}
-                      strokeWidth={isShaft ? 6 : 2}
-                    />
-                  );
-                })}
-              </g>
             </svg>
           </TransformComponent>
+          <WheelZoom utils={utils} minScale={MIN_SCALE} maxScale={MAX_SCALE} />
+          </>
+          )}
         </TransformWrapper>
       </Box>
     </Box>

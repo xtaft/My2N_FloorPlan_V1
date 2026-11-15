@@ -38,7 +38,9 @@ import type { RowTarget } from "./StructureRowMenu";
 import { InlineRename } from "./InlineRename";
 import { ResizeHandle } from "./ResizeHandle";
 import { PANEL_BACKGROUND } from "../theme";
+import { AttentionBadge } from "../AttentionBadge";
 import {
+  floorsNeedingAlignment,
   envelopeChain,
   floorEnvelopes,
   groupAccessType,
@@ -188,6 +190,9 @@ export function StructureTree({
     );
   }, [query, layer]);
 
+  /** Floors whose stairs and lifts are not over the ones below. */
+  const misaligned = useMemo(() => floorsNeedingAlignment(layer), [layer]);
+
   const row = (
     key: string,
     depth: number,
@@ -207,6 +212,8 @@ export function StructureTree({
       muted?: boolean;
 
       onMenu?: (el: HTMLElement) => void;
+      /** Says what is wrong with the row, on the orange mark. */
+      attention?: string;
     } = {},
   ) => (
     <ListItemButton
@@ -282,6 +289,11 @@ export function StructureTree({
         (badges.rooms.has(key) ||
           badges.groups.has(key) ||
           badges.floors.has(key)) && <AccessDot />}
+      {opts.attention && (
+        <Box sx={{ display: "flex", ml: 1, mr: opts.onMenu ? 0.5 : 0 }}>
+          <AttentionBadge label="Needs aligning" hint={opts.attention} />
+        </Box>
+      )}
       {opts.onMenu && renaming?.id !== key && (
         <IconButton
           size="small"
@@ -484,6 +496,9 @@ export function StructureTree({
                       open(floor.id);
                     },
                     selected: floor.id === floorId,
+                    attention: misaligned.has(floor.id)
+                      ? "This floor does not sit over the one below. Use Align floor."
+                      : undefined,
                   },
                 )}
                 {/* floorEnvelopes skips the pass-through group that would

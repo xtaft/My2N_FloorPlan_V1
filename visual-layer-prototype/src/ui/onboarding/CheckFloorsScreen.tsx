@@ -39,6 +39,7 @@ import RotateLeft from "@mui/icons-material/RotateLeft";
 import RotateRight from "@mui/icons-material/RotateRight";
 import Undo from "@mui/icons-material/Undo";
 import { AlignFloorView } from "../edit/AlignFloorView";
+import { AttentionBadge } from "../AttentionBadge";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { EditAppBar } from "../edit/EditAppBar";
 import { ActionBar, BarButton, BarGroup, ZoomControls } from "../edit/EditorChrome";
@@ -57,6 +58,7 @@ import {
   referenceFloor,
   rotateAbout,
   invertTransform,
+  floorsNeedingAlignment,
   landingsFor,
   markChecked,
   moveFloor,
@@ -163,6 +165,8 @@ export function CheckFloorsScreen({
     floor?.floor_id ?? layer.floors[index % layer.floors.length]?.id ?? "";
 
   const levels = useMemo(() => storeyLevels(floors), [floors]);
+  /** Floors whose stairs and lifts are not over the ones below. */
+  const out = useMemo(() => floorsNeedingAlignment(layer), [layer]);
 
   // Looking at a floor is what checks it.
   const go = useCallback(
@@ -391,6 +395,14 @@ export function CheckFloorsScreen({
                     primaryTypographyProps={{ variant: "body2", noWrap: true }}
                     secondaryTypographyProps={{ variant: "caption", noWrap: true }}
                   />
+                  {f.segmented && out.has(modelFloorOf(f.id) ?? "") && (
+                    <Box sx={{ display: "flex", mr: 1 }}>
+                      <AttentionBadge
+                        label="Needs aligning"
+                        hint="This floor does not sit over the one below. Use Align floor."
+                      />
+                    </Box>
+                  )}
                   <DragHandle
                     sx={{ fontSize: 18, color: "text.secondary", cursor: "grab" }}
                   />
@@ -493,6 +505,7 @@ export function CheckFloorsScreen({
               onApply={applyAlign}
               onCancel={() => setDraft(null)}
               referenceFloorId={previousId}
+              paint={paintForReview}
             />
           ) : (
             <FloorPlanCanvas
