@@ -1,6 +1,6 @@
 /**
- * The navigation tree: what stays where when a space comes off the map,
- * and what a drag may do.
+ * The navigation tree and the spaces that come off the map: what the
+ * tree lists, where the named space waits, and what a drag may do.
  */
 import { describe, expect, it } from "vitest";
 import { fixture } from "./load";
@@ -9,12 +9,14 @@ import {
   initEditState,
   moveInTree,
   placeSpace,
-  renameUnplacedSpace,
+  removeUnplacedSpace,
+  spaceCategories,
   treeChildren,
   treeMoveRefusal,
   unassignGroup,
   unassignRoom,
   undo,
+  unplacedCategory,
   type EditState,
   type TreeNode,
   type VisualLayerFile,
@@ -24,14 +26,17 @@ const state = (): EditState => initEditState(fixture as unknown as VisualLayerFi
 
 const GROUND = { floorId: "0:floor", groupId: null };
 const FIRST = { floorId: "1:floor", groupId: null };
+const C1 = { floorId: "0:floor", groupId: "0:C1" };
 
-/** A row's name; a star marks a space with no shape. */
-const label = (n: TreeNode) =>
-  n.kind === "group" ? n.group.name : n.kind === "room" ? n.room.name : n.space.name + "*";
+const label = (n: TreeNode) => (n.kind === "group" ? n.group.name : n.room.name);
 const names = (st: EditState, place: { floorId: string; groupId: string | null }) =>
   treeChildren(st.layer, place).map(label);
 const roomNamed = (st: EditState, floorId: string, name: string) =>
   st.layer.file.rooms.find((r) => r.floor_id === floorId && r.name === name)!;
+const roomIn = (st: EditState, groupId: string, name: string) =>
+  st.layer.file.rooms.find((r) => r.group_id === groupId && r.name === name)!;
+const category = (st: EditState, id: string | null) =>
+  spaceCategories(st.layer).find((c) => c.id === id)!;
 
 describe("what the tree lists", () => {
   it("lists a floor's envelopes in drawer order, one-room envelopes as the room", () => {
@@ -46,53 +51,115 @@ describe("what the tree lists", () => {
 
   it("lists an envelope's own rooms and groups", () => {
     const st = state();
-    expect(names(st, { floorId: "0:floor", groupId: "0:C1" })).toEqual(["Shop floor", "Storage"]);
+    expect(names(st, C1)).toEqual(["Shop floor", "Storage"]);
     expect(names(st, { floorId: "0:floor", groupId: "0:GYM" })).toEqual([
       "Locker room M", "Locker room W", "Gym floor",
     ]);
   });
 });
 
-describe("unassigning a room", () => {
-  it("leaves the named space in the row the room had", () => {
+describe("unassigning a room of a group", () => {
+  const unassignStorage = () => {
     const st = state();
-    const tech = roomNamed(st, "0:floor", "Technical room");
-    const after = unassignRoom(st, tech.id);
-    // The anonymous room is listed too, after everything else.
-    expect(names(after, GROUND)).toEqual([
-      "C1", "C2", "GYM", "Lobby", "Stairs", "Elevator", "Technical room*", "Unnamed 1",
-    ]);
-    const space = after.file.unplaced_spaces![0];
-    expect(space).toMatchObject({ name: "Technical room", space_type: "technical", group_id: null });
-    expect(after.layer.rooms.get(tech.id)).toMatchObject({
-      name: "Unnamed 1", space_type: null, group_id: null,
+    const storage = roomIn(st, "0:C1", "Storage");
+    return { st, storage, after: unassignRoom(st, storage.id) };
+  };
+
+  it("leaves an unnamed space of no category on the floor, and lists that", () => {
+    const { storage, after } = unassignStorage();
+    expect(after.layer.rooms.get(storage.id)).toMatchObject({
+      name: "Unnamed 1", space_type: null, group_id: null, surfaced: true,
     });
+    // On the floor, after everything else — and out of the group.
+    expect(names(after, GROUND).at(-1)).toBe("Unnamed 1");
+    expect(names(after, C1)).toEqual(["Shop floor"]);
+    // Under Unknown in the drawer.
+    expect(category(after, null).rooms.map((r) => r.name)).toEqual(["Unnamed 1"]);
   });
 
-  it("keeps a room of a group inside the group, in its place", () => {
-    const st = state();
-    const shop = roomNamed(st, "0:floor", "Shop floor");
-    expect(shop.group_id).toBe("0:C1");
-    const after = unassignRoom(st, shop.id);
-    expect(names(after, { floorId: "0:floor", groupId: "0:C1" })).toEqual(["Shop floor*", "Storage"]);
-    expect(after.file.unplaced_spaces![0].group_id).toBe("0:C1");
-    expect(names(after, GROUND).at(-1)).toBe("Unnamed 1");
+  it("does not list the named space in the tree", () => {
+    const { after } = unassignStorage();
+    const everything = [...names(after, GROUND), ...names(after, C1)];
+    expect(everything).not.toContain("Storage");
+  });
+
+  it("keeps the named space as part of its group, under the group's category", () => {
+    const { after } = unassignStorage();
+    const space = after.file.unplaced_spaces![0];
+    expect(space).toMatchObject({ name: "Storage", group_id: "0:C1", space_type: "commercial" });
+    expect(unplacedCategory(after.layer, space)).toBe("commercial");
+  });
+
+  it("keeps the group a group, even down to one room", () => {
+    const { after } = unassignStorage();
+    // Not collapsed into a row called Shop floor: it is still C1.
+    const row = treeChildren(after.layer, GROUND).find((n) => n.id === "0:C1")!;
+    expect(row.kind).toBe("group");
+  });
+
+  it("does not remove the group when every room of it has been unassigned", () => {
+    const { after } = unassignStorage();
+    const shop = roomIn(after, "0:C1", "Shop floor");
+    const both = unassignRoom(after, shop.id);
+    expect(both.layer.groups.has("0:C1")).toBe(true);
+    expect(names(both, GROUND)).toContain("C1");
+    expect(names(both, C1)).toEqual([]);
+    expect(both.file.unplaced_spaces!.map((s) => s.group_id)).toEqual(["0:C1", "0:C1"]);
+    // Still a commercial unit, with two spaces to place.
+    expect(category(both, "commercial").groups.map((g) => g.id)).toContain("0:C1");
+  });
+
+  it("goes back into its group when it is placed again", () => {
+    const { st, storage, after } = unassignStorage();
+    const space = after.file.unplaced_spaces![0];
+    const back = placeSpace(after, space.id, storage.id);
+    expect(back.layer.rooms.get(storage.id)).toMatchObject({
+      name: "Storage", group_id: "0:C1", space_type: storage.space_type,
+    });
+    expect(back.file.unplaced_spaces).toEqual([]);
+    expect(names(back, C1)).toEqual(names(st, C1));
+  });
+
+  it("lets the group go once its last waiting space is dropped", () => {
+    const { after } = unassignStorage();
+    const both = unassignRoom(after, roomIn(after, "0:C1", "Shop floor").id);
+    const [a, b] = both.file.unplaced_spaces!;
+    const one = removeUnplacedSpace(both, a.id);
+    expect(one.layer.groups.has("0:C1")).toBe(true);
+    const none = removeUnplacedSpace(one, b.id);
+    expect(none.layer.groups.has("0:C1")).toBe(false);
   });
 
   it("is undone whole", () => {
+    const { st, after } = unassignStorage();
+    expect(undo(after).file).toBe(st.file);
+  });
+});
+
+describe("unassigning a space that is its own envelope", () => {
+  it("drops the envelope, which was only the room by another name", () => {
     const st = state();
     const tech = roomNamed(st, "0:floor", "Technical room");
-    expect(undo(unassignRoom(st, tech.id)).file).toBe(st.file);
+    const after = unassignRoom(st, tech.id);
+    expect(after.layer.groups.has("0:gTECH")).toBe(false);
+    expect(names(after, GROUND)).toEqual([
+      "C1", "C2", "GYM", "Lobby", "Stairs", "Elevator", "Unnamed 1",
+    ]);
+    const space = after.file.unplaced_spaces![0];
+    expect(space).toMatchObject({ name: "Technical room", group_id: null });
+    expect(unplacedCategory(after.layer, space)).toBe("technical");
+    // The category stays, for the space that is waiting in it.
+    expect(category(after, "technical")).toBeDefined();
   });
 });
 
 describe("unassigning an apartment", () => {
-  it("leaves an unnamed apartment on the map and the named one in its row", () => {
+  it("leaves an unnamed apartment in the same row, and the named one waiting", () => {
     const st = state();
     const after = unassignGroup(st, "1:A1");
-    const rows = names(after, FIRST);
-    expect(rows[0]).toBe("A1*");
-    expect(rows.at(-1)).toBe("Unnamed apartment 1");
+    // The tree lists what is drawn: the envelope, under its new name.
+    expect(names(after, FIRST)[0]).toBe("Unnamed apartment 1");
+    expect(names(after, FIRST)).not.toContain("A1");
 
     const left = after.layer.groups.get("1:A1")!;
     expect(left).toMatchObject({ name: "Unnamed apartment 1", space_type: "apartment", domain_ref: null });
@@ -105,6 +172,7 @@ describe("unassigning an apartment", () => {
     expect(space).toMatchObject({
       name: "A1", kind: "apartment", space_type: "apartment", domain_ref: "unit:A1",
     });
+    expect(unplacedCategory(after.layer, space)).toBe("apartment");
     // The answering unit is the flat's, and comes away with it.
     expect(space.devices).toContain("AN-A1");
     expect(after.layer.devices.find((d) => d.id === "AN-A1")!.host_id).toBeNull();
@@ -115,7 +183,7 @@ describe("unassigning an apartment", () => {
     expect(() => unassignGroup(state(), "0:C1")).toThrow(OperationRejected);
   });
 
-  it("goes back where it was when it is placed on the apartment again", () => {
+  it("is itself again when it is placed on the apartment", () => {
     const st = state();
     const away = unassignGroup(st, "1:A1");
     const space = away.file.unplaced_spaces![0];
@@ -134,7 +202,7 @@ describe("dragging a row", () => {
     expect(names(after, FIRST).slice(0, 4)).toEqual(["A3", "A1", "A2", "A4"]);
     expect(after.undo.at(-1)!.label).toBe("Reorder A3");
     // Nothing about the building changed.
-    expect(after.file.groups).toBe(st.file.groups);
+    expect(after.file.rooms).toBe(st.file.rooms);
     expect(names(undo(after), FIRST)).toEqual(names(st, FIRST));
   });
 
@@ -152,7 +220,7 @@ describe("dragging a row", () => {
 
   it("puts a room into a group on its floor", () => {
     const st = state();
-    const storage = st.file.rooms.find((r) => r.group_id === "0:C1" && r.name === "Storage")!;
+    const storage = roomIn(st, "0:C1", "Storage");
     const after = moveInTree(
       st,
       { kind: "room", id: storage.id },
@@ -160,8 +228,19 @@ describe("dragging a row", () => {
     );
     expect(after.layer.rooms.get(storage.id)!.group_id).toBe("0:GYM");
     expect(names(after, { floorId: "0:floor", groupId: "0:GYM" }).at(-1)).toBe("Storage");
-    expect(names(after, { floorId: "0:floor", groupId: "0:C1" })).toEqual(["Shop floor"]);
     expect(after.undo.at(-1)!.label).toBe("Move Storage");
+  });
+
+  it("puts the unnamed space left by an unassign into a group", () => {
+    const st = state();
+    const storage = roomIn(st, "0:C1", "Storage");
+    const away = unassignRoom(st, storage.id);
+    const after = moveInTree(
+      away,
+      { kind: "room", id: storage.id },
+      { floorId: "0:floor", groupId: "0:C2", beforeId: null },
+    );
+    expect(names(after, { floorId: "0:floor", groupId: "0:C2" }).at(-1)).toBe("Unnamed 1");
   });
 
   it("takes a room that stood for its envelope out of it, and drops the envelope", () => {
@@ -174,9 +253,7 @@ describe("dragging a row", () => {
     );
     expect(after.layer.rooms.get(tech.id)!.group_id).toBe("0:C1");
     expect(after.layer.groups.has("0:gTECH")).toBe(false);
-    expect(names(after, { floorId: "0:floor", groupId: "0:C1" })).toEqual([
-      "Shop floor", "Storage", "Technical room",
-    ]);
+    expect(names(after, C1)).toEqual(["Shop floor", "Storage", "Technical room"]);
     expect(names(after, GROUND)).not.toContain("Technical room");
   });
 
@@ -192,11 +269,12 @@ describe("dragging a row", () => {
     expect(after.layer.rooms.get(hall.id)).toMatchObject({ group_id: "1:A1", space_type: null });
   });
 
-  it("keeps anything drawn on the floor it is drawn on", () => {
+  it("keeps what is drawn on the floor it is drawn on", () => {
     const st = state();
     const tech = roomNamed(st, "0:floor", "Technical room");
-    const why = treeMoveRefusal(st.layer, { kind: "room", id: tech.id }, FIRST);
-    expect(why).toMatch(/Unassign it from the map/);
+    expect(treeMoveRefusal(st.layer, { kind: "room", id: tech.id }, FIRST)).toMatch(
+      /stays on its floor/,
+    );
     expect(() =>
       moveInTree(st, { kind: "group", id: "1:A1" }, { floorId: "2:floor", groupId: null, beforeId: null }),
     ).toThrow(OperationRejected);
@@ -215,40 +293,15 @@ describe("dragging a row", () => {
     ).toBeNull();
   });
 
-  it("lets a space with no shape go to another floor, and into a group there", () => {
+  it("does not drop a group that a drag empties while a space of it is waiting", () => {
     const st = state();
-    const tech = roomNamed(st, "0:floor", "Technical room");
-    const away = unassignRoom(st, tech.id);
-    const space = away.file.unplaced_spaces![0];
-    const moved = moveInTree(
+    const away = unassignRoom(st, roomIn(st, "0:C1", "Storage").id);
+    const shop = roomIn(away, "0:C1", "Shop floor");
+    const after = moveInTree(
       away,
-      { kind: "space", id: space.id },
-      { floorId: "1:floor", groupId: "1:A2", beforeId: null },
+      { kind: "room", id: shop.id },
+      { floorId: "0:floor", groupId: "0:C2", beforeId: null },
     );
-    expect(moved.file.unplaced_spaces![0]).toMatchObject({ floor_id: "1:floor", group_id: "1:A2" });
-    expect(names(moved, { floorId: "1:floor", groupId: "1:A2" })).toEqual(["Technical room*"]);
-    expect(names(moved, GROUND)).not.toContain("Technical room*");
-  });
-
-  it("does not let an unassigned apartment go inside an apartment", () => {
-    const away = unassignGroup(state(), "1:A1");
-    const space = away.file.unplaced_spaces![0];
-    expect(
-      treeMoveRefusal(away.layer, { kind: "space", id: space.id }, { floorId: "1:floor", groupId: "1:A2" }),
-    ).toMatch(/rooms only/);
-    // Another floor is fine: it has no walls to keep it anywhere.
-    expect(
-      treeMoveRefusal(away.layer, { kind: "space", id: space.id }, { floorId: "3:floor", groupId: null }),
-    ).toBeNull();
-  });
-});
-
-describe("a space with no shape", () => {
-  it("can be renamed", () => {
-    const away = unassignGroup(state(), "1:A1");
-    const id = away.file.unplaced_spaces![0].id;
-    const renamed = renameUnplacedSpace(away, id, "  A1 bis ");
-    expect(renamed.file.unplaced_spaces![0].name).toBe("A1 bis");
-    expect(() => renameUnplacedSpace(away, id, "  ")).toThrow(OperationRejected);
+    expect(after.layer.groups.has("0:C1")).toBe(true);
   });
 });

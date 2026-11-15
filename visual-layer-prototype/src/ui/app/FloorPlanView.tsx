@@ -25,6 +25,7 @@ import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import InputAdornment from "@mui/material/InputAdornment";
 import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
@@ -43,6 +44,7 @@ import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
 import { ModeSwitch, ZoomControls } from "../edit/EditorChrome";
 import { CategoryTally } from "../CategoryTally";
+import { AttentionBadge } from "../AttentionBadge";
 import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
@@ -58,6 +60,8 @@ import {
   roomsInGroup,
   spaceCategories,
   type VisualLayer,
+  unplacedCategory,
+  unplacedHome,
 } from "../../model";
 
 export type PlanMode = "devices" | "access";
@@ -522,11 +526,14 @@ function SpacePanel({
               })),
             ];
             const isOpen = open.has(category.id ?? "unknown");
-            // Spaces the category holds that have no shape on the plan.
+            // Spaces the category holds that have no shape on the plan —
+            // its own, and the rooms of its groups.
             const unplaced = (layer.file.unplaced_spaces ?? []).filter(
-              (sp) => (sp.space_type ?? null) === category.id,
+              (sp) => unplacedCategory(layer, sp) === category.id,
             );
-            const held = inside.length + unplaced.length;
+            const held =
+              inside.length +
+              unplaced.filter((sp) => unplacedHome(layer, sp) === null).length;
             return (
               <Fragment key={category.id ?? "unknown"}>
                 <ListItemButton
@@ -534,7 +541,7 @@ function SpacePanel({
                   onClick={() => toggle(category.id ?? "unknown")}
                 >
                   <Box sx={{ width: 24, display: "flex" }}>
-                    {held > 0 ? (
+                    {held + unplaced.length > 0 ? (
                       isOpen ? (
                         <ExpandMore sx={{ fontSize: 18 }} />
                       ) : (
@@ -585,18 +592,31 @@ function SpacePanel({
                     </ListItemButton>
                   ))}
                 {/* Spaces with no shape yet. They are counted above, so
-                    they are listed — greyed, since there is nothing on
-                    the plan for a click to point at. */}
+                    they are listed — as plain rows rather than buttons,
+                    since there is nothing on the plan to point at. */}
                 {isOpen &&
                   unplaced.map((sp) => (
-                    <ListItemButton key={sp.id} disabled sx={{ minHeight: 48, pl: 6 }}>
+                    <ListItem key={sp.id} sx={{ minHeight: 48, pl: 6 }}>
                       <ListItemText
                         primary={sp.name}
-                        secondary="Unassigned"
+                        // Whose room it is, when it is a room of a group.
+                        secondary={
+                          <Box
+                            component="span"
+                            sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}
+                          >
+                            <span>
+                              {[unplacedHome(layer, sp)?.name, "Unplaced"]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                            <AttentionBadge label="Unplaced" />
+                          </Box>
+                        }
                         primaryTypographyProps={{ variant: "body2", noWrap: true }}
-                        secondaryTypographyProps={{ variant: "caption", noWrap: true }}
+                        secondaryTypographyProps={{ variant: "caption", component: "div" }}
                       />
-                    </ListItemButton>
+                    </ListItem>
                   ))}
               </Fragment>
             );

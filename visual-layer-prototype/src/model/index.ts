@@ -11,6 +11,7 @@ export * from "./shaft";
 export * from "./align";
 export * from "./structure";
 export * from "./tree";
+export * from "./groups";
 export * from "./door";
 export * from "./spaceList";
 export * from "./building";

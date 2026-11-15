@@ -10,7 +10,8 @@ import { commit, OperationRejected, type EditState } from "./edit";
 import { must, type VisualLayer } from "./load";
 import { accessType, roomsInGroup } from "./access";
 import { doorsOfRoom, groupAccessType } from "./derive";
-import { orderWithSwap, treeOrderId, treePlaceOf } from "./tree";
+import { treePlaceOf } from "./tree";
+import { liveGroups } from "./groups";
 import type { Group, Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 function trimmed(name: string): string {
@@ -175,15 +176,11 @@ export function detachRoom(state: EditState, roomId: string): EditState {
   const rooms = file.rooms.map((r) =>
     r.id === roomId ? { ...r, group_id: null } : r,
   );
-  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(
-    file.groups.map((g) => g.parent_group_id).filter(Boolean),
-  );
 
   return commit(state, "regroup", "Detach from group", {
     ...file,
     rooms,
-    groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
+    groups: liveGroups(file.groups, rooms, file.unplaced_spaces),
   });
 }
 
@@ -256,15 +253,10 @@ function anonymise(
   );
   // The envelope it leaves may now hold nothing, and an empty envelope is a
   // row that names nothing.
-  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(
-    file.groups.map((g) => g.parent_group_id).filter(Boolean),
-  );
-
   return commit(state, kind, label, {
     ...file,
     rooms,
-    groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
+    groups: liveGroups(file.groups, rooms, file.unplaced_spaces),
   });
 }
 
@@ -309,14 +301,14 @@ function freeSpaceId(taken: Set<string>): string {
  * manager has to resolve, and a row they cannot see is not a to-do.
  *
  * What is new is the identity, which leaves the plan with no walls at all
- * and waits in the drawer under the category it read as, still named, now
- * labelled unassigned. So a category of two spaces still shows two after
- * one of them is unassigned.
+ * and waits in the drawer, still named, marked unplaced. It waits where
+ * it belonged: a space on its own under the category it read as, a room
+ * of a group inside that group — the shop's storage room is still the
+ * shop's. A group is never removed for having only such rooms left.
  *
- * In the navigation tree the named space stays exactly where the room
- * was — same parent, same position — because the tree is the list of
- * what the building has, and the building still has it. The anonymous
- * room is listed too, under the floor, as the new thing it is.
+ * The navigation tree lists what is drawn, so it lists the anonymous
+ * room, under its floor, and not the named space: its group loses the
+ * row there, and keeps it in the drawer.
  *
  * Keeping the room as the record rather than minting a fresh one is what
  * makes the rest fall out: walls, doors and the readers that guard them go
@@ -331,7 +323,8 @@ function freeSpaceId(taken: Set<string>): string {
 export function unassignRoom(state: EditState, roomId: string): EditState {
   const { layer, file } = state;
   const room = must(layer.rooms, roomId, "room");
-  // Where its row is now, which is where the named space will stay.
+  // The group its row is under — not the envelope it merely stands in
+  // for, which is the room by another name and goes when the room does.
   const place = treePlaceOf(layer, { kind: "room", id: roomId }) ?? {
     floorId: room.floor_id,
     groupId: null,
@@ -371,12 +364,7 @@ export function unassignRoom(state: EditState, roomId: string): EditState {
     d.host_kind === "room" && d.host_id === roomId ? { ...d, host_id: null } : d,
   );
 
-  // The envelope it leaves may now hold nothing, and an empty envelope is
-  // a row that names nothing.
-  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(
-    file.groups.map((g) => g.parent_group_id).filter(Boolean),
-  );
+  const spaces = [...(file.unplaced_spaces ?? []), space];
 
   return commit(state, "unassign_room", "Unassign from map", {
     ...file,
@@ -385,14 +373,10 @@ export function unassignRoom(state: EditState, roomId: string): EditState {
     unplaced_devices: devices
       .filter((d) => d.host_id === null)
       .map((d) => d.id),
-    groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
-    unplaced_spaces: [...(file.unplaced_spaces ?? []), space],
-    tree_order: orderWithSwap(
-      layer,
-      place,
-      treeOrderId(layer, { kind: "room", id: roomId }),
-      space.id,
-    ),
+    // An envelope that was only this room goes with it. One the space is
+    // still a part of stays, however little of it is left on the plan.
+    groups: liveGroups(file.groups, rooms, spaces),
+    unplaced_spaces: spaces,
   });
 }
 
@@ -413,8 +397,9 @@ export function unnamedApartmentName(layer: VisualLayer): string {
  * door — and wrong about which one. So the envelope stays on the plan
  * with everything in it, still an apartment, with no name and no unit
  * behind it; and the apartment the building knows — its name, the
- * platform unit it points at, its answering unit — comes away and waits,
- * listed where it was in the tree and under Apartment in the drawer.
+ * platform unit it points at, its answering unit — comes away and waits
+ * under Apartment in the drawer, marked unplaced. The tree goes on
+ * listing the envelope, in the same row, under its new name.
  *
  * The rooms inside keep their names. "Bedroom" was never a statement
  * about whose bedroom it is.
@@ -472,7 +457,6 @@ export function unassignGroup(state: EditState, groupId: string): EditState {
     devices,
     unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
     unplaced_spaces: [...(file.unplaced_spaces ?? []), space],
-    tree_order: orderWithSwap(layer, place, groupId, space.id),
   });
 }
 

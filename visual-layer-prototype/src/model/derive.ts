@@ -13,6 +13,7 @@ import {
   type Group,
   type Point,
   type Room,
+  type UnplacedSpace,
   type Wall,
 } from "./types";
 
@@ -119,8 +120,49 @@ export function passThroughRoom(
   group: Group,
 ): Room | null {
   if ((layer.childGroups.get(group.id) ?? []).length > 0) return null;
+  // A space of this envelope that is waiting to be placed is a second
+  // thing in it. The shop whose storage room came off the map is still
+  // a shop with a storage room, not a single room called Shop floor.
+  if ((layer.file.unplaced_spaces ?? []).some((s) => s.group_id === group.id)) {
+    return null;
+  }
   const rooms = layer.file.rooms.filter((r) => r.group_id === group.id);
   return rooms.length === 1 ? rooms[0] : null;
+}
+
+/** The group a space with no shape is still a part of, if it is in one. */
+export function unplacedHome(layer: VisualLayer, space: UnplacedSpace): Group | null {
+  return (space.group_id ? layer.groups.get(space.group_id) : undefined) ?? null;
+}
+
+/**
+ * The category a space with no shape is counted under in the drawer.
+ *
+ * On its own, the category it read as. Inside a group, the category of
+ * the envelope the drawer lists that group under — the storage room of
+ * a commercial unit waits under Commercial unit, where its unit is,
+ * whatever it would have been called by itself.
+ */
+export function unplacedCategory(
+  layer: VisualLayer,
+  space: UnplacedSpace,
+): string | null {
+  let at = unplacedHome(layer, space);
+  if (!at) return space.space_type ?? null;
+  for (;;) {
+    const parent: Group | undefined = at.parent_group_id
+      ? layer.groups.get(at.parent_group_id)
+      : undefined;
+    if (!parent) break;
+    // A top-level group with no rooms only holds the floor together;
+    // the drawer lists what is inside it, so the climb stops below it.
+    const holdsFloor =
+      parent.parent_group_id === null &&
+      !layer.file.rooms.some((r) => r.group_id === parent.id);
+    if (holdsFloor) break;
+    at = parent;
+  }
+  return groupAccessType(layer, at);
 }
 
 /**
@@ -214,7 +256,7 @@ export function spaceCategories(layer: VisualLayer): SpaceCategory[] {
   // itself — it knows which one was made in front of the user, and the
   // file cannot tell an empty new category from an unused old one.
   const waiting = new Set(
-    (layer.file.unplaced_spaces ?? []).map((s) => s.space_type ?? null),
+    (layer.file.unplaced_spaces ?? []).map((s) => unplacedCategory(layer, s)),
   );
 
   const out: SpaceCategory[] = layer.file.space_types

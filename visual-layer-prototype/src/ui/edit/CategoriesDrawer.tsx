@@ -32,6 +32,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import InputBase from "@mui/material/InputBase";
 import { ResizeHandle } from "./ResizeHandle";
+import { AttentionBadge } from "../AttentionBadge";
 import { CategoryTally } from "../CategoryTally";
 import { PANEL_BACKGROUND } from "../theme";
 import { SPACE_MIME } from "./spaceDrag";
@@ -54,6 +55,8 @@ import {
   roomColor,
   roomsInGroup,
   spaceCategories,
+  unplacedCategory,
+  unplacedHome,
   type Group,
   type SpaceCategory,
   type UnplacedSpace,
@@ -182,8 +185,21 @@ export function CategoriesDrawer({
     for (const g of layer.file.groups) {
       if (g.name.toLowerCase().includes(q)) hit.add(g.id);
     }
+    for (const sp of layer.file.unplaced_spaces ?? []) {
+      if (sp.name.toLowerCase().includes(q)) hit.add(sp.id);
+    }
     return hit;
   }, [query, layer]);
+
+  /** The spaces of a group that are not on the plan: still its own. */
+  const waitingIn = (groupId: string) =>
+    (layer.file.unplaced_spaces ?? []).filter(
+      (sp) => unplacedHome(layer, sp)?.id === groupId,
+    );
+  /** How many spaces with no shape an envelope holds, at any depth. */
+  const waitingUnder = (group: Group): number =>
+    waitingIn(group.id).length +
+    (layer.childGroups.get(group.id) ?? []).reduce((n, c) => n + waitingUnder(c), 0);
 
   const floorName = (floorId: string) =>
     layer.floors.find((f) => f.id === floorId)?.name ?? floorId;
@@ -194,6 +210,7 @@ export function CategoriesDrawer({
     if (matches.has(group.id)) return true;
     if (layer.file.rooms.some((r) => r.group_id === group.id && matches.has(r.id)))
       return true;
+    if (waitingIn(group.id).some((sp) => matches.has(sp.id))) return true;
     return (layer.childGroups.get(group.id) ?? []).some(branchMatches);
   };
 
@@ -242,11 +259,16 @@ export function CategoriesDrawer({
   );
 
   /**
-   * A space the building has and the plan does not. It drags: that is the
-   * whole point of listing it, and a row that only said "not placed yet"
-   * would be a reminder rather than a way to deal with it.
+   * A space the building has and the plan does not: unassigned from the
+   * map, or imported and never placed. It is listed where it belongs —
+   * under its category, or inside the group it is a room of — and marked
+   * unplaced, with the same badge its category carries.
+   *
+   * It drags: that is the whole point of listing it, and a row that only
+   * said "not placed yet" would be a reminder rather than a way to deal
+   * with it.
    */
-  const renderUnplaced = (space: UnplacedSpace) => (
+  const renderUnplaced = (space: UnplacedSpace, depth = 1) => (
     <ListItemButton
       key={space.id}
       draggable
@@ -257,7 +279,7 @@ export function CategoriesDrawer({
         e.dataTransfer.setData("text/plain", space.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      sx={{ pl: 4, pr: 1, minHeight: 68, opacity: 0.7, cursor: "grab" }}
+      sx={{ pl: 2 + depth * 2, pr: 1, minHeight: 68, cursor: "grab" }}
     >
       <Box sx={{ width: 28, flexShrink: 0 }} />
       <Box
@@ -275,12 +297,22 @@ export function CategoriesDrawer({
         primary={space.name}
         // It is still whatever it was; what it has lost is a place.
         secondary={
-          space.floor_id
-            ? `${floorName(space.floor_id)} · Unassigned`
-            : "Unassigned"
+          <Box
+            component="span"
+            sx={{ display: "inline-flex", alignItems: "center", gap: 1, whiteSpace: "nowrap" }}
+          >
+            <span>
+              {/* Inside a group the group's row has already said which
+                  floor; on its own, the space has to. */}
+              {depth === 1 && space.floor_id
+                ? `${floorName(space.floor_id)} · Unplaced`
+                : "Unplaced"}
+            </span>
+            <AttentionBadge label="Unplaced" />
+          </Box>
         }
         primaryTypographyProps={{ variant: "body1", noWrap: true }}
-        secondaryTypographyProps={{ variant: "body2" }}
+        secondaryTypographyProps={{ variant: "body2", component: "div" }}
       />
       <IconButton
         size="small"
@@ -311,7 +343,9 @@ export function CategoriesDrawer({
       (r) => r.group_id === group.id && isRoomListed(layer, r),
     );
     const children = layer.childGroups.get(group.id) ?? [];
-    const expandable = rooms.length > 0 || children.length > 0;
+    // Its rooms that are not on the plan are still its rooms.
+    const waiting = waitingIn(group.id);
+    const expandable = rooms.length > 0 || children.length > 0 || waiting.length > 0;
     const open = isExpanded(group.id) || Boolean(matches);
 
     return (
@@ -343,11 +377,26 @@ export function CategoriesDrawer({
           <ListItemText
             primary={group.name}
             // The floor, because the same envelope name repeats on every
-            // storey — four Hallways, five Stairs — and then what is in it.
-            // Rooms are always drawn, so an envelope has nothing unplaced.
-            secondary={`${floorName(group.floor_id)} · ${countSpaces(roomsInGroup(layer, group.id).length)}`}
+            // storey — four Hallways, five Stairs — and then what is in it,
+            // with the badge when some of that is not on the plan: a folded
+            // group must not hide what its category is flagging.
+            secondary={
+              <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+                <span>
+                  {`${floorName(group.floor_id)} · ${countSpaces(
+                    roomsInGroup(layer, group.id).length + waitingUnder(group),
+                  )}`}
+                </span>
+                {waitingUnder(group) > 0 && (
+                  <AttentionBadge
+                    label="Has unplaced spaces"
+                    hint={`${waitingUnder(group)} unplaced`}
+                  />
+                )}
+              </Box>
+            }
             primaryTypographyProps={{ variant: "body1", noWrap: true }}
-            secondaryTypographyProps={{ variant: "body2" }}
+            secondaryTypographyProps={{ variant: "body2", component: "div" }}
           />
           <IconButton
             size="small"
@@ -364,6 +413,7 @@ export function CategoriesDrawer({
           <>
             {children.map((c) => renderEnvelope(c, depth + 1))}
             {rooms.map((r) => renderRoom(r, depth + 1))}
+            {waiting.map((sp) => renderUnplaced(sp, depth + 1))}
           </>
         )}
       </Fragment>
@@ -427,10 +477,19 @@ export function CategoriesDrawer({
           {visible.map((category) => {
             const key = category.id ?? "__unknown__";
             const open = isExpanded(key) || Boolean(matches);
+            // Every space of the category that is not on the plan, the
+            // rooms of its groups included: that is what the badge is for.
             const waiting = categoryTally(layer, category.id).unplaced;
+            // The ones that are spaces of the category in their own right,
+            // rather than a room of one of its groups.
+            const loose = (layer.file.unplaced_spaces ?? []).filter(
+              (sp) =>
+                unplacedHome(layer, sp) === null &&
+                unplacedCategory(layer, sp) === category.id,
+            );
             // What the row opens onto. A category whose spaces are all
             // unplaced still has rows inside it to reach.
-            const held = placed(category) + waiting;
+            const held = placed(category) + loose.length;
             return (
               <Fragment key={key}>
                 <ListItemButton
@@ -519,8 +578,8 @@ export function CategoriesDrawer({
                     {/* Spaces with no shape yet, under the category they
                         were imported as. Drag one onto a space on the plan
                         to give it that shape. */}
-                    {(layer.file.unplaced_spaces ?? [])
-                      .filter((sp) => (sp.space_type ?? null) === category.id)
+                    {loose
+                      .filter((sp) => !matches || matches.has(sp.id))
                       .map((space) => renderUnplaced(space))}
                   </>
                 )}

@@ -64,7 +64,6 @@ import {
   unassignGroup,
   unassignRoom,
   moveInTree,
-  renameUnplacedSpace,
   type Group,
   type Room,
   previewDeleteWall,
@@ -395,7 +394,7 @@ export function EditModeScreen({
   /** The row being renamed in place, and the text so far. */
   const [renaming, setRenaming] = useState<{
     id: string;
-    kind: "room" | "group" | "space";
+    kind: "room" | "group";
     draft: string;
   } | null>(null);
 
@@ -405,9 +404,7 @@ export function EditModeScreen({
     run(() =>
       kind === "room"
         ? renameRoom(state, id, draft)
-        : kind === "group"
-          ? renameGroup(state, id, draft)
-          : renameUnplacedSpace(state, id, draft),
+        : renameGroup(state, id, draft),
     );
     setRenaming(null);
   }, [renaming, run, state]);
@@ -969,8 +966,6 @@ export function EditModeScreen({
             setRenaming({ id: target.room.id, kind: "room", draft: target.room.name });
           } else if (target.kind === "group") {
             setRenaming({ id: target.group.id, kind: "group", draft: target.group.name });
-          } else if (target.kind === "space") {
-            setRenaming({ id: target.space.id, kind: "space", draft: target.space.name });
           }
         }}
         onReorder={() => {

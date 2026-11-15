@@ -315,12 +315,6 @@ export interface BuildingStorey {
   id: string;
   name: string;
   spaces: BuildingSpace[];
-  /**
-   * Spaces the building has on this storey that the plan does not show:
-   * unassigned from the map, or imported and never placed. Named, so
-   * they are listed; shapeless, so there is nothing to point the plan at.
-   */
-  unassigned: { id: string; name: string }[];
 }
 
 /**
@@ -340,8 +334,5 @@ export function spacesByFloor(layer: VisualLayer): BuildingStorey[] {
     id: floor.id,
     name: floor.name,
     spaces: spaces.filter((s) => floorOf.get(s.id) === floor.id),
-    unassigned: (layer.file.unplaced_spaces ?? [])
-      .filter((s) => s.floor_id === floor.id)
-      .map((s) => ({ id: s.id, name: s.name })),
   }));
 }

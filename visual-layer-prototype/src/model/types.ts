@@ -76,16 +76,16 @@ export interface UnplacedSpace {
    */
   devices?: string[];
   /**
-   * The group it is listed under in the navigation tree, or null/absent
-   * for directly under its floor. A room's place in the tree is where
-   * its walls are; this has no walls, so it has to say. It is what keeps
-   * a space where it was when it is unassigned from the map.
+   * The group it is still a part of, or null/absent for none. A room
+   * says which group it is in by where it is; this has no walls, so it
+   * has to say. It is what keeps a shop's storage room in the shop, in
+   * the categories drawer, after it is unassigned from the map — and
+   * what keeps the shop from being removed as empty meanwhile.
    */
   group_id?: string | null;
   /**
    * Set when this is a whole apartment that came off the map, rather
-   * than a single space: placing it names an envelope, not a room, and
-   * it cannot be dragged inside another apartment.
+   * than a single space: placing it names an envelope, not a room.
    */
   kind?: "apartment";
   /** The platform unit an unassigned apartment pointed at, kept for when it is placed. */

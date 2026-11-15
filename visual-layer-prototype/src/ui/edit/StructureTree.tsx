@@ -14,14 +14,14 @@
  * floor collapsed the last one, and an open floor could not be folded at all.
  *
  * What is listed, and in which order, is the model's to say (`treeChildren`):
- * the tree draws rows and does not decide them. That is also where a space
- * unassigned from the map comes from — it has no shape, but it is still a
- * space of the building, so it is still a row, greyed and marked.
+ * the tree draws rows and does not decide them. It lists what is drawn. A
+ * space unassigned from the map is here as the unnamed room it left on its
+ * floor; the named space, which has no shape, is in the drawer on the right.
  *
  * Reorder (Figma 153:304964) is a mode, entered from any row's menu. In it
- * the rows drag: up and down among their siblings, into a group, and — for
- * a space with no shape — onto another floor. The model says what may go
- * where; the tree only asks it, and shows the answer while the row is held.
+ * the rows drag: up and down among their siblings, into a group, or out to
+ * the floor. The model says what may go where; the tree only asks it, and
+ * shows the answer while the row is held.
  */
 import { Fragment, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
@@ -41,7 +41,6 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import DragIndicator from "@mui/icons-material/DragIndicator";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
-import LocationOffOutlined from "@mui/icons-material/LocationOffOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
@@ -56,7 +55,6 @@ import { AttentionBadge } from "../AttentionBadge";
 import {
   floorsNeedingAlignment,
   envelopeChain,
-  floorlessSpaces,
   groupAccessType,
   isRoomListed,
   roomColor,
@@ -69,7 +67,6 @@ import {
   type TreeNode,
   type TreePlace,
   type TreeRef,
-  type UnplacedSpace,
   type VisualLayer,
 } from "../../model";
 
@@ -167,11 +164,7 @@ interface RowDnd {
 type Zone = "before" | "after" | "into";
 
 const nameOf = (node: TreeNode) =>
-  node.kind === "group"
-    ? node.group.name
-    : node.kind === "room"
-      ? node.room.name
-      : node.space.name;
+  node.kind === "group" ? node.group.name : node.room.name;
 
 export function StructureTree({
   layer,
@@ -333,8 +326,6 @@ export function StructureTree({
       onMenu?: (el: HTMLElement) => void;
       /** Says what is wrong with the row, on the orange mark. */
       attention?: string;
-      /** A mark after the name: what state the row is in. */
-      trailing?: React.ReactNode;
       dnd?: RowDnd;
     } = {},
   ) => {
@@ -462,7 +453,6 @@ export function StructureTree({
             }}
           />
         )}
-        {opts.trailing}
         {/* Every row carries the same mark, and the row's own id is
             what decides: a floor, an envelope and a room are all just
             keys the selection either reaches or does not. */}
@@ -522,35 +512,6 @@ export function StructureTree({
     });
 
   /**
-   * A space the building has and the plan does not: unassigned from the
-   * map, or imported and never placed. It keeps its row — greyed, and
-   * marked — because the tree is the list of what the building has.
-   */
-  const renderSpace = (space: UnplacedSpace, depth: number, place?: TreePlace) =>
-    row(space.id, depth, <MeetingRoomOutlined sx={{ fontSize: 20 }} />, space.name, {
-      muted: true,
-      tint: layer.spaceTypes.get(space.space_type ?? "")?.color,
-      // There is no shape to point at, but there is a floor to turn to.
-      onClick: () => {
-        if (space.floor_id) onFloorChange(space.floor_id);
-      },
-      trailing: (
-        <Tooltip title="Unassigned from the map">
-          <LocationOffOutlined
-            aria-label="Unassigned from the map"
-            sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0, ml: 0.5 }}
-          />
-        </Tooltip>
-      ),
-      onMenu:
-        onRowMenu && ((el: HTMLElement) => onRowMenu(el, { kind: "space", space })),
-      dnd: {
-        ref: { kind: "space", id: space.id },
-        ...(place ? { place, orderId: space.id } : {}),
-      },
-    });
-
-  /**
    * A flat is a unit, and a unit is a door off the hallway — the same thing
    * a room is, one level up. Envelopes that are not units keep the generic
    * mark, since a gym is not a door.
@@ -575,7 +536,6 @@ export function StructureTree({
   ): React.ReactNode => {
     if (q && !all && !shows(node)) return null;
     if (node.kind === "room") return renderRoom(node.room, depth, place, node.id);
-    if (node.kind === "space") return renderSpace(node.space, depth, place);
 
     const { group } = node;
     const inside: TreePlace = { floorId: group.floor_id, groupId: group.id };
@@ -620,8 +580,7 @@ export function StructureTree({
   /** A floor's own rows, without the connective tissue. */
   const floorRows = (id: string) =>
     treeChildren(layer, { floorId: id, groupId: null }).filter((node) => {
-      const envelope =
-        node.kind === "group" ? node.group : node.kind === "room" ? node.envelope : null;
+      const envelope = node.kind === "group" ? node.group : node.envelope;
       return !(envelope && HIDDEN_FROM_TREE.has(groupAccessType(layer, envelope) ?? ""));
     });
 
@@ -746,12 +705,6 @@ export function StructureTree({
               </Fragment>
             );
           })}
-          {/* Spaces a list named without saying which floor. They are in
-              the building, so they are listed; dragging one onto a floor
-              is how it gets one. */}
-          {floorlessSpaces(layer)
-            .filter((s) => !q || s.name.toLowerCase().includes(q))
-            .map((space) => renderSpace(space, 1))}
         </List>
       </Box>
 

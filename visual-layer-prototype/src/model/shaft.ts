@@ -12,6 +12,7 @@
  * rather than a dropdown. The warning has to be true, so this computes what
  * actually breaks rather than saying something vague about structure.
  */
+import { liveGroups } from "./groups";
 import { commit, OperationRejected, type EditState } from "./edit";
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { groupAccessType } from "./derive";
@@ -260,11 +261,8 @@ export function setRoomSpaceType(
       : r,
   );
 
-  const prune = (groups: Group[]) => {
-    const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
-    const hasChild = new Set(groups.map((g) => g.parent_group_id).filter(Boolean));
-    return groups.filter((g) => used.has(g.id) || hasChild.has(g.id));
-  };
+  const prune = (groups: Group[]) =>
+    liveGroups(groups, rooms, file.unplaced_spaces);
 
   const impact = shaftImpact(layer, roomId, nextType);
   if (!impact) {

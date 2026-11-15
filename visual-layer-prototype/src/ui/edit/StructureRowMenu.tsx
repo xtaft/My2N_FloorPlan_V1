@@ -9,10 +9,13 @@
  * A room gets everything: Rename, Reorder, Hide, Change space category,
  * Detach from group, Unassign from map, Delete. The other rows get the
  * part of that which means something for them — an envelope has no
- * group to detach from, a floor can only be reordered within, and a
- * space with no shape has nothing to hide and can be placed instead.
- * Reorder is on all of them: it turns the tree into something that can
- * be dragged, and any row is a fair place to ask for that.
+ * group to detach from, and a floor can only be reordered within.
+ * Reorder is on every row of the tree: it turns the tree into something
+ * that can be dragged, and any row is a fair place to ask for that.
+ *
+ * A space with no shape is not in the tree; its menu opens from the
+ * drawer, and offers the two things that can be done with it: put it on
+ * the plan, or drop it.
  *
  * Changing the category opens in place rather than as a nested menu. A
  * submenu that has to be kept open while the pointer crosses a gap is the
@@ -186,8 +189,6 @@ export function StructureRowMenu({
     if (target.kind === "floor") return [reorder()];
     if (target.kind === "space") {
       return [
-        rename(),
-        reorder(),
         item("place", <PlaceOutlined sx={ICON} />, "Place on the plan", onPlace),
         divider(),
         remove(),

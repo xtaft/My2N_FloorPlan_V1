@@ -2,25 +2,23 @@
  * The navigation tree: what is listed under what, in which order, and
  * what may be dragged where.
  *
- * Containment is derived, as it always was — a room is under the group
- * its `group_id` names, a group under its parent. Two things are not
- * derivable and are stored:
+ * The tree lists what is drawn. Containment is derived, as it always
+ * was — a room is under the group its `group_id` names, a group under
+ * its parent — and a space that has no shape on the plan is not in it
+ * at all: unassigned from the map, it is the anonymous room left
+ * behind that the tree lists, under its floor, and the named space
+ * waits in the categories drawer.
  *
- * - The order a person put the rows in. `tree_order` holds, per parent,
- *   the ids of its children in the order they were dragged into. Ids it
- *   does not mention come after, in the order they would have had anyway,
- *   so a parent nobody has reordered needs no entry and a child added
- *   later does not need the list rewritten.
+ * One thing is not derivable and is stored: the order a person put the
+ * rows in. `tree_order` holds, per parent, the ids of its children in
+ * the order they were dragged into. Ids it does not mention come after,
+ * in the order they would have had anyway, so a parent nobody has
+ * reordered needs no entry and a child added later does not need the
+ * list rewritten.
  *
- * - Where a space with no shape is listed. A room's place in the tree is
- *   its place in the building, but a space unassigned from the map has
- *   no walls to say which flat it is in, so it carries a `group_id` of
- *   its own. That is what lets it stay where it was when it comes off
- *   the plan, and what lets it be dragged to another floor.
- *
- * A row is one of three things: an envelope, a room, or a space with no
- * shape. An envelope that is just its one room — a stairwell, the
- * technical room — is listed as that room, standing in for it.
+ * A row is an envelope or a room. An envelope that is just its one
+ * room — a stairwell, the technical room — is listed as that room,
+ * standing in for it.
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import { topGroups, type VisualLayer } from "./load";
@@ -30,18 +28,18 @@ import {
   isRoomListed,
   passThroughRoom,
 } from "./derive";
-import type { Group, Room, UnplacedSpace, VisualLayerFile } from "./types";
+import { liveGroups } from "./groups";
+import type { Group, Room, VisualLayerFile } from "./types";
 
 export type TreeNode =
   /** `id` is what `tree_order` knows the row by. */
   | { kind: "group"; id: string; group: Group }
   /** `envelope` is the group this room stands in for, if it does. */
-  | { kind: "room"; id: string; room: Room; envelope: Group | null }
-  | { kind: "space"; id: string; space: UnplacedSpace };
+  | { kind: "room"; id: string; room: Room; envelope: Group | null };
 
 /** A row, named the way a drag names it. */
 export interface TreeRef {
-  kind: "group" | "room" | "space";
+  kind: "group" | "room";
   id: string;
 }
 
@@ -72,48 +70,18 @@ function floorContainers(layer: VisualLayer, floorId: string): Group[] {
 /** A group id as the tree means it: null where the tree shows the floor. */
 function listedGroup(
   layer: VisualLayer,
-  floorId: string | null,
-  groupId: string | null | undefined,
+  floorId: string,
+  groupId: string | null,
 ): string | null {
-  if (!groupId || floorId === null) return null;
-  const group = layer.groups.get(groupId);
-  // A group that has gone, or is on another floor, is no place to be
-  // listed: the space falls back to the floor rather than vanishing.
-  if (!group || group.floor_id !== floorId) return null;
+  if (!groupId) return null;
   if (floorContainers(layer, floorId).some((g) => g.id === groupId)) return null;
   return groupId;
 }
 
-/** The spaces with no shape that are listed at this place. */
-function spacesAt(layer: VisualLayer, place: TreePlace): UnplacedSpace[] {
-  return (layer.file.unplaced_spaces ?? []).filter(
-    (s) =>
-      s.floor_id === place.floorId &&
-      listedGroup(layer, s.floor_id, s.group_id) === place.groupId,
-  );
-}
-
-/** Spaces with no shape and no floor either: imported with the column blank. */
-export function floorlessSpaces(layer: VisualLayer): UnplacedSpace[] {
-  const floors = new Set(layer.floors.map((f) => f.id));
-  return (layer.file.unplaced_spaces ?? []).filter(
-    (s) => s.floor_id === null || !floors.has(s.floor_id),
-  );
-}
-
-/**
- * The room an envelope is listed as, when it is listed as one.
- *
- * Not while a space with no shape is listed inside it: then the
- * envelope has two things in it to show, and has to be a row of its own.
- */
+/** The room an envelope is listed as, when it is listed as one. */
 function standsFor(layer: VisualLayer, group: Group): Room | null {
   const only = passThroughRoom(layer, group);
-  if (!only || !isRoomListed(layer, only)) return null;
-  if (spacesAt(layer, { floorId: group.floor_id, groupId: group.id }).length > 0) {
-    return null;
-  }
-  return only;
+  return only && isRoomListed(layer, only) ? only : null;
 }
 
 /** The rows under a floor or a group, in the order they are listed. */
@@ -140,7 +108,6 @@ export function treeChildren(layer: VisualLayer, place: TreePlace): TreeNode[] {
         : { kind: "group", id: group.id, group };
     }),
     ...rooms.map((room): TreeNode => ({ kind: "room", id: room.id, room, envelope: null })),
-    ...spacesAt(layer, place).map((space): TreeNode => ({ kind: "space", id: space.id, space })),
   ];
 
   const order = layer.file.tree_order?.[groupId ?? floorId];
@@ -163,26 +130,18 @@ export function treePlaceOf(layer: VisualLayer, ref: TreeRef): TreePlace | null 
       groupId: listedGroup(layer, group.floor_id, group.parent_group_id),
     };
   }
-  if (ref.kind === "room") {
-    const room = layer.rooms.get(ref.id);
-    if (!room) return null;
-    const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
-    if (!group) return { floorId: room.floor_id, groupId: null };
-    // Standing in for its envelope, it is listed where the envelope is.
-    if (standsFor(layer, group)?.id === room.id) {
-      return {
-        floorId: room.floor_id,
-        groupId: listedGroup(layer, group.floor_id, group.parent_group_id),
-      };
-    }
-    return { floorId: room.floor_id, groupId: listedGroup(layer, room.floor_id, group.id) };
+  const room = layer.rooms.get(ref.id);
+  if (!room) return null;
+  const group = room.group_id ? layer.groups.get(room.group_id) : undefined;
+  if (!group) return { floorId: room.floor_id, groupId: null };
+  // Standing in for its envelope, it is listed where the envelope is.
+  if (standsFor(layer, group)?.id === room.id) {
+    return {
+      floorId: room.floor_id,
+      groupId: listedGroup(layer, group.floor_id, group.parent_group_id),
+    };
   }
-  const space = (layer.file.unplaced_spaces ?? []).find((s) => s.id === ref.id);
-  if (!space || space.floor_id === null) return null;
-  return {
-    floorId: space.floor_id,
-    groupId: listedGroup(layer, space.floor_id, space.group_id),
-  };
+  return { floorId: room.floor_id, groupId: listedGroup(layer, room.floor_id, group.id) };
 }
 
 /** The id `tree_order` knows a row by. */
@@ -191,26 +150,6 @@ export function treeOrderId(layer: VisualLayer, ref: TreeRef): string {
   const room = layer.rooms.get(ref.id);
   const group = room?.group_id ? layer.groups.get(room.group_id) : undefined;
   return group && standsFor(layer, group)?.id === ref.id ? group.id : ref.id;
-}
-
-/**
- * The stored order with one row's place handed to another: what was
- * listed as `oldId` is listed as `newId`, in the same position.
- *
- * Unassigning a space is this — the named space takes the row the room
- * had — and so is placing it again.
- */
-export function orderWithSwap(
-  layer: VisualLayer,
-  place: TreePlace,
-  oldId: string,
-  newId: string,
-): Record<string, string[]> {
-  const ids = treeChildren(layer, place)
-    .map((n) => n.id)
-    .filter((id) => id !== newId)
-    .map((id) => (id === oldId ? newId : id));
-  return { ...(layer.file.tree_order ?? {}), [place.groupId ?? place.floorId]: ids };
 }
 
 function isInside(layer: VisualLayer, group: Group, ancestorId: string): boolean {
@@ -230,10 +169,10 @@ const floorName = (layer: VisualLayer, id: string) =>
 /**
  * Why a row cannot be dropped there, or null if it can.
  *
- * Two rules, and both are about what the plan already says. Anything
- * drawn stays on the floor it is drawn on — its walls are there, and
- * the tree cannot move walls — so only a space with no shape changes
- * floor. And an apartment holds rooms: not groups, not other apartments.
+ * Two rules, and both are about what the plan already says. Everything
+ * in the tree is drawn, and what is drawn stays on the floor it is
+ * drawn on — its walls are there, and the tree cannot move walls. And
+ * an apartment holds rooms: not groups, not other apartments.
  */
 export function treeMoveRefusal(
   layer: VisualLayer,
@@ -245,10 +184,8 @@ export function treeMoveRefusal(
   if (to.groupId && (!target || target.floor_id !== to.floorId)) {
     return "That group is not on this floor.";
   }
-  const intoApartment =
-    target !== undefined && groupAccessType(layer, target) === "apartment";
   const drawnElsewhere = (name: string, on: string) =>
-    `${name} is drawn on ${floorName(layer, on)}. Unassign it from the map to move it to another floor.`;
+    `${name} is drawn on ${floorName(layer, on)}, and what is drawn stays on its floor.`;
 
   if (moving.kind === "room") {
     const room = layer.rooms.get(moving.id);
@@ -257,56 +194,21 @@ export function treeMoveRefusal(
     return null;
   }
 
-  if (moving.kind === "group") {
-    const group = layer.groups.get(moving.id);
-    if (!group) return "That group is not in the building.";
-    if (group.floor_id !== to.floorId) return drawnElsewhere(group.name, group.floor_id);
-    if (target && isInside(layer, target, group.id)) {
-      return `${group.name} cannot go inside itself.`;
-    }
-    if (intoApartment) {
-      return `${target!.name} is an apartment, and an apartment holds rooms only.`;
-    }
-    return null;
+  const group = layer.groups.get(moving.id);
+  if (!group) return "That group is not in the building.";
+  if (group.floor_id !== to.floorId) return drawnElsewhere(group.name, group.floor_id);
+  if (target && isInside(layer, target, group.id)) {
+    return `${group.name} cannot go inside itself.`;
   }
-
-  const space = (layer.file.unplaced_spaces ?? []).find((s) => s.id === moving.id);
-  if (!space) return "That space is not in the building.";
-  if (intoApartment && space.kind === "apartment") {
-    return `${target!.name} is an apartment, and an apartment holds rooms only.`;
+  if (target && groupAccessType(layer, target) === "apartment") {
+    return `${target.name} is an apartment, and an apartment holds rooms only.`;
   }
   return null;
 }
 
 /**
- * An envelope emptied by a move is a row that names nothing, and goes —
- * the same rule every other regrouping follows. A space with no shape
- * that was listed inside it moves up to wherever the envelope was.
- */
-function withoutEmptied(file: VisualLayerFile): VisualLayerFile {
-  const used = new Set(file.rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(file.groups.map((g) => g.parent_group_id).filter(Boolean));
-  const gone = new Map(
-    file.groups
-      .filter((g) => !used.has(g.id) && !hasChild.has(g.id))
-      .map((g) => [g.id, g]),
-  );
-  if (gone.size === 0) return file;
-  return {
-    ...file,
-    groups: file.groups.filter((g) => !gone.has(g.id)),
-    unplaced_spaces: file.unplaced_spaces?.map((s) =>
-      s.group_id && gone.has(s.group_id)
-        ? { ...s, group_id: gone.get(s.group_id)!.parent_group_id }
-        : s,
-    ),
-  };
-}
-
-/**
  * Drag a row somewhere else in the tree: to another position among its
- * siblings, into a group, out to the floor, or — for a space with no
- * shape — onto another floor.
+ * siblings, into a group, or out to the floor.
  */
 export function moveInTree(
   state: EditState,
@@ -352,7 +254,7 @@ export function moveInTree(
         ),
       };
     }
-  } else if (moving.kind === "group") {
+  } else {
     const group = layer.groups.get(moving.id)!;
     name = group.name;
     if (!stays) {
@@ -361,17 +263,6 @@ export function moveInTree(
         ...file,
         groups: file.groups.map((g) =>
           g.id === group.id ? { ...g, parent_group_id: to.groupId ?? container } : g,
-        ),
-      };
-    }
-  } else {
-    const space = (file.unplaced_spaces ?? []).find((s) => s.id === moving.id)!;
-    name = space.name;
-    if (!stays) {
-      next = {
-        ...file,
-        unplaced_spaces: (file.unplaced_spaces ?? []).map((s) =>
-          s.id === space.id ? { ...s, floor_id: to.floorId, group_id: to.groupId } : s,
         ),
       };
     }
@@ -388,10 +279,11 @@ export function moveInTree(
     return state;
   }
 
-  next = withoutEmptied({
+  return commit(state, "move_in_tree", stays ? `Reorder ${name}` : `Move ${name}`, {
     ...next,
+    // An envelope emptied by a move is a row that names nothing, and
+    // goes — the same rule every other regrouping follows.
+    groups: liveGroups(next.groups, next.rooms, next.unplaced_spaces),
     tree_order: { ...(file.tree_order ?? {}), [to.groupId ?? to.floorId]: ids },
   });
-
-  return commit(state, "move_in_tree", stays ? `Reorder ${name}` : `Move ${name}`, next);
 }

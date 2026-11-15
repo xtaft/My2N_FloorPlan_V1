@@ -22,6 +22,7 @@
  *
  * Every refusal is checked before anything is written.
  */
+import { liveGroups } from "./groups";
 import { commit, OperationRejected, type EditState } from "./edit";
 import { indexVisualLayer, must, type VisualLayer } from "./load";
 import { vertexOf } from "./geometry";
@@ -322,11 +323,7 @@ function roomSwallowedBy(
 }
 
 function pruneEmptyGroups(file: VisualLayerFile): Group[] {
-  const used = new Set(file.rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(
-    file.groups.map((g) => g.parent_group_id).filter(Boolean),
-  );
-  return file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id));
+  return liveGroups(file.groups, file.rooms, file.unplaced_spaces);
 }
 
 /**

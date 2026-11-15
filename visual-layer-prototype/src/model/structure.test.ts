@@ -381,12 +381,11 @@ describe("unassignRoom", () => {
     const back = placeSpace(after, space.id, "1:L1");
     const room = back.layer.rooms.get("1:L1")!;
     expect(room.name).toBe("Living room");
-    // Back under its own category, and standing alone: the flat it used
-    // to be part of is not rebuilt around it. Unassigning said the
-    // drawing was wrong about what is there, and placing the space back
-    // answers only where it is, not what it belongs to.
+    // Back in the flat it is a room of. It never stopped being one:
+    // unassigning took it off the plan, not out of the apartment, and
+    // the drawer went on listing it there while it waited.
     expect(accessType(back.layer, room)).toBe("apartment");
-    expect(room.group_id).toBeNull();
+    expect(room.group_id).toBe("1:A1");
     expect(back.file.unplaced_spaces).toEqual([]);
     expect(back.file.devices.find((d) => d.id === "AN-A1")!.host_id).toBe(
       "1:L1",

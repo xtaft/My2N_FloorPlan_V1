@@ -13,9 +13,9 @@
  */
 import { commit, OperationRejected, type EditState } from "./edit";
 import type { VisualLayer } from "./load";
-import { groupAccessType } from "./derive";
+import { groupAccessType, unplacedCategory } from "./derive";
 import { insideRings, interiorRings, ringsOf } from "./rings";
-import { orderWithSwap, treeOrderId, treePlaceOf } from "./tree";
+import { liveGroups } from "./groups";
 import type { Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 /**
@@ -42,12 +42,12 @@ function retyped(
 }
 
 /** An envelope emptied by a retype is a row that names nothing. */
-function pruneGroups(file: VisualLayerFile, rooms: Room[]) {
-  const used = new Set(rooms.map((r) => r.group_id).filter(Boolean));
-  const hasChild = new Set(
-    file.groups.map((g) => g.parent_group_id).filter(Boolean),
-  );
-  return file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id));
+function pruneGroups(
+  file: VisualLayerFile,
+  rooms: Room[],
+  spaces: UnplacedSpace[] = file.unplaced_spaces ?? [],
+) {
+  return liveGroups(file.groups, rooms, spaces);
 }
 
 export interface SpaceRow {
@@ -330,7 +330,7 @@ export function applySpaceList(
     {
       ...file,
       rooms,
-      groups: pruneGroups(file, rooms),
+      groups: pruneGroups(file, rooms, [...existing, ...added]),
       unplaced_spaces: [...existing, ...added],
       counts: { ...file.counts, imported_spaces: summary.added },
     },
@@ -368,19 +368,6 @@ export function placeSpace(
     );
   }
 
-  // Where the space is listed, and whether the thing it is placed on is
-  // listed beside it: if so it takes over the space's row, so a space
-  // unassigned and placed again ends up where it started.
-  const listedAt = treePlaceOf(layer, { kind: "space", id: spaceId });
-  const sameRow = (ref: { kind: "group" | "room"; id: string }) => {
-    const at = treePlaceOf(layer, ref);
-    return (
-      listedAt !== null &&
-      at !== null &&
-      at.floorId === listedAt.floorId &&
-      at.groupId === listedAt.groupId
-    );
-  };
   const remaining = (file.unplaced_spaces ?? []).filter((s) => s.id !== spaceId);
 
   // An apartment is placed on an apartment: the envelope the room is in
@@ -423,16 +410,26 @@ export function placeSpace(
       devices,
       unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
       unplaced_spaces: remaining,
-      ...(listedAt && sameRow({ kind: "group", id: envelope.id })
-        ? { tree_order: orderWithSwap(layer, listedAt, spaceId, envelope.id) }
-        : {}),
     });
   }
 
+  // A room of a group goes back into its group: that is where the space
+  // was waiting, and placing it is what ends the wait. It inherits the
+  // group's category where that is what it read as, and keeps its own
+  // where it differed — a locker room inside the gym.
+  const home = space.group_id ? layer.groups.get(space.group_id) : undefined;
   const category =
-    space.space_type === null
-      ? { space_type: room.space_type, group_id: room.group_id }
-      : retyped(layer, room, space.space_type);
+    home && home.floor_id === room.floor_id
+      ? {
+          group_id: home.id,
+          space_type:
+            space.space_type === null || groupAccessType(layer, home) === space.space_type
+              ? null
+              : space.space_type,
+        }
+      : space.space_type === null
+        ? { space_type: room.space_type, group_id: room.group_id }
+        : retyped(layer, room, space.space_type);
 
   const rooms = file.rooms.map((r) =>
     r.id === roomId
@@ -459,44 +456,8 @@ export function placeSpace(
     unplaced_devices: devices
       .filter((d) => d.host_id === null)
       .map((d) => d.id),
-    groups: pruneGroups(file, rooms),
+    groups: pruneGroups(file, rooms, remaining),
     unplaced_spaces: remaining,
-    // Only when the room stays where it is listed: one that changed
-    // category has left its envelope, and its old row with it.
-    ...(listedAt &&
-    category.group_id === room.group_id &&
-    sameRow({ kind: "room", id: roomId })
-      ? {
-          tree_order: orderWithSwap(
-            layer,
-            listedAt,
-            spaceId,
-            treeOrderId(layer, { kind: "room", id: roomId }),
-          ),
-        }
-      : {}),
-  });
-}
-
-/** Rename a space that has no shape: it is still a row, and rows have names. */
-export function renameUnplacedSpace(
-  state: EditState,
-  spaceId: string,
-  name: string,
-): EditState {
-  const { file } = state;
-  const space = (file.unplaced_spaces ?? []).find((s) => s.id === spaceId);
-  if (!space) {
-    throw new OperationRejected("That space is not waiting to be placed.");
-  }
-  const next = name.trim();
-  if (next.length === 0) throw new OperationRejected("A name cannot be blank.");
-  if (next === space.name) return state;
-  return commit(state, "rename", "Rename", {
-    ...file,
-    unplaced_spaces: (file.unplaced_spaces ?? []).map((s) =>
-      s.id === spaceId ? { ...s, name: next } : s,
-    ),
   });
 }
 
@@ -510,11 +471,12 @@ export function removeUnplacedSpace(
   if (!space) {
     throw new OperationRejected("That space is not waiting to be placed.");
   }
+  const remaining = (file.unplaced_spaces ?? []).filter((s) => s.id !== spaceId);
   return commit(state, "place_space", `Remove ${space.name}`, {
     ...file,
-    unplaced_spaces: (file.unplaced_spaces ?? []).filter(
-      (s) => s.id !== spaceId,
-    ),
+    // The group it was the last thing in has nothing left to hold.
+    groups: pruneGroups(file, file.rooms, remaining),
+    unplaced_spaces: remaining,
   });
 }
 
@@ -525,7 +487,7 @@ export function categoryTally(
 ): { unplaced: number } {
   return {
     unplaced: (layer.file.unplaced_spaces ?? []).filter(
-      (s) => (s.space_type ?? null) === typeId,
+      (s) => unplacedCategory(layer, s) === typeId,
     ).length,
   };
 }
