@@ -19,6 +19,8 @@ export interface FloorPlanTabProps {
   onFloorChange: (floorId: string) => void;
   /** The space the tree is pointing at, drawn lit. */
   selectedGroupId: string | null;
+  selectedRoomId: string | null;
+  onSelectSpace: (id: string, floorId: string | null, kind: "group" | "room") => void;
   onClearSelection: () => void;
   groups: readonly AccessGroup[];
   hasPlan: boolean;
@@ -35,6 +37,8 @@ export function FloorPlanTab({
   floorId,
   onFloorChange,
   selectedGroupId,
+  selectedRoomId,
+  onSelectSpace,
   onClearSelection,
   groups,
   hasPlan,
@@ -49,6 +53,8 @@ export function FloorPlanTab({
         floorId={floorId}
         onFloorChange={onFloorChange}
         selectedGroupId={selectedGroupId}
+        selectedRoomId={selectedRoomId}
+        onSelectSpace={onSelectSpace}
         onClearSelection={onClearSelection}
         groups={groups}
       />

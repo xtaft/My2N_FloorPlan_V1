@@ -28,6 +28,7 @@ import {
   snapEnd,
   ringsToPath,
   roomColor,
+  roomsInGroup,
   doorSides,
   goesOnDoors,
   normal,
@@ -409,6 +410,21 @@ export function FloorPlanCanvas({
   );
 
   /**
+   * The envelope pointed at from the tree or a list: every room inside
+   * it, however deep, and the walls that bound the lot.
+   */
+  const pickedGroup = useMemo(() => {
+    if (!selectedGroupId) return null;
+    const ids = new Set(roomsInGroup(layer, selectedGroupId).map((r) => r.id));
+    if (ids.size === 0) return null;
+    const outline = scene.walls.filter(
+      (w) => ids.has(w.room_a) !== ids.has(w.room_b),
+    );
+    return { ids, outline };
+  }, [layer, selectedGroupId, scene.walls]);
+
+
+  /**
    * Reading the CTM is the obvious way to learn the plan's scale and the
    * wrong one: the wrapper calls back before the browser has applied the
    * transform, so every zoom step measures the step before it. Markers then
@@ -697,8 +713,11 @@ export function FloorPlanCanvas({
             if (interior.length === 0) return null;
 
             const state = reach ? roomAccessState(reach, room.id) : "reachable";
-            const selected =
-              room.id === selectedRoomId || room.group_id === selectedGroupId;
+            const inPicked = pickedGroup?.ids.has(room.id) ?? false;
+            // A room picked on its own is outlined on its own. A room
+            // inside a picked envelope is lit, and the outline goes round
+            // the envelope — drawn further down, over the walls.
+            const selected = room.id === selectedRoomId;
 
             // "transparent" rather than "none": a bare room still has to
             // take a click, and fill="none" has no interior to hit.
@@ -717,7 +736,7 @@ export function FloorPlanCanvas({
                 <path
                   d={ringsToPath(interior)}
                   fill={fill}
-                  fillOpacity={selected ? 1 : fillOpacity}
+                  fillOpacity={selected || inPicked ? 1 : fillOpacity}
                   fillRule="evenodd"
                   stroke={selected ? "#2196F3" : "none"}
                   strokeWidth={selected ? 6 : 0}
@@ -902,6 +921,29 @@ export function FloorPlanCanvas({
             />
           ))}
 
+          {/* The picked envelope's outline: the walls with the envelope on
+              one side and not the other, so a flat, or a gym with its
+              locker rooms inside it, reads as one shape. */}
+          {pickedGroup && (
+            <g pointerEvents="none">
+              {pickedGroup.outline.map((wall) => {
+                const [a, b] = wallEnds(layer, wall);
+                return (
+                  <line
+                    key={`picked:${wall.id}`}
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke="#2196F3"
+                    strokeWidth={6}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+            </g>
+          )}
+
           {/* The lit outline, over the walls so it reads as one shape: the
               envelope's outer walls for a whole flat, the room's own ring
               for a surfaced room. */}
@@ -1049,10 +1091,13 @@ export function FloorPlanCanvas({
             })}
 
           {(showDevices ? [...shownGlyphs] : [])
-            .sort((a, b) =>
-              Number(a.device.id === hoverDevice) -
-              Number(b.device.id === hoverDevice),
-            )
+            .sort((a, b) => {
+              // The pointed-at one over its neighbours, and the one under
+              // the pointer over that, so neither name is buried.
+              const rank = (id: string) =>
+                Number(id === selectedDeviceId) + 2 * Number(id === hoverDevice);
+              return rank(a.device.id) - rank(b.device.id);
+            })
             .map((glyph) => (
               <DeviceMarker
                 key={glyph.device.id}
@@ -1063,10 +1108,8 @@ export function FloorPlanCanvas({
                 y={glyph.y}
                 unitScale={unitScale}
                 showStatus={showDeviceStatus}
-                hovered={
-                  glyph.device.id === hoverDevice ||
-                  glyph.device.id === selectedDeviceId
-                }
+                hovered={glyph.device.id === hoverDevice}
+                selected={glyph.device.id === selectedDeviceId}
               />
             ))}
 

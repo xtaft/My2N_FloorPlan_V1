@@ -120,7 +120,22 @@ export function BuildingScreen({
   const [tab, setTab] = useState<BuildingTab>("plan");
   const [floorId, setFloorId] = useState(layer.floors[0]?.id ?? "");
   /** What the tree is pointing at, for the plan to light up. */
-  const [spaceId, setSpaceId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<{
+    kind: "group" | "room";
+    id: string;
+  } | null>(null);
+  const spaceId = picked?.id ?? null;
+  const setSpaceId = (id: string | null) =>
+    setPicked(id === null ? null : { kind: "group", id });
+  /** A space picked anywhere — tree or list — turns the plan to its floor. */
+  const pickSpace = (
+    id: string,
+    floor: string | null,
+    kind: "group" | "room",
+  ) => {
+    setPicked({ kind, id });
+    if (floor) setFloorId(floor);
+  };
 
   /** The one tab that is a screen rather than a card on the page. */
   const planFills = tab === "plan" && hasPlan;
@@ -181,10 +196,7 @@ export function BuildingScreen({
           // go: before it, a space has no storey and nothing to light up.
           onSelectSpace={
             hasPlan
-              ? (id, floor) => {
-                  setSpaceId(id);
-                  if (floor) setFloorId(floor);
-                }
+              ? pickSpace
               : undefined
           }
           onSelectFloor={
@@ -313,7 +325,9 @@ export function BuildingScreen({
                 layer={layer}
                 floorId={floorId}
                 onFloorChange={setFloorId}
-                selectedGroupId={spaceId}
+                selectedGroupId={picked?.kind === "group" ? picked.id : null}
+                selectedRoomId={picked?.kind === "room" ? picked.id : null}
+                onSelectSpace={pickSpace}
                 onClearSelection={() => setSpaceId(null)}
                 groups={groups}
                 hasPlan={hasPlan}

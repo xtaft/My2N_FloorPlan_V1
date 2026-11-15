@@ -99,6 +99,8 @@ export interface CategoriesDrawerProps {
   layer: VisualLayer;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string) => void;
+  /** An envelope row was clicked: the plan turns to it and outlines it. */
+  onSelectGroup?: (groupId: string) => void;
   onRename: (typeId: string, name: string) => void;
   onRecolor: (typeId: string, color: string) => void;
   /** Move every space of one category into another, or out of all of them. */
@@ -126,6 +128,7 @@ export function CategoriesDrawer({
   layer,
   selectedRoomId,
   onSelectRoom,
+  onSelectGroup,
   onRename,
   onRecolor,
   onReassign,
@@ -328,10 +331,19 @@ export function CategoriesDrawer({
       <Fragment key={group.id}>
         <ListItemButton
           sx={{ pl: 2 + depth * 2, pr: 1, minHeight: 68 }}
-          onClick={() => expandable && toggle(group.id)}
+          // The row points at the envelope; the chevron is what folds it.
+          onClick={() => {
+            if (onSelectGroup) onSelectGroup(group.id);
+            else if (expandable) toggle(group.id);
+          }}
         >
           <Box
             sx={{ width: 28, display: "flex", alignItems: "center", flexShrink: 0 }}
+            onClick={(e) => {
+              if (!onSelectGroup || !expandable) return;
+              e.stopPropagation();
+              toggle(group.id);
+            }}
           >
             {expandable ? (
               open ? (

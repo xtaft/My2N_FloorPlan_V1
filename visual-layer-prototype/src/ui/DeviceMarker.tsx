@@ -1,10 +1,11 @@
 /**
  * A device on the map.
  *
- * Figma: `<Avatar> deviceFloorPlan` (82:137613) — a 40px grey circle holding
- * the device's icon, with a status badge clipped to its top-right corner. The
- * three variants in that node are the three statuses; the icon inside is what
- * varies by device type.
+ * Figma 150:302230 — a 40px light disc holding the device's icon in dark
+ * line, with a status badge clipped to its top-right corner. Three states
+ * down the sheet, three statuses across it: at rest; highlighted, with a
+ * 5px ring of the primary blue round the disc; and under the pointer,
+ * with the disc tinted. The icon inside is what varies by device type.
  *
  * Everything here is authored in **screen pixels**, not plan units. The caller
  * passes `unitScale` — how many plan units one screen pixel currently covers —
@@ -15,8 +16,13 @@
  */
 import { memo } from "react";
 
-/** Figma: grey/500 — the avatar ground. */
-const CIRCLE = "#9e9e9e";
+/** The disc at rest, under the pointer, and the ink of the icon on it. */
+const CIRCLE = "#eeeeee";
+const CIRCLE_HOVER = "#d5e3ee";
+const ICON = "#3c3c3c";
+/** The highlight: a ring hugging the disc, 5px of primary. */
+const RING = "#2196f3";
+const RING_W = 5;
 
 /** The avatar's drawn size in screen pixels, which the caller's scale undoes. */
 export const DEVICE_PX = 40;
@@ -154,7 +160,14 @@ export interface DeviceMarkerProps {
   unitScale: number;
   /** Off while editing the plan, where a device's health is not the subject. */
   showStatus?: boolean;
+  /** Under the pointer: the disc tints and the name comes out. */
   hovered: boolean;
+  /**
+   * Pointed at from somewhere else — found by the search, or picked in
+   * a drawer. The ring goes round it and the name stays out above it,
+   * since whoever pointed is not hovering here to read it.
+   */
+  selected?: boolean;
 }
 
 export const DeviceMarker = memo(function DeviceMarker({
@@ -166,6 +179,7 @@ export const DeviceMarker = memo(function DeviceMarker({
   unitScale,
   showStatus = true,
   hovered,
+  selected = false,
 }: DeviceMarkerProps) {
   const look = STATUS[status] ?? UNKNOWN;
   const text = showStatus ? `${name} — ${look.label}` : name;
@@ -181,9 +195,17 @@ export const DeviceMarker = memo(function DeviceMarker({
           — so the canvas works out which marker the pointer is near rather
           than the marker claiming the area. */}
       <g pointerEvents="none">
-        <circle r={AVATAR_R} fill={CIRCLE} />
+        {selected && (
+          <circle
+            r={AVATAR_R + RING_W / 2}
+            fill="none"
+            stroke={RING}
+            strokeWidth={RING_W}
+          />
+        )}
+        <circle r={AVATAR_R} fill={hovered ? CIRCLE_HOVER : CIRCLE} />
         {/* inset 10% of the 40px circle leaves a 32px icon box. */}
-        <g transform="translate(-8 -16)" fill="#ffffff" color="#ffffff">
+        <g transform="translate(-8 -16)" fill={ICON} color={ICON}>
           <DeviceIcon deviceType={deviceType} />
         </g>
 
@@ -214,8 +236,8 @@ export const DeviceMarker = memo(function DeviceMarker({
           </text>
         )}
 
-        {hovered && (
-          <g transform={`translate(0 ${-AVATAR_R - BADGE_RING - 10})`}>
+        {(hovered || selected) && (
+          <g transform={`translate(0 ${-AVATAR_R - RING_W - 8})`}>
             <rect
               x={-tipW / 2}
               y={-22}

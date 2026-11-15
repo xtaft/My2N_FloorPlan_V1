@@ -671,7 +671,7 @@ export function EditModeScreen({
             // somewhere, and that is what the colours say.
             showDevices={mode !== "structure"}
             paint={shading ? accessPaint(shading) : undefined}
-            selectedDeviceId={mode === "devices" ? selectedDeviceId : null}
+            selectedDeviceId={mode === "structure" ? null : selectedDeviceId}
             dragging={draggingDevice}
             onDropOnDoor={(deviceId, doorId, side) => {
               setDraggingDevice(null);
@@ -719,6 +719,14 @@ export function EditModeScreen({
             header={modeSwitch}
             layer={layer}
             groups={groups}
+            focusedDeviceId={selectedDeviceId}
+            onDeviceFocus={(id) => {
+              setSelectedDeviceId(id);
+              const device = layer.file.devices.find((d) => d.id === id);
+              if (device?.host_id && device.floor_id && device.floor_id !== floorId) {
+                onFloorChange(device.floor_id);
+              }
+            }}
             picked={picked}
             onPicked={(next) => {
               setPicked(next);
@@ -791,6 +799,11 @@ export function EditModeScreen({
             selectRoom(id);
             const room = layer.rooms.get(id);
             if (room && room.floor_id !== floorId) onFloorChange(room.floor_id);
+          }}
+          onSelectGroup={(id) => {
+            selectGroup(id);
+            const group = layer.groups.get(id);
+            if (group && group.floor_id !== floorId) onFloorChange(group.floor_id);
           }}
           onRename={(id, name) => run(() => renameSpaceType(state, id, name))}
           onRecolor={(id, color) => run(() => recolorSpaceType(state, id, color))}

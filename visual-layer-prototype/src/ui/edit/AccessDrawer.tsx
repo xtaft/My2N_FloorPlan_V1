@@ -63,6 +63,12 @@ export interface AccessDrawerProps {
    */
   onDeviceMenu?: (el: HTMLElement, deviceId: string) => void;
   onPersonMenu?: (el: HTMLElement, personId: string) => void;
+  /**
+   * A device row was clicked. Ticking it is the drawer's own business;
+   * this is for the plan, which turns to the device and rings it.
+   */
+  onDeviceFocus?: (deviceId: string) => void;
+  focusedDeviceId?: string | null;
   /** Drawn at the very top: the editor puts its mode switch here. */
   header?: React.ReactNode;
   width: number;
@@ -78,6 +84,8 @@ export function AccessDrawer({
   onPerson,
   onDeviceMenu,
   onPersonMenu,
+  onDeviceFocus,
+  focusedDeviceId = null,
   header,
   width,
   onWidthChange,
@@ -136,8 +144,12 @@ export function AccessDrawer({
     return (
       <ListItemButton
         key={`d:${deviceId}`}
+        selected={deviceId === focusedDeviceId}
         sx={{ minHeight: 48, pl: 1 + depth * 2, pr: 0.5 }}
-        onClick={() => tick([deviceId], !picked.has(deviceId))}
+        onClick={() => {
+          tick([deviceId], !picked.has(deviceId));
+          onDeviceFocus?.(deviceId);
+        }}
       >
         <Checkbox
           size="small"

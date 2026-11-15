@@ -59,7 +59,11 @@ export interface SpaceTreeProps {
    * at it. Both are the same click, because a space is on a storey.
    */
   selectedSpaceId?: string | null;
-  onSelectSpace?: (spaceId: string, floorId: string | null) => void;
+  onSelectSpace?: (
+    spaceId: string,
+    floorId: string | null,
+    kind: "group" | "room",
+  ) => void;
   selectedFloorId?: string | null;
   onSelectFloor?: (floorId: string) => void;
 }
@@ -132,7 +136,7 @@ export function SpaceTree({
           onToggle={() => toggle(space.id)}
           selected={space.id === selectedSpaceId}
           onClick={
-            onSelectSpace ? () => onSelectSpace(space.id, floorId) : undefined
+            onSelectSpace ? () => onSelectSpace(space.id, floorId, "group") : undefined
           }
         />
         {isOpen &&
@@ -142,6 +146,12 @@ export function SpaceTree({
               depth={depth + 1}
               icon={<MeetingRoomOutlined sx={iconSx} />}
               label={room.name}
+              selected={room.id === selectedSpaceId}
+              onClick={
+                onSelectSpace
+                  ? () => onSelectSpace(room.id, floorId, "room")
+                  : undefined
+              }
             />
           ))}
       </Fragment>

@@ -158,12 +158,21 @@ export type EditorMode = "structure" | "devices" | "access";
  * a dropdown: three choices are few enough to be seen at once, and the
  * one that is on stays in view.
  */
-export function ModeSwitch({
+const EDITOR_MODES: { id: EditorMode; label: string }[] = [
+  { id: "structure", label: "Structure" },
+  { id: "devices", label: "Devices" },
+  { id: "access", label: "Access" },
+];
+
+export function ModeSwitch<T extends string = EditorMode>({
   mode,
   onChange,
+  options = EDITOR_MODES as unknown as { id: T; label: string }[],
 }: {
-  mode: EditorMode;
-  onChange: (mode: EditorMode) => void;
+  mode: T;
+  onChange: (mode: T) => void;
+  /** The editor's three by default; the view has two of its own. */
+  options?: { id: T; label: string }[];
 }) {
   return (
     <Box sx={{ px: 1, pt: 1, flexShrink: 0 }}>
@@ -173,7 +182,7 @@ export function ModeSwitch({
         value={mode}
         // Pressing the one that is on would hand back null; a mode is
         // always one of the three.
-        onChange={(_e, next: EditorMode | null) => next && onChange(next)}
+        onChange={(_e, next: T | null) => next && onChange(next)}
         sx={{
           "& .MuiToggleButton-root": {
             height: 48,
@@ -188,9 +197,11 @@ export function ModeSwitch({
           },
         }}
       >
-        <ToggleButton value="structure">Structure</ToggleButton>
-        <ToggleButton value="devices">Devices</ToggleButton>
-        <ToggleButton value="access">Access</ToggleButton>
+        {options.map((o) => (
+          <ToggleButton key={o.id} value={o.id}>
+            {o.label}
+          </ToggleButton>
+        ))}
       </ToggleButtonGroup>
     </Box>
   );

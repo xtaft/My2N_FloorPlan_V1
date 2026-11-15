@@ -46,6 +46,7 @@ import { Fragment } from "react";
 import { DeviceGlyph } from "../DeviceMarker";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
+import { ModeSwitch } from "../edit/EditorChrome";
 import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
@@ -63,7 +64,12 @@ import {
   type VisualLayer,
 } from "../../model";
 
-export type PlanMode = "structure" | "access";
+export type PlanMode = "devices" | "access";
+
+const PLAN_MODES: { id: PlanMode; label: string }[] = [
+  { id: "devices", label: "Devices" },
+  { id: "access", label: "Access" },
+];
 
 /** The right-hand panel, and the dropdown that sits over it. */
 const DRAWER = 320;
@@ -91,6 +97,10 @@ export interface FloorPlanViewProps {
    * row of floor tabs would be a second place to do it from.
    */
   selectedGroupId: string | null;
+  /** Or the one room, when a room was what was pointed at. */
+  selectedRoomId: string | null;
+  /** A row of the space list was clicked; the plan turns to it and outlines it. */
+  onSelectSpace: (id: string, floorId: string | null, kind: "group" | "room") => void;
   onClearSelection: () => void;
   /** Access groups, read: who holds what is what the shading answers. */
   groups: readonly AccessGroup[];
@@ -101,10 +111,12 @@ export function FloorPlanView({
   floorId,
   onFloorChange,
   selectedGroupId,
+  selectedRoomId,
+  onSelectSpace,
   onClearSelection,
   groups,
 }: FloorPlanViewProps) {
-  const [mode, setMode] = useState<PlanMode>("structure");
+  const [mode, setMode] = useState<PlanMode>("devices");
   /** The device the search found, drawn lit with its name out. */
   const [found, setFound] = useState<string | null>(null);
 
@@ -173,6 +185,22 @@ export function FloorPlanView({
         ? accessShading(layer, allowed, personId ? "outside" : "devices")
         : null,
     [mode, layer, allowed, personId],
+  );
+
+  /** Ring a device and turn the plan to the storey it is on. */
+  const focusDevice = (id: string) => {
+    setFound(id);
+    const device = layer.file.devices.find((d) => d.id === id);
+    if (device?.host_id && device.floor_id && device.floor_id !== floorId) {
+      onFloorChange(device.floor_id);
+    }
+  };
+
+  // The same group of buttons the editor has, at the top of the drawer.
+  // Two modes here: Devices is the plan with its space types beside it
+  // and its devices found through the search; Access asks who gets in.
+  const modeSwitch = (
+    <ModeSwitch mode={mode} onChange={setMode} options={PLAN_MODES} />
   );
 
   return (
@@ -349,16 +377,6 @@ export function FloorPlanView({
           <IconButton size="small" onClick={() => controls.current?.reset()}>
             <CenterFocusStrongOutlined sx={{ fontSize: 20 }} />
           </IconButton>
-          <TextField
-            select
-            size="small"
-            value={mode}
-            onChange={(e) => setMode(e.target.value as PlanMode)}
-            sx={{ width: DRAWER - TOOLBAR_PAD }}
-          >
-            <MenuItem value="structure">Structure</MenuItem>
-            <MenuItem value="access">Access</MenuItem>
-          </TextField>
         </Stack>
       </Stack>
       <Divider />
@@ -370,7 +388,7 @@ export function FloorPlanView({
             floorId={floorId}
             showAllRooms={false}
             reach={null}
-            selectedRoomId={null}
+            selectedRoomId={selectedRoomId}
             selectedGroupId={selectedGroupId}
             // Clicking the plan itself lets go of what the tree picked:
             // the highlight answers "where is A32", and once you have
@@ -396,8 +414,13 @@ export function FloorPlanView({
 
         {mode === "access" ? (
           <AccessDrawer
+            header={modeSwitch}
             layer={layer}
             groups={groups}
+            // A device row rings its device on the plan and turns to its
+            // storey — the same highlight the search gives.
+            focusedDeviceId={found}
+            onDeviceFocus={focusDevice}
             picked={picked}
             onPicked={(next) => {
               setPicked(next);
@@ -415,7 +438,12 @@ export function FloorPlanView({
             onWidthChange={() => {}}
           />
         ) : (
-          <SpacePanel layer={layer} />
+          <SpacePanel
+            layer={layer}
+            header={modeSwitch}
+            selectedId={selectedGroupId ?? selectedRoomId}
+            onSelect={onSelectSpace}
+          />
         )}
       </Box>
 
@@ -430,7 +458,17 @@ export function FloorPlanView({
 }
 
 /** The categories, which here only list. */
-function SpacePanel({ layer }: { layer: VisualLayer }) {
+function SpacePanel({
+  layer,
+  header,
+  selectedId,
+  onSelect,
+}: {
+  layer: VisualLayer;
+  header: React.ReactNode;
+  selectedId: string | null;
+  onSelect: (id: string, floorId: string | null, kind: "group" | "room") => void;
+}) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const categories = useMemo(() => spaceCategories(layer), [layer]);
 
@@ -450,20 +488,27 @@ function SpacePanel({ layer }: { layer: VisualLayer }) {
         borderLeft: 1,
         borderColor: "divider",
         bgcolor: PANEL_BACKGROUND,
-        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <List dense disablePadding>
+      {/* The switch stays put; only the list under it scrolls. */}
+      {header}
+      <List dense disablePadding sx={{ mt: 1, flex: 1, overflowY: "auto" }}>
         {categories.map((category) => {
             const inside = [
               ...category.groups.map((g) => ({
                 id: g.id,
+                kind: "group" as const,
+                floorId: g.floor_id,
                 name: g.name,
                 where: layer.floors.find((f) => f.id === g.floor_id)?.name ?? "",
                 rooms: roomsInGroup(layer, g.id).length,
               })),
               ...category.rooms.map((r) => ({
                 id: r.id,
+                kind: "room" as const,
+                floorId: r.floor_id,
                 name: r.name,
                 where: layer.floors.find((f) => f.id === r.floor_id)?.name ?? "",
                 rooms: 0,
@@ -503,7 +548,12 @@ function SpacePanel({ layer }: { layer: VisualLayer }) {
                 </ListItemButton>
                 {isOpen &&
                   inside.map((x) => (
-                    <ListItemButton key={x.id} sx={{ minHeight: 48, pl: 6 }}>
+                    <ListItemButton
+                      key={x.id}
+                      selected={x.id === selectedId}
+                      sx={{ minHeight: 48, pl: 6 }}
+                      onClick={() => onSelect(x.id, x.floorId, x.kind)}
+                    >
                       <ListItemText
                         primary={x.name}
                         secondary={x.where}
