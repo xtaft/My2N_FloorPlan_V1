@@ -336,26 +336,35 @@ export function setRoomSurfaced(
  * it. They are far enough apart to tell two adjacent spaces apart.
  */
 export const SPACE_TYPE_PALETTE = [
-  "#6B8FD4", // blue
-  "#D4A96B", // sand
-  "#7FC4A8", // green
-  "#C47F7F", // clay
-  "#A88FD4", // violet
-  "#D4C06B", // ochre
-  "#6BBFD4", // teal
-  "#D48FB4", // rose
-  "#8FD47F", // leaf
-  "#B0A8A0", // stone
+  // Paul Tol's "light" qualitative scheme
+  // (https://sronpersonalpages.nl/~pault/, "Colour schemes"): designed
+  // to fill labelled cells, and "reasonably distinct in both normal and
+  // colour-blind vision". Of the pastel sets measured for this plan it
+  // stayed furthest apart under simulated colour blindness. Nine is all
+  // of it; past that, colours repeat and the names on the plan do the
+  // telling apart.
+  "#77AADD", // light blue
+  "#EEDD88", // light yellow
+  "#44BB99", // mint
+  "#EE8866", // orange
+  "#99DDFF", // light cyan
+  "#FFAABB", // pink
+  "#BBCC33", // pear
+  "#AAAA00", // olive
+  "#DDDDDD", // pale grey
 ];
 
 /**
  * A category the user has just asked for, before they have named it.
  *
- * The colour is picked at random from those the building is not already
- * using, so two categories are not born the same shade and the user does
- * not have to go and fix that before the panel is readable. Once every
- * colour is in use it falls back to the whole palette — a repeat is better
- * than refusing to make a category.
+ * The colour is the one the building is using least, so two categories
+ * are not born the same shade where that can be helped. A colour no
+ * category has is taken first. The palette is nine colours and a
+ * building can have nine categories before anyone adds one, so often
+ * there is none: then it is a colour the fewest categories share, and
+ * among those the one the fewest spaces wear — a repeat that shows up
+ * on the plan as little as possible, which is better than refusing to
+ * make a category. Ties are broken at random.
  */
 export function newSpaceType(layer: VisualLayer): SpaceType {
   const types = layer.file.space_types;
@@ -367,9 +376,21 @@ export function newSpaceType(layer: VisualLayer): SpaceType {
     if (!taken.has(candidate)) id = candidate;
   }
 
-  const used = new Set(types.map((t) => t.color.toUpperCase()));
-  const free = SPACE_TYPE_PALETTE.filter((c) => !used.has(c.toUpperCase()));
-  const from = free.length > 0 ? free : SPACE_TYPE_PALETTE;
+  // How much of the building each palette colour is already on: how
+  // many categories have it, then how many spaces those categories hold.
+  const wear = SPACE_TYPE_PALETTE.map((color) => {
+    const ids = new Set(
+      types.filter((t) => t.color.toUpperCase() === color.toUpperCase()).map((t) => t.id),
+    );
+    const spaces =
+      layer.file.rooms.filter((r) => r.space_type !== null && ids.has(r.space_type)).length +
+      layer.file.groups.filter((g) => g.space_type !== null && ids.has(g.space_type)).length;
+    return { color, categories: ids.size, spaces };
+  });
+  const fewestCategories = Math.min(...wear.map((w) => w.categories));
+  const quiet = wear.filter((w) => w.categories === fewestCategories);
+  const fewestSpaces = Math.min(...quiet.map((w) => w.spaces));
+  const from = quiet.filter((w) => w.spaces === fewestSpaces).map((w) => w.color);
 
   return {
     id,

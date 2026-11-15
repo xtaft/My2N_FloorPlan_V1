@@ -53,9 +53,10 @@ import type { RowTarget } from "./StructureRowMenu";
 import { InlineRename } from "./InlineRename";
 import { ResizeHandle } from "./ResizeHandle";
 import { PRESSED_BACKGROUND } from "./EditorChrome";
-import { PANEL_BACKGROUND } from "../theme";
+import { PANEL_BACKGROUND, categoryInk } from "../theme";
 import { AttentionBadge } from "../AttentionBadge";
 import {
+  UNBOUND_COLOR,
   floorsNeedingAlignment,
   envelopeChain,
   groupAccessType,
@@ -518,7 +519,7 @@ export function StructureTree({
         onFloorChange(room.floor_id);
         onSelectRoom(room.id);
       },
-      tint: roomColor(layer, room),
+      tint: categoryInk(roomColor(layer, room)),
       onMenu:
         onRowMenu && ((el: HTMLElement) => onRowMenu(el, { kind: "room", room })),
       dnd: { ref: { kind: "room", id: room.id }, place, orderId },
@@ -533,7 +534,7 @@ export function StructureTree({
   const renderSpace = (space: UnplacedSpace, depth: number, place: TreePlace) =>
     row(space.id, depth, <MeetingRoomOutlined sx={{ fontSize: 20 }} />, space.name, {
       muted: true,
-      tint: layer.spaceTypes.get(space.space_type ?? "")?.color,
+      tint: categoryInk(layer.spaceTypes.get(space.space_type ?? "")?.color ?? UNBOUND_COLOR),
       // There is no shape to point at, but there is a floor to turn to.
       onClick: () => {
         if (space.floor_id) onFloorChange(space.floor_id);

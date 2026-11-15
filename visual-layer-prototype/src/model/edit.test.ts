@@ -446,14 +446,32 @@ describe("a category the user has just asked for", () => {
     expect(newSpaceType(next.layer).id).toBe("category_2");
   });
 
-  it("is given a colour the building is not already using", () => {
-    const used = new Set(
-      state.file.space_types.map((t) => t.color.toUpperCase()),
-    );
+  it("is given the palette colour the building is using least", () => {
+    // The palette is nine colours and the building already has nine
+    // categories, so none is free. The one that shows least is the
+    // colour of Room, a category that holds no spaces.
+    const room = state.file.space_types.find((t) => t.id === "room")!;
     many(40, () => {
       const made = newSpaceType(state.layer);
       expect(SPACE_TYPE_PALETTE).toContain(made.color);
-      expect(used.has(made.color.toUpperCase())).toBe(false);
+      expect(made.color.toUpperCase()).toBe(room.color.toUpperCase());
+    });
+  });
+
+  it("takes a colour no category has, while there is one", () => {
+    // Drop two categories and their colours come free.
+    const fewer = initEditState({
+      ...state.file,
+      space_types: state.file.space_types.filter(
+        (t) => t.id !== "room" && t.id !== "locker_room",
+      ),
+      rooms: state.file.rooms.map((r) =>
+        r.space_type === "locker_room" ? { ...r, space_type: null } : r,
+      ),
+    });
+    const used = new Set(fewer.file.space_types.map((t) => t.color.toUpperCase()));
+    many(40, () => {
+      expect(used.has(newSpaceType(fewer.layer).color.toUpperCase())).toBe(false);
     });
   });
 

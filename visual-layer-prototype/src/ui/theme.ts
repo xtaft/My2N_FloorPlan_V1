@@ -82,3 +82,22 @@ export const CANVAS_BACKGROUND = "#eeeeee";
  */
 export const HEADER_BACKGROUND = "#f5f5f5";
 export const PANEL_BACKGROUND = "#fafafa";
+
+/**
+ * A category's colour, darkened for drawing with rather than filling.
+ *
+ * The categories are pastels, chosen to sit behind room names. A thin
+ * icon in the same pastel on a near-white panel all but disappears —
+ * pale grey and light yellow most of all — so where the colour is the
+ * ink (the tree's row icons) it is taken down toward black, keeping its
+ * hue. Anything that is not a six-digit hex comes back unchanged.
+ */
+export function categoryInk(color: string, keep = 0.62): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!m) return color;
+  const channel = (i: number) =>
+    Math.round(parseInt(m[1].slice(i, i + 2), 16) * keep)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(0)}${channel(2)}${channel(4)}`.toUpperCase();
+}

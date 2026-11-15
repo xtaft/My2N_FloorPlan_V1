@@ -4,47 +4,47 @@
     {
       "id": "apartment",
       "name": "Apartment",
-      "color": "#6B8FD4"
+      "color": "#77AADD"
     },
     {
       "id": "room",
       "name": "Room",
-      "color": "#8FA8CC"
+      "color": "#99DDFF"
     },
     {
       "id": "circulation",
       "name": "Shared spaces",
-      "color": "#C9CFD6"
+      "color": "#DDDDDD"
     },
     {
       "id": "elevator",
       "name": "Elevator",
-      "color": "#A8B4C4"
+      "color": "#EE8866"
     },
     {
       "id": "stairs",
       "name": "Stairs",
-      "color": "#A8B4C4"
+      "color": "#FFAABB"
     },
     {
       "id": "commercial",
       "name": "Commercial unit",
-      "color": "#D4A96B"
+      "color": "#EEDD88"
     },
     {
       "id": "gym",
       "name": "Gym",
-      "color": "#7FC4A8"
+      "color": "#44BB99"
     },
     {
       "id": "locker_room",
       "name": "Locker room",
-      "color": "#5FA88C"
+      "color": "#BBCC33"
     },
     {
       "id": "technical",
       "name": "Technical",
-      "color": "#B0A8A0"
+      "color": "#AAAA00"
     }
   ],
   "floors": [

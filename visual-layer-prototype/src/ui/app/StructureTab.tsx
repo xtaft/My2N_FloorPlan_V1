@@ -37,6 +37,7 @@ import { FilterMenu } from "./DataTable";
 import {
   accessType,
   buildingSpaces,
+  UNBOUND_COLOR,
   floorEnvelopes,
   groupAccessType,
   residents,
@@ -100,7 +101,7 @@ export function StructureTab({ layer, hasPlan }: StructureTabProps) {
   const typeName = (id: string | null) =>
     id ? (layer.spaceTypes.get(id)?.name ?? id) : "Unknown";
   const typeColor = (id: string | null) =>
-    (id && layer.spaceTypes.get(id)?.color) || "#DADDE1";
+    (id && layer.spaceTypes.get(id)?.color) || UNBOUND_COLOR;
 
   const every = useMemo(() => flatten(tree), [tree]);
 

@@ -210,7 +210,12 @@ export interface SpaceCategory {
   rooms: Room[];
 }
 
-const UNBOUND_COLOR = "#DADDE1";
+/**
+ * No category, so nearly no colour: a space nobody has identified reads
+ * as blank floor. It also has to stay clear of the palette's pale grey,
+ * which is a category, and a second grey beside it would not.
+ */
+export const UNBOUND_COLOR = "#F7F7F7";
 
 /**
  * The categories panel, grouped by ENVELOPE rather than by room.
@@ -432,8 +437,8 @@ export function isWallVisible(
 /** A room or group holds no colour of its own; the type owns it. */
 export function roomColor(layer: VisualLayer, room: Room): string {
   const type = accessType(layer, room);
-  if (!type) return "#DADDE1"; // unbound is a valid state, rendered distinctly
-  return layer.spaceTypes.get(type)?.color ?? "#DADDE1";
+  if (!type) return UNBOUND_COLOR; // unbound is a valid state, rendered distinctly
+  return layer.spaceTypes.get(type)?.color ?? UNBOUND_COLOR;
 }
 
 export function spaceTypeName(
