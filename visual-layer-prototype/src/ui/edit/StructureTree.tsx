@@ -56,6 +56,7 @@ import { PRESSED_BACKGROUND } from "./EditorChrome";
 import { PANEL_BACKGROUND, categoryInk } from "../theme";
 import { AttentionBadge } from "../AttentionBadge";
 import {
+  ACCESS_OPEN_MARK,
   UNBOUND_COLOR,
   floorsNeedingAlignment,
   envelopeChain,
@@ -96,7 +97,8 @@ function AccessDot() {
         width: 8,
         height: 8,
         borderRadius: "50%",
-        bgcolor: "#2E9E4F",
+        // The same hue the plan fills an enterable space with.
+        bgcolor: ACCESS_OPEN_MARK,
         flexShrink: 0,
         ml: 1,
       }}

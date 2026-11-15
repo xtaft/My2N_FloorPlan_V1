@@ -135,13 +135,33 @@ export function accessShading(
   return out;
 }
 
-/** The colours access mode paints with. */
+/**
+ * The colours access mode paints with.
+ *
+ * Green for "you can get in" and red for "you cannot" is what the two
+ * mean on every door in Europe and America — and is also the pair that
+ * red-green colour blindness turns into one colour. The first pair
+ * drawn here, a green and a red of equal lightness, measured almost
+ * identical under deuteranopia.
+ *
+ * So the green is a turquoise: still on the green side, with enough
+ * blue in it to survive losing the red-green axis. The red is a shade
+ * darker than a pastel, so the two differ in lightness as well as hue.
+ * And "no question asked" is a paler grey, clear of both.
+ */
 export const ACCESS_COLORS: Record<AccessShade, string | null> = {
   // No question asked, so no answer drawn.
-  none: "#C9CDD2",
-  open: "#7FC49A",
-  closed: "#E0A3A3",
+  none: "#DDDDDD",
+  open: "#4FC3C7",
+  closed: "#E57373",
 };
+
+/**
+ * The "can get in" colour for something small — the dot on a row of the
+ * tree. A patch of fill can be pale; eight pixels of it cannot, so this
+ * is the same hue with more ink in it.
+ */
+export const ACCESS_OPEN_MARK = "#1F9AA0";
 
 /** What to fill a room with, for the canvas's `paint`. */
 export function accessPaint(
