@@ -684,6 +684,9 @@ export function EditModeScreen({
             // because a person is not somewhere, they are allowed
             // somewhere, and that is what the colours say.
             showDevices={mode !== "structure"}
+            // Devices mode is about the devices: the spaces are there to
+            // place them by, not to be edited, and are drawn to say so.
+            mutedRooms={mode === "devices"}
             paint={shading ? accessPaint(shading) : undefined}
             selectedDeviceId={mode === "structure" ? null : selectedDeviceId}
             dragging={draggingDevice}

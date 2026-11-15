@@ -60,6 +60,9 @@ import { SPACE_MIME } from "./edit/spaceDrag";
 const MIN_DEVICE_PX = 20;
 
 const WALL_COLOR = "#2E3338";
+/** How strongly a room wears its category's colour, and how faintly when muted. */
+const ROOM_FILL = 0.85;
+const MUTED_FILL = 0.3;
 /** How far out and in the plan zooms. */
 const MIN_SCALE = 0.4;
 const MAX_SCALE = 8;
@@ -196,6 +199,13 @@ export interface FloorPlanCanvasProps {
    * view, so the two are told apart at a glance.
    */
   grid?: boolean;
+  /**
+   * Draws the rooms' colours thinned out. For a mode that is about
+   * something else on the plan — the devices — and in which the spaces
+   * cannot be changed: the categories are still there to read, as a
+   * tint, and the plan stops looking like the thing being edited.
+   */
+  mutedRooms?: boolean;
 }
 
 export interface CanvasControls {
@@ -264,6 +274,7 @@ export function FloorPlanCanvas({
   placementError,
   onControls,
   grid = false,
+  mutedRooms = false,
 }: FloorPlanCanvasProps) {
   const revealing = tool === "show";
   const hiding = tool === "hide";
@@ -737,7 +748,7 @@ export function FloorPlanCanvas({
             // take a click, and fill="none" has no interior to hit.
             const painted = paint ? paint(room) : roomColor(layer, room);
             let fill = painted ?? "transparent";
-            let fillOpacity = painted === null ? 1 : 0.85;
+            let fillOpacity = painted === null ? 1 : mutedRooms ? MUTED_FILL : ROOM_FILL;
             if (state === "blocked") {
               fillOpacity = 0.3;
             } else if (state === "unexamined") {
@@ -750,7 +761,11 @@ export function FloorPlanCanvas({
                 <path
                   d={ringsToPath(interior)}
                   fill={fill}
-                  fillOpacity={selected || inPicked ? 1 : fillOpacity}
+                  // A pointed-at space lights to full strength — except
+                  // where the spaces are muted, since lighting one up
+                  // would say it is the thing to work on. Its outline
+                  // still says which it is.
+                  fillOpacity={(selected || inPicked) && !mutedRooms ? 1 : fillOpacity}
                   fillRule="evenodd"
                   stroke={selected ? "#2196F3" : "none"}
                   strokeWidth={selected ? 6 : 0}
