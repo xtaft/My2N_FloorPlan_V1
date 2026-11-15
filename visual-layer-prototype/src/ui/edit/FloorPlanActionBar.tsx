@@ -61,6 +61,10 @@ export function FloorPlanActionBar({
   onRedo,
 }: FloorPlanActionBarProps) {
   const structure = mode === "structure";
+  // A tool greyed by the mode says so, rather than describing what it
+  // would do if it could: the question on a greyed button is "why".
+  const WRONG_MODE = "Switch to Structure to edit the plan";
+  const say = (hint: string) => (structure ? hint : WRONG_MODE);
   const arm = (id: EditTool) => ({
     pressed: tool === id,
     // Pressing the armed tool again puts the pointer back to selecting.
@@ -90,14 +94,14 @@ export function FloorPlanActionBar({
         <BarButton
           label="Show room"
           icon={<VisibilityOutlined sx={icon} />}
-          hint="Reveals the rooms folded inside their envelopes. Click one to draw it on the map in its own right."
+          hint={say("Reveals the rooms folded inside their envelopes. Click one to draw it on the map in its own right.")}
           disabled={!structure}
           {...arm("show")}
         />
         <BarButton
           label="Hide room"
           icon={<VisibilityOffOutlined sx={icon} />}
-          hint="Click a room to fold it back into its envelope. A room carrying a device cannot be hidden."
+          hint={say("Click a room to fold it back into its envelope. A room carrying a device cannot be hidden.")}
           disabled={!structure}
           {...arm("hide")}
         />
@@ -107,21 +111,21 @@ export function FloorPlanActionBar({
         <BarButton
           label="Wall"
           icon={<VerticalSplitOutlined sx={icon} />}
-          hint="Click where a wall starts and where it stops — on a wall, at a corner, or on open floor. Close a shape and it becomes a room"
+          hint={say("Click where a wall starts and where it stops — on a wall, at a corner, or on open floor. Close a shape and it becomes a room")}
           disabled={!structure}
           {...arm("wall")}
         />
         <BarButton
           label="Remove wall"
           icon={<LayersClearOutlined sx={icon} />}
-          hint="Click a wall to take it out. The rooms on either side become one; any other wall they share stays standing."
+          hint={say("Click a wall to take it out. The rooms on either side become one; any other wall they share stays standing.")}
           disabled={!structure}
           {...arm("remove_wall")}
         />
         <BarButton
           label="Door"
           icon={<DoorFrontOutlined sx={icon} />}
-          hint="Click a wall to put a door in it"
+          hint={say("Click a wall to put a door in it")}
           disabled={!structure}
           {...arm("door")}
         />
@@ -131,11 +135,11 @@ export function FloorPlanActionBar({
         <BarButton
           label="Align floor"
           icon={<OpenWith sx={icon} />}
-          hint={
+          hint={say(
             canAlign
               ? "Fit this floor onto the one below, and say which shaft is which"
-              : "The lowest storey is the reference every other floor is fitted to"
-          }
+              : "The lowest storey is the reference every other floor is fitted to",
+          )}
           disabled={!structure || !canAlign}
           {...arm("align")}
         />

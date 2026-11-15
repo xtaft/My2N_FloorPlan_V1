@@ -137,15 +137,21 @@ export function ZoomControls({
       spacing={1.5}
       sx={{ position: "absolute", right: 24, bottom: 24, zIndex: 2 }}
     >
-      <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomOut} aria-label="Zoom out">
-        <Remove sx={{ fontSize: 16 }} />
-      </Button>
-      <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomIn} aria-label="Zoom in">
-        <Add sx={{ fontSize: 16 }} />
-      </Button>
-      <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomFit} aria-label="Fit to view">
-        <CenterFocusStrongOutlined sx={{ fontSize: 16 }} />
-      </Button>
+      <Tooltip title="Zoom out">
+        <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomOut} aria-label="Zoom out">
+          <Remove sx={{ fontSize: 16 }} />
+        </Button>
+      </Tooltip>
+      <Tooltip title="Zoom in">
+        <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomIn} aria-label="Zoom in">
+          <Add sx={{ fontSize: 16 }} />
+        </Button>
+      </Tooltip>
+      <Tooltip title="Fit the floor to the view">
+        <Button variant="outlined" color="inherit" size="small" sx={sx} onClick={onZoomFit} aria-label="Fit to view">
+          <CenterFocusStrongOutlined sx={{ fontSize: 16 }} />
+        </Button>
+      </Tooltip>
     </Stack>
   );
 }

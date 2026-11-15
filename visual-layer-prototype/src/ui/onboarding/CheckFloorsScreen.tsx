@@ -409,14 +409,22 @@ export function CheckFloorsScreen({
             <BarButton
               icon={<Undo sx={{ fontSize: 16 }} />}
               ariaLabel="Undo"
-              hint={state.undo[state.undo.length - 1]?.label ?? "Nothing to undo"}
+              hint={
+                canUndo(state)
+                  ? `Undo ${state.undo[state.undo.length - 1].label.toLowerCase()}`
+                  : "Nothing to undo"
+              }
               disabled={!canUndo(state)}
               onClick={() => onChange(undo(state))}
             />
             <BarButton
               icon={<Redo sx={{ fontSize: 16 }} />}
               ariaLabel="Redo"
-              hint="Redo"
+              hint={
+                canRedo(state)
+                  ? `Redo ${state.redo[state.redo.length - 1].label.toLowerCase()}`
+                  : "Nothing to redo"
+              }
               disabled={!canRedo(state)}
               onClick={() => onChange(redo(state))}
             />

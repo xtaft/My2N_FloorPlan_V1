@@ -23,8 +23,6 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
-import IconButton from "@mui/material/IconButton";
-import Divider from "@mui/material/Divider";
 import InputAdornment from "@mui/material/InputAdornment";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -34,19 +32,17 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import Add from "@mui/icons-material/Add";
 import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
-import CenterFocusStrongOutlined from "@mui/icons-material/CenterFocusStrongOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import Close from "@mui/icons-material/Close";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import Remove from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
 import { Fragment } from "react";
 import { DeviceGlyph } from "../DeviceMarker";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AccessDrawer } from "../edit/AccessDrawer";
-import { ModeSwitch } from "../edit/EditorChrome";
+import { ModeSwitch, ZoomControls } from "../edit/EditorChrome";
+import { CategoryTally } from "../CategoryTally";
 import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
@@ -212,13 +208,23 @@ export function FloorPlanView({
         flex: 1,
         minWidth: 0,
         display: "flex",
-        flexDirection: "column",
         bgcolor: "background.paper",
         overflow: "hidden",
       }}
     >
+      {/* Figma 96:163336. The toolbar is over the plan and only the
+          plan; the drawer runs the full height beside them both, with
+          the mode switch at its top level with the toolbar. */}
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
       {/*
-        One row of 56, always. A toolbar that grows a second line on a
+        One row, always. A toolbar that grows a second line on a
         laptop takes that line off the plan, which is the thing worth
         the space — so nothing wraps. Two groups: the filters give way
         and clip when the window is narrow, and the two controls that
@@ -227,7 +233,14 @@ export function FloorPlanView({
       <Stack
         direction="row"
         alignItems="center"
-        sx={{ px: `${TOOLBAR_PAD}px`, height: 56, flexShrink: 0, flexWrap: "nowrap" }}
+        sx={{
+          px: `${TOOLBAR_PAD}px`,
+          height: 64,
+          flexShrink: 0,
+          flexWrap: "nowrap",
+          borderBottom: 1,
+          borderColor: "divider",
+        }}
       >
         <Stack
           direction="row"
@@ -287,7 +300,7 @@ export function FloorPlanView({
                 </li>
               );
             }}
-            sx={{ width: 240, minWidth: 120, flexShrink: 1 }}
+            sx={{ width: 320, minWidth: 120, flexShrink: 1 }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -362,27 +375,16 @@ export function FloorPlanView({
           </Button>
         </Stack>
 
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-          sx={{ flexShrink: 0, pl: 1.5 }}
-        >
-          <IconButton size="small" onClick={() => controls.current?.zoomOut()}>
-            <Remove sx={{ fontSize: 20 }} />
-          </IconButton>
-          <IconButton size="small" onClick={() => controls.current?.zoomIn()}>
-            <Add sx={{ fontSize: 20 }} />
-          </IconButton>
-          <IconButton size="small" onClick={() => controls.current?.reset()}>
-            <CenterFocusStrongOutlined sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Stack>
       </Stack>
-      <Divider />
 
-      <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            position: "relative",
+            bgcolor: CANVAS_BACKGROUND,
+          }}
+        >
           <FloorPlanCanvas
             layer={layer}
             floorId={floorId}
@@ -410,7 +412,13 @@ export function FloorPlanView({
               controls.current = c;
             }}
           />
+          <ZoomControls
+            onZoomOut={() => controls.current?.zoomOut()}
+            onZoomIn={() => controls.current?.zoomIn()}
+            onZoomFit={() => controls.current?.reset()}
+          />
         </Box>
+      </Box>
 
         {mode === "access" ? (
           <AccessDrawer
@@ -445,7 +453,6 @@ export function FloorPlanView({
             onSelect={onSelectSpace}
           />
         )}
-      </Box>
 
       <DeviceDetailCard
         device={detailDevice}
@@ -515,14 +522,19 @@ function SpacePanel({
               })),
             ];
             const isOpen = open.has(category.id ?? "unknown");
+            // Spaces the category holds that have no shape on the plan.
+            const unplaced = (layer.file.unplaced_spaces ?? []).filter(
+              (sp) => (sp.space_type ?? null) === category.id,
+            );
+            const held = inside.length + unplaced.length;
             return (
               <Fragment key={category.id ?? "unknown"}>
                 <ListItemButton
-                  sx={{ minHeight: 52, pl: 1.5 }}
+                  sx={{ minHeight: 68, pl: 1.5 }}
                   onClick={() => toggle(category.id ?? "unknown")}
                 >
                   <Box sx={{ width: 24, display: "flex" }}>
-                    {inside.length > 0 ? (
+                    {held > 0 ? (
                       isOpen ? (
                         <ExpandMore sx={{ fontSize: 18 }} />
                       ) : (
@@ -542,8 +554,12 @@ function SpacePanel({
                     }}
                   />
                   <ListItemText
-                    primary={`${category.name}  (${inside.length})`}
-                    primaryTypographyProps={{ variant: "body2", noWrap: true }}
+                    primary={category.name}
+                    secondary={
+                      <CategoryTally spaces={held} unplaced={unplaced.length} />
+                    }
+                    primaryTypographyProps={{ variant: "body1", noWrap: true }}
+                    secondaryTypographyProps={{ variant: "body2", component: "div" }}
                   />
                 </ListItemButton>
                 {isOpen &&
@@ -565,6 +581,20 @@ function SpacePanel({
                           variant: "caption",
                           noWrap: true,
                         }}
+                      />
+                    </ListItemButton>
+                  ))}
+                {/* Spaces with no shape yet. They are counted above, so
+                    they are listed — greyed, since there is nothing on
+                    the plan for a click to point at. */}
+                {isOpen &&
+                  unplaced.map((sp) => (
+                    <ListItemButton key={sp.id} disabled sx={{ minHeight: 48, pl: 6 }}>
+                      <ListItemText
+                        primary={sp.name}
+                        secondary="Unplaced"
+                        primaryTypographyProps={{ variant: "body2", noWrap: true }}
+                        secondaryTypographyProps={{ variant: "caption", noWrap: true }}
                       />
                     </ListItemButton>
                   ))}

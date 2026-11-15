@@ -32,6 +32,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import InputBase from "@mui/material/InputBase";
 import { ResizeHandle } from "./ResizeHandle";
+import { CategoryTally } from "../CategoryTally";
 import { PANEL_BACKGROUND } from "../theme";
 import { SPACE_MIME } from "./spaceDrag";
 import ArrowBack from "@mui/icons-material/ArrowBack";
@@ -70,22 +71,8 @@ import {
 const placed = (category: SpaceCategory) =>
   category.groups.length + category.rooms.length;
 
-/**
- * What a row holds, said rather than counted in brackets.
- *
- * The first number is every space the category holds, placed or not, so
- * the second reads as a part of it: "4 spaces | 1 unplaced" is four
- * spaces, one of which has nowhere to be yet. Counting only the placed
- * ones would make unassigning a space look like losing it.
- *
- * Spaces still to place are named only when there are some: a trailing
- * "0 unplaced" on every category is noise on a building nobody has
- * imported a list into.
- */
-function tally(spaces: number, unplaced: number): string {
-  const first = `${spaces} space${spaces === 1 ? "" : "s"}`;
-  return unplaced > 0 ? `${first} | ${unplaced} unplaced` : first;
-}
+/** "1 space", "3 spaces" — for an envelope row, which has nothing unplaced. */
+const countSpaces = (n: number) => `${n} space${n === 1 ? "" : "s"}`;
 
 /** Wide enough for a category name and a count; wider if asked. */
 export const DRAWER_MIN = 240;
@@ -358,10 +345,7 @@ export function CategoriesDrawer({
             // The floor, because the same envelope name repeats on every
             // storey — four Hallways, five Stairs — and then what is in it.
             // Rooms are always drawn, so an envelope has nothing unplaced.
-            secondary={`${floorName(group.floor_id)} · ${tally(
-              roomsInGroup(layer, group.id).length,
-              0,
-            )}`}
+            secondary={`${floorName(group.floor_id)} · ${countSpaces(roomsInGroup(layer, group.id).length)}`}
             primaryTypographyProps={{ variant: "body1", noWrap: true }}
             secondaryTypographyProps={{ variant: "body2" }}
           />
@@ -505,9 +489,9 @@ export function CategoriesDrawer({
                           <span>{category.name}</span>
                         </Box>
                       }
-                      secondary={tally(held, waiting)}
+                      secondary={<CategoryTally spaces={held} unplaced={waiting} />}
                       primaryTypographyProps={{ variant: "body1" }}
-                      secondaryTypographyProps={{ variant: "body2" }}
+                      secondaryTypographyProps={{ variant: "body2", component: "div" }}
                     />
                   )}
                   <IconButton
