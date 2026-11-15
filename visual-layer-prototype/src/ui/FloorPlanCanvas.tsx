@@ -62,7 +62,7 @@ const MIN_DEVICE_PX = 20;
 const WALL_COLOR = "#2E3338";
 /** How strongly a room wears its category's colour, and how faintly when muted. */
 const ROOM_FILL = 0.85;
-const MUTED_FILL = 0.3;
+const MUTED_FILL = 0.45;
 /** How far out and in the plan zooms. */
 const MIN_SCALE = 0.4;
 const MAX_SCALE = 8;
