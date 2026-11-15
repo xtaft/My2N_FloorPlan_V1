@@ -75,6 +75,21 @@ export interface UnplacedSpace {
    * the shape rather than to whoever lives behind them.
    */
   devices?: string[];
+  /**
+   * The group it is listed under in the navigation tree, or null/absent
+   * for directly under its floor. A room's place in the tree is where
+   * its walls are; this has no walls, so it has to say. It is what keeps
+   * a space where it was when it is unassigned from the map.
+   */
+  group_id?: string | null;
+  /**
+   * Set when this is a whole apartment that came off the map, rather
+   * than a single space: placing it names an envelope, not a room, and
+   * it cannot be dragged inside another apartment.
+   */
+  kind?: "apartment";
+  /** The platform unit an unassigned apartment pointed at, kept for when it is placed. */
+  domain_ref?: string | null;
 }
 
 export interface Group {
@@ -198,6 +213,13 @@ export interface VisualLayerFile {
   unplaced_devices: string[];
   /** Spaces named in the structure that have no shape on the plan yet. */
   unplaced_spaces?: UnplacedSpace[];
+  /**
+   * The order rows were dragged into in the navigation tree: per parent
+   * (a floor id or a group id), its children's ids. Absent for a parent
+   * nobody has reordered; ids it does not name come after, in their
+   * default order. Display only — nothing derived reads it.
+   */
+  tree_order?: Record<string, string[]>;
   repairs: Repair[];
   counts: Record<string, number>;
 }

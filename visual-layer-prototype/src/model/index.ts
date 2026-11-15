@@ -10,6 +10,7 @@ export * from "./merge";
 export * from "./shaft";
 export * from "./align";
 export * from "./structure";
+export * from "./tree";
 export * from "./door";
 export * from "./spaceList";
 export * from "./building";

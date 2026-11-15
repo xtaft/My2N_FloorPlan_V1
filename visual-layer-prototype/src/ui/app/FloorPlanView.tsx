@@ -592,7 +592,7 @@ function SpacePanel({
                     <ListItemButton key={sp.id} disabled sx={{ minHeight: 48, pl: 6 }}>
                       <ListItemText
                         primary={sp.name}
-                        secondary="Unplaced"
+                        secondary="Unassigned"
                         primaryTypographyProps={{ variant: "body2", noWrap: true }}
                         secondaryTypographyProps={{ variant: "caption", noWrap: true }}
                       />

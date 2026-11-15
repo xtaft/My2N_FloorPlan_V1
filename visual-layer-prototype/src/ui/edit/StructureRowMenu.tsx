@@ -1,10 +1,18 @@
 /**
  * The row menu in the structure tree.
  *
- * Figma: `<Menu> floorPlanSpacesPlan` (93:158689 / 93:158690) — 256 wide,
- * 36px items, a 20px icon in action/active, body1 label, a divider before
- * the destructive half, and Delete in error/main. Two variants: a room gets
- * the full set, an envelope gets rename, fold, categorise and delete.
+ * Figma: `<Menu> floorPlanSpacesPlan` (93:158689 / 93:158690), and the
+ * full set for a room in 153:304964 — 256 wide, 36px items, a 20px icon
+ * in action/active, body1 label, one divider, and Delete under it in
+ * error/main.
+ *
+ * A room gets everything: Rename, Reorder, Hide, Change space category,
+ * Detach from group, Unassign from map, Delete. The other rows get the
+ * part of that which means something for them — an envelope has no
+ * group to detach from, a floor can only be reordered within, and a
+ * space with no shape has nothing to hide and can be placed instead.
+ * Reorder is on all of them: it turns the tree into something that can
+ * be dragged, and any row is a fair place to ask for that.
  *
  * Changing the category opens in place rather than as a nested menu. A
  * submenu that has to be kept open while the pointer crosses a gap is the
@@ -24,14 +32,27 @@ import Class from "@mui/icons-material/Class";
 import Delete from "@mui/icons-material/Delete";
 import Edit from "@mui/icons-material/Edit";
 import LocationOff from "@mui/icons-material/LocationOff";
+import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import PlaylistRemove from "@mui/icons-material/PlaylistRemove";
+import SwapVert from "@mui/icons-material/SwapVert";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { roomsInGroup, type Group, type Room, type VisualLayer } from "../../model";
+import {
+  groupAccessType,
+  roomsInGroup,
+  type Floor,
+  type Group,
+  type Room,
+  type UnplacedSpace,
+  type VisualLayer,
+} from "../../model";
 
 export type RowTarget =
   | { kind: "room"; room: Room }
-  | { kind: "group"; group: Group };
+  | { kind: "group"; group: Group }
+  | { kind: "floor"; floor: Floor }
+  /** A space with no shape on the plan: unassigned, or never placed. */
+  | { kind: "space"; space: UnplacedSpace };
 
 export interface StructureRowMenuProps {
   layer: VisualLayer;
@@ -42,6 +63,10 @@ export interface StructureRowMenuProps {
   target: RowTarget | null;
   onClose: () => void;
   onRename: () => void;
+  /** Turns the tree into one that can be dragged. */
+  onReorder: () => void;
+  /** Arms a space with no shape, to be put on a space on the plan. */
+  onPlace: () => void;
   /** Fold the room away, or the envelope's rooms; or bring them back. */
   onToggleHidden: (hide: boolean) => void;
   onAssignCategory: (typeId: string | null) => void;
@@ -61,6 +86,8 @@ export function StructureRowMenu({
   target,
   onClose,
   onRename,
+  onReorder,
+  onPlace,
   onToggleHidden,
   onAssignCategory,
   onDetach,
@@ -79,12 +106,18 @@ export function StructureRowMenu({
   const isRoom = target?.kind === "room";
   // An envelope counts as folded when nothing inside it is on the map, so
   // the item offers the move that is actually available.
-  const hidden = target
-    ? target.kind === "room"
+  const hidden =
+    target?.kind === "room"
       ? !target.room.surfaced
-      : roomsInGroup(layer, target.group.id).every((r) => !r.surfaced)
-    : false;
-  const current = isRoom ? target.room.space_type : target?.group.space_type;
+      : target?.kind === "group"
+        ? roomsInGroup(layer, target.group.id).every((r) => !r.surfaced)
+        : false;
+  const current =
+    target?.kind === "room"
+      ? target.room.space_type
+      : target?.kind === "group"
+        ? target.group.space_type
+        : undefined;
 
   const item = (
     key: string,
@@ -126,6 +159,74 @@ export function StructureRowMenu({
     ) : (
       node
     );
+  };
+
+  const rename = () => item("rename", <Edit sx={ICON} />, "Rename", onRename);
+  const reorder = () => item("reorder", <SwapVert sx={ICON} />, "Reorder", onReorder);
+  const category = () => (
+    <MenuItem key="category" sx={itemSx} onClick={() => setPage("category")}>
+      <ListItemIcon sx={iconSx}>
+        <Class sx={ICON} />
+      </ListItemIcon>
+      <ListItemText
+        primary="Change space category"
+        primaryTypographyProps={{ variant: "body1" }}
+      />
+    </MenuItem>
+  );
+  const unassign = () =>
+    item("unassign", <LocationOff sx={ICON} />, "Unassign from map", onUnassign);
+  const divider = () => <Divider key="divider" sx={{ my: 1 }} />;
+  const remove = () =>
+    item("delete", <Delete sx={ICON} />, "Delete", onDelete, { danger: true });
+
+  /** The items for whatever the menu is on, in the design's order. */
+  const mainPage = (): React.ReactNode[] => {
+    if (!target) return [];
+    if (target.kind === "floor") return [reorder()];
+    if (target.kind === "space") {
+      return [
+        rename(),
+        reorder(),
+        item("place", <PlaceOutlined sx={ICON} />, "Place on the plan", onPlace),
+        divider(),
+        remove(),
+      ];
+    }
+    const hide = item(
+      "hide",
+      hidden ? <Visibility sx={ICON} /> : <VisibilityOff sx={ICON} />,
+      isRoom ? (hidden ? "Show" : "Hide") : hidden ? "Show rooms" : "Hide rooms",
+      () => onToggleHidden(!hidden),
+    );
+    if (target.kind === "room") {
+      return [
+        rename(),
+        reorder(),
+        hide,
+        category(),
+        // Detach and Unassign appear only where they mean something:
+        // there is no group to leave if it is in none, and nothing to
+        // unassign from the map if it is not drawn on it in its own right.
+        ...(target.room.group_id !== null
+          ? [item("detach", <PlaylistRemove sx={ICON} />, "Detach from group", onDetach)]
+          : []),
+        ...(target.room.surfaced ? [unassign()] : []),
+        divider(),
+        remove(),
+      ];
+    }
+    return [
+      rename(),
+      reorder(),
+      hide,
+      category(),
+      // Only an apartment comes off the map whole: it is the one kind of
+      // envelope the building knows by name apart from its walls.
+      ...(groupAccessType(layer, target.group) === "apartment" ? [unassign()] : []),
+      divider(),
+      remove(),
+    ];
   };
 
   return (
@@ -195,70 +296,7 @@ export function StructureRowMenu({
               />
             </MenuItem>,
           ]
-        : [
-            item("rename", <Edit sx={ICON} />, "Rename", onRename),
-            item(
-              "hide",
-              hidden ? <Visibility sx={ICON} /> : <VisibilityOff sx={ICON} />,
-              isRoom
-                ? hidden
-                  ? "Show"
-                  : "Hide"
-                : hidden
-                  ? "Show rooms"
-                  : "Hide rooms",
-              () => onToggleHidden(!hidden),
-            ),
-            <MenuItem
-              key="category"
-              sx={itemSx}
-              onClick={() => setPage("category")}
-            >
-              <ListItemIcon sx={iconSx}>
-                <Class sx={ICON} />
-              </ListItemIcon>
-              <ListItemText
-                primary="Change space category"
-                primaryTypographyProps={{ variant: "body1" }}
-              />
-            </MenuItem>,
-            <Divider key="divider" sx={{ my: 1 }} />,
-            // Detach and Unassign appear only where they mean something,
-            // which is what the variants in the design differ by: there is
-            // no group to leave if it is in none, and nothing to unassign
-            // from the map if it is not on it.
-            ...(isRoom
-              ? [
-                  ...(target.room.group_id !== null
-                    ? [
-                        item(
-                          "detach",
-                          <PlaylistRemove sx={ICON} />,
-                          "Detach from group",
-                          onDetach,
-                        ),
-                      ]
-                    : []),
-                  ...(target.room.surfaced
-                    ? [
-                        item(
-                          "unassign",
-                          <LocationOff sx={ICON} />,
-                          "Unassign from map",
-                          onUnassign,
-                        ),
-                      ]
-                    : []),
-                  item("delete", <Delete sx={ICON} />, "Delete", onDelete, {
-                    danger: true,
-                  }),
-                ]
-              : [
-                  item("delete", <Delete sx={ICON} />, "Delete", onDelete, {
-                    danger: true,
-                  }),
-                ]),
-          ]}
+        : mainPage()}
     </Menu>
   );
 }

@@ -14,6 +14,8 @@
 import { commit, OperationRejected, type EditState } from "./edit";
 import type { VisualLayer } from "./load";
 import { groupAccessType } from "./derive";
+import { insideRings, interiorRings, ringsOf } from "./rings";
+import { orderWithSwap, treeOrderId, treePlaceOf } from "./tree";
 import type { Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 /**
@@ -366,6 +368,67 @@ export function placeSpace(
     );
   }
 
+  // Where the space is listed, and whether the thing it is placed on is
+  // listed beside it: if so it takes over the space's row, so a space
+  // unassigned and placed again ends up where it started.
+  const listedAt = treePlaceOf(layer, { kind: "space", id: spaceId });
+  const sameRow = (ref: { kind: "group" | "room"; id: string }) => {
+    const at = treePlaceOf(layer, ref);
+    return (
+      listedAt !== null &&
+      at !== null &&
+      at.floorId === listedAt.floorId &&
+      at.groupId === listedAt.groupId
+    );
+  };
+  const remaining = (file.unplaced_spaces ?? []).filter((s) => s.id !== spaceId);
+
+  // An apartment is placed on an apartment: the envelope the room is in
+  // takes the name and the unit, and its rooms stay as they are.
+  const envelope = room.group_id ? layer.groups.get(room.group_id) : undefined;
+  if (
+    space.kind === "apartment" &&
+    envelope &&
+    groupAccessType(layer, envelope) === "apartment"
+  ) {
+    const members = file.rooms.filter((r) => r.group_id === envelope.id);
+    const returning = new Set(space.devices ?? []);
+    // Each unit goes back into the room it is standing in, or failing
+    // that the room that was clicked.
+    const homeOf = (d: { position: [number, number] | null }) => {
+      if (d.position) {
+        const pt = { x: d.position[0], y: d.position[1] };
+        const hit = members.find((r) =>
+          insideRings(pt, interiorRings(ringsOf(layer, r))),
+        );
+        if (hit) return hit.id;
+      }
+      return roomId;
+    };
+    const devices = returning.size
+      ? file.devices.map((d) =>
+          returning.has(d.id) && d.host_id === null
+            ? { ...d, host_kind: "room" as const, host_id: homeOf(d) }
+            : d,
+        )
+      : file.devices;
+
+    return commit(state, "place_space", `Place ${space.name}`, {
+      ...file,
+      groups: file.groups.map((g) =>
+        g.id === envelope.id
+          ? { ...g, name: space.name, domain_ref: space.domain_ref ?? g.domain_ref }
+          : g,
+      ),
+      devices,
+      unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
+      unplaced_spaces: remaining,
+      ...(listedAt && sameRow({ kind: "group", id: envelope.id })
+        ? { tree_order: orderWithSwap(layer, listedAt, spaceId, envelope.id) }
+        : {}),
+    });
+  }
+
   const category =
     space.space_type === null
       ? { space_type: room.space_type, group_id: room.group_id }
@@ -397,8 +460,42 @@ export function placeSpace(
       .filter((d) => d.host_id === null)
       .map((d) => d.id),
     groups: pruneGroups(file, rooms),
-    unplaced_spaces: (file.unplaced_spaces ?? []).filter(
-      (s) => s.id !== spaceId,
+    unplaced_spaces: remaining,
+    // Only when the room stays where it is listed: one that changed
+    // category has left its envelope, and its old row with it.
+    ...(listedAt &&
+    category.group_id === room.group_id &&
+    sameRow({ kind: "room", id: roomId })
+      ? {
+          tree_order: orderWithSwap(
+            layer,
+            listedAt,
+            spaceId,
+            treeOrderId(layer, { kind: "room", id: roomId }),
+          ),
+        }
+      : {}),
+  });
+}
+
+/** Rename a space that has no shape: it is still a row, and rows have names. */
+export function renameUnplacedSpace(
+  state: EditState,
+  spaceId: string,
+  name: string,
+): EditState {
+  const { file } = state;
+  const space = (file.unplaced_spaces ?? []).find((s) => s.id === spaceId);
+  if (!space) {
+    throw new OperationRejected("That space is not waiting to be placed.");
+  }
+  const next = name.trim();
+  if (next.length === 0) throw new OperationRejected("A name cannot be blank.");
+  if (next === space.name) return state;
+  return commit(state, "rename", "Rename", {
+    ...file,
+    unplaced_spaces: (file.unplaced_spaces ?? []).map((s) =>
+      s.id === spaceId ? { ...s, name: next } : s,
     ),
   });
 }

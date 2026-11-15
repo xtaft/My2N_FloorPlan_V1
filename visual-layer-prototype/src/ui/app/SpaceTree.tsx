@@ -19,10 +19,12 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import ApartmentOutlined from "@mui/icons-material/ApartmentOutlined";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
+import LocationOffOutlined from "@mui/icons-material/LocationOffOutlined";
 import MeetingRoomOutlined from "@mui/icons-material/MeetingRoomOutlined";
 import MoreVert from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
@@ -218,7 +220,11 @@ export function SpaceTree({
             // own call and carry different objects for the same spaces.
             const shown = new Set(visible.map((x) => x.id));
             const inside = storey.spaces.filter((x) => shown.has(x.id));
-            if (matches && inside.length === 0) return null;
+            const q = query.trim().toLowerCase();
+            const away = storey.unassigned.filter(
+              (x) => !matches || x.name.toLowerCase().includes(q),
+            );
+            if (matches && inside.length === 0 && away.length === 0) return null;
             const isOpen = !closed.has(storey.id) || Boolean(matches);
             return (
               <Fragment key={storey.id}>
@@ -255,6 +261,19 @@ export function SpaceTree({
                 />
                 {isOpen &&
                   inside.map((space) => renderSpace(space, 2, storey.id))}
+                {/* Named in the building, not drawn on the plan: listed,
+                    greyed, and with nothing to point at. */}
+                {isOpen &&
+                  away.map((space) => (
+                    <Row
+                      key={space.id}
+                      depth={2}
+                      icon={<MeetingRoomOutlined sx={iconSx} />}
+                      label={space.name}
+                      unassigned
+                      onClick={onSelectFloor ? () => onSelectFloor(storey.id) : undefined}
+                    />
+                  ))}
               </Fragment>
             );
           })}
@@ -278,6 +297,7 @@ function Row({
   onToggle,
   menu = true,
   selected = false,
+  unassigned = false,
   onClick,
 }: {
   depth: number;
@@ -289,6 +309,8 @@ function Row({
   onToggle?: () => void;
   menu?: boolean;
   selected?: boolean;
+  /** Named in the building but not on the plan: greyed and marked. */
+  unassigned?: boolean;
   onClick?: () => void;
 }) {
   // With somewhere to go, the row goes there and the chevron is left to
@@ -301,6 +323,7 @@ function Row({
         height: ROW,
         pl: `${PAD + Math.max(0, depth - 1) * RAIL}px`,
         pr: 1,
+        opacity: unassigned ? 0.6 : 1,
       }}
       onClick={onClick ?? (folds ? onToggle : undefined)}
     >
@@ -344,6 +367,14 @@ function Row({
           fontWeight: bold ? 500 : 400,
         }}
       />
+      {unassigned && (
+        <Tooltip title="Unassigned from the map">
+          <LocationOffOutlined
+            aria-label="Unassigned from the map"
+            sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0, mr: 0.5 }}
+          />
+        </Tooltip>
+      )}
       {menu && (
         <IconButton size="small" edge="end" onClick={(e) => e.stopPropagation()}>
           <MoreVert sx={{ fontSize: 20 }} />

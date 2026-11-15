@@ -276,8 +276,8 @@ export function CategoriesDrawer({
         // It is still whatever it was; what it has lost is a place.
         secondary={
           space.floor_id
-            ? `${floorName(space.floor_id)} · unplaced`
-            : "unplaced"
+            ? `${floorName(space.floor_id)} · Unassigned`
+            : "Unassigned"
         }
         primaryTypographyProps={{ variant: "body1", noWrap: true }}
         secondaryTypographyProps={{ variant: "body2" }}

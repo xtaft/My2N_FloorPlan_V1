@@ -12,13 +12,6 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import Divider from "@mui/material/Divider";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import Delete from "@mui/icons-material/Delete";
-import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AlignFloorView } from "./AlignFloorView";
@@ -68,7 +61,10 @@ import {
   setRoomSpaceType,
   shaftImpact,
   unassignDevice,
+  unassignGroup,
   unassignRoom,
+  moveInTree,
+  renameUnplacedSpace,
   type Group,
   type Room,
   previewDeleteWall,
@@ -158,11 +154,12 @@ export function EditModeScreen({
   const [leaving, setLeaving] = useState(false);
   const [tool, setTool] = useState<EditTool>("select");
   const [importing, setImporting] = useState(false);
-  /** The menu on a space that has no shape yet. */
-  const [unplacedMenu, setUnplacedMenu] = useState<{
-    el: HTMLElement;
-    spaceId: string;
-  } | null>(null);
+  /**
+   * The tree's rows drag. Entered from any row's Reorder, left with the
+   * tree's Done — or by leaving Structure, since moving a row is an edit
+   * to the structure.
+   */
+  const [reordering, setReordering] = useState(false);
   /**
    * A space armed for placing. The next room clicked on the plan takes its
    * name and category — this is the import's first matching step done by
@@ -398,7 +395,7 @@ export function EditModeScreen({
   /** The row being renamed in place, and the text so far. */
   const [renaming, setRenaming] = useState<{
     id: string;
-    kind: "room" | "group";
+    kind: "room" | "group" | "space";
     draft: string;
   } | null>(null);
 
@@ -408,7 +405,9 @@ export function EditModeScreen({
     run(() =>
       kind === "room"
         ? renameRoom(state, id, draft)
-        : renameGroup(state, id, draft),
+        : kind === "group"
+          ? renameGroup(state, id, draft)
+          : renameUnplacedSpace(state, id, draft),
     );
     setRenaming(null);
   }, [renaming, run, state]);
@@ -424,6 +423,8 @@ export function EditModeScreen({
         run(() => setRoomSurfaced(state, target.room.id, !hide));
         return;
       }
+      // A floor and a space with no shape have nothing to fold.
+      if (target.kind !== "group") return;
       try {
         const { state: next, kept } = setGroupRoomsSurfaced(
           state,
@@ -538,6 +539,18 @@ export function EditModeScreen({
           width={treeWidth}
           onWidthChange={setTreeWidth}
           onNewSpace={mode === "structure" ? () => setNewSpace(true) : undefined}
+          reordering={reordering && mode === "structure"}
+          onReorderDone={() => setReordering(false)}
+          onMove={(moving, to) => {
+            // Let go where it already was: nothing happened, so nothing
+            // is announced.
+            try {
+              if (moveInTree(state, moving, to) === state) return;
+            } catch {
+              // run() below turns the refusal into its message.
+            }
+            run(() => moveInTree(state, moving, to));
+          }}
         />
 
         {/* The plan and the bar that acts on it are one column: tree on
@@ -818,52 +831,16 @@ export function EditModeScreen({
           width={drawerWidth}
           onWidthChange={setDrawerWidth}
           onImportSpaces={() => setImporting(true)}
-          onUnplacedMenu={(el, spaceId) => setUnplacedMenu({ el, spaceId })}
+          onUnplacedMenu={(el, spaceId) => {
+            const space = (layer.file.unplaced_spaces ?? []).find(
+              (x) => x.id === spaceId,
+            );
+            if (space) setRowMenu({ el, target: { kind: "space", space } });
+          }}
           onNewCategory={newCategory}
         />
         )}
       </Box>
-
-      {/* What a space with no shape can do: take one, or go. */}
-      <Menu
-        anchorEl={unplacedMenu?.el ?? null}
-        open={Boolean(unplacedMenu)}
-        onClose={() => setUnplacedMenu(null)}
-        slotProps={{ paper: { sx: { width: 256 } } }}
-      >
-        <MenuItem
-          sx={{ minHeight: 36, py: 0.25 }}
-          onClick={() => {
-            setPlacing(unplacedMenu?.spaceId ?? null);
-            setUnplacedMenu(null);
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 0, mr: 2, color: "action.active" }}>
-            <PlaceOutlined sx={{ fontSize: 20 }} />
-          </ListItemIcon>
-          <ListItemText
-            primary="Place on the plan"
-            primaryTypographyProps={{ variant: "body1" }}
-          />
-        </MenuItem>
-        <Divider sx={{ my: 1 }} />
-        <MenuItem
-          sx={{ minHeight: 36, py: 0.25 }}
-          onClick={() => {
-            const id = unplacedMenu?.spaceId;
-            if (id) run(() => removeUnplacedSpace(state, id));
-            setUnplacedMenu(null);
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 0, mr: 2, color: "error.main" }}>
-            <Delete sx={{ fontSize: 20 }} />
-          </ListItemIcon>
-          <ListItemText
-            primary="Remove from the list"
-            primaryTypographyProps={{ variant: "body1", color: "error.main" }}
-          />
-        </MenuItem>
-      </Menu>
 
       {/* While a space is armed, say which one and offer a way out. */}
       <Snackbar
@@ -988,18 +965,35 @@ export function EditModeScreen({
         onRename={() => {
           if (!rowMenu) return;
           const { target } = rowMenu;
-          setRenaming(
-            target.kind === "room"
-              ? { id: target.room.id, kind: "room", draft: target.room.name }
-              : { id: target.group.id, kind: "group", draft: target.group.name },
-          );
+          if (target.kind === "room") {
+            setRenaming({ id: target.room.id, kind: "room", draft: target.room.name });
+          } else if (target.kind === "group") {
+            setRenaming({ id: target.group.id, kind: "group", draft: target.group.name });
+          } else if (target.kind === "space") {
+            setRenaming({ id: target.space.id, kind: "space", draft: target.space.name });
+          }
+        }}
+        onReorder={() => {
+          // Dragging is among the tree's rows, so nothing else should be
+          // armed while it is on.
+          setTool("select");
+          setPlacing(null);
+          setReordering(true);
+        }}
+        onPlace={() => {
+          const target = rowMenu?.target;
+          if (target?.kind !== "space") return;
+          setReordering(false);
+          setPlacing(target.space.id);
         }}
         onToggleHidden={(hide) => rowMenu && toggleHidden(rowMenu.target, hide)}
         onAssignCategory={(typeId) => {
           if (!rowMenu) return;
           const { target } = rowMenu;
           if (target.kind === "room") assignCategory(target.room.id, typeId);
-          else run(() => setGroupSpaceType(state, target.group.id, typeId));
+          else if (target.kind === "group") {
+            run(() => setGroupSpaceType(state, target.group.id, typeId));
+          }
         }}
         onDetach={() => {
           const target = rowMenu?.target;
@@ -1008,17 +1002,22 @@ export function EditModeScreen({
         }}
         onUnassign={() => {
           const target = rowMenu?.target;
-          if (target?.kind !== "room") return;
-          run(() => unassignRoom(state, target.room.id));
+          if (target?.kind === "room") {
+            run(() => unassignRoom(state, target.room.id));
+          } else if (target?.kind === "group") {
+            run(() => unassignGroup(state, target.group.id));
+          }
         }}
         onDelete={() => {
           const target = rowMenu?.target;
           if (!target) return;
-          run(() =>
-            target.kind === "group"
-              ? dissolveGroup(state, target.group.id)
-              : deleteRoom(state, target.room.id),
-          );
+          if (target.kind === "group") {
+            run(() => dissolveGroup(state, target.group.id));
+          } else if (target.kind === "room") {
+            run(() => deleteRoom(state, target.room.id));
+          } else if (target.kind === "space") {
+            run(() => removeUnplacedSpace(state, target.space.id));
+          }
         }}
       />
 

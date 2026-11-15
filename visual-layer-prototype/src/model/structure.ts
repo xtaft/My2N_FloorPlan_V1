@@ -9,7 +9,8 @@
 import { commit, OperationRejected, type EditState } from "./edit";
 import { must, type VisualLayer } from "./load";
 import { accessType, roomsInGroup } from "./access";
-import { doorsOfRoom } from "./derive";
+import { doorsOfRoom, groupAccessType } from "./derive";
+import { orderWithSwap, treeOrderId, treePlaceOf } from "./tree";
 import type { Group, Room, UnplacedSpace, VisualLayerFile } from "./types";
 
 function trimmed(name: string): string {
@@ -309,8 +310,13 @@ function freeSpaceId(taken: Set<string>): string {
  *
  * What is new is the identity, which leaves the plan with no walls at all
  * and waits in the drawer under the category it read as, still named, now
- * labelled unplaced. So a category of two spaces still shows two after one
- * of them is unassigned, one of them unplaced.
+ * labelled unassigned. So a category of two spaces still shows two after
+ * one of them is unassigned.
+ *
+ * In the navigation tree the named space stays exactly where the room
+ * was — same parent, same position — because the tree is the list of
+ * what the building has, and the building still has it. The anonymous
+ * room is listed too, under the floor, as the new thing it is.
  *
  * Keeping the room as the record rather than minting a fresh one is what
  * makes the rest fall out: walls, doors and the readers that guard them go
@@ -325,11 +331,17 @@ function freeSpaceId(taken: Set<string>): string {
 export function unassignRoom(state: EditState, roomId: string): EditState {
   const { layer, file } = state;
   const room = must(layer.rooms, roomId, "room");
+  // Where its row is now, which is where the named space will stay.
+  const place = treePlaceOf(layer, { kind: "room", id: roomId }) ?? {
+    floorId: room.floor_id,
+    groupId: null,
+  };
 
   const space: UnplacedSpace = {
     id: freeSpaceId(new Set((file.unplaced_spaces ?? []).map((x) => x.id))),
     name: room.name,
     floor_id: room.floor_id,
+    group_id: place.groupId,
     // What it read as, not what it stored: a bedroom inheriting "apartment"
     // is an apartment space, and that is the category it waits under.
     space_type: accessType(layer, room),
@@ -375,6 +387,92 @@ export function unassignRoom(state: EditState, roomId: string): EditState {
       .map((d) => d.id),
     groups: file.groups.filter((g) => used.has(g.id) || hasChild.has(g.id)),
     unplaced_spaces: [...(file.unplaced_spaces ?? []), space],
+    tree_order: orderWithSwap(
+      layer,
+      place,
+      treeOrderId(layer, { kind: "room", id: roomId }),
+      space.id,
+    ),
+  });
+}
+
+/** The next free "Unnamed apartment N", numbered across the building. */
+export function unnamedApartmentName(layer: VisualLayer): string {
+  const taken = new Set(layer.file.groups.map((g) => g.name));
+  for (let n = 1; ; n += 1) {
+    const name = `Unnamed apartment ${n}`;
+    if (!taken.has(name)) return name;
+  }
+}
+
+/**
+ * Unassign a whole apartment from the map.
+ *
+ * The same separation as for a room, one level up. The drawing was right
+ * that there is an apartment there — its outline, its rooms, its front
+ * door — and wrong about which one. So the envelope stays on the plan
+ * with everything in it, still an apartment, with no name and no unit
+ * behind it; and the apartment the building knows — its name, the
+ * platform unit it points at, its answering unit — comes away and waits,
+ * listed where it was in the tree and under Apartment in the drawer.
+ *
+ * The rooms inside keep their names. "Bedroom" was never a statement
+ * about whose bedroom it is.
+ */
+export function unassignGroup(state: EditState, groupId: string): EditState {
+  const { layer, file } = state;
+  const group = must(layer.groups, groupId, "group");
+  const type = groupAccessType(layer, group);
+  if (type !== "apartment") {
+    throw new OperationRejected(
+      `${group.name} is not an apartment. Only an apartment, or a single space, can be unassigned from the map.`,
+    );
+  }
+
+  const place = treePlaceOf(layer, { kind: "group", id: groupId }) ?? {
+    floorId: group.floor_id,
+    groupId: null,
+  };
+  const inside = new Set(roomsInGroup(layer, groupId).map((r) => r.id));
+
+  const space: UnplacedSpace = {
+    id: freeSpaceId(new Set((file.unplaced_spaces ?? []).map((x) => x.id))),
+    name: group.name,
+    floor_id: group.floor_id,
+    group_id: place.groupId,
+    space_type: type,
+    note: null,
+    kind: "apartment",
+    domain_ref: group.domain_ref,
+    devices: layer.devices
+      .filter((d) => d.host_kind === "room" && d.host_id !== null && inside.has(d.host_id))
+      .map((d) => d.id),
+  };
+
+  const devices = file.devices.map((d) =>
+    d.host_kind === "room" && d.host_id !== null && inside.has(d.host_id)
+      ? { ...d, host_id: null }
+      : d,
+  );
+
+  return commit(state, "unassign_room", "Unassign from map", {
+    ...file,
+    groups: file.groups.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            name: unnamedApartmentName(layer),
+            // Written down, in case it was only inheriting it: what is
+            // left is an apartment whoever it turns out to be.
+            space_type: type,
+            domain_ref: null,
+          }
+        : g,
+    ),
+    devices,
+    unplaced_devices: devices.filter((d) => d.host_id === null).map((d) => d.id),
+    unplaced_spaces: [...(file.unplaced_spaces ?? []), space],
+    tree_order: orderWithSwap(layer, place, groupId, space.id),
   });
 }
 

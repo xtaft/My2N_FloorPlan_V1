@@ -64,7 +64,8 @@ export type OperationKind =
   | "create_envelope"
   | "add_floor"
   | "add_wall"
-  | "flip_device";
+  | "flip_device"
+  | "move_in_tree";
 
 export interface EditOperation {
   kind: OperationKind;
