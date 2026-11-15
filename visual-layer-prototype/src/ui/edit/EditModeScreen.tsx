@@ -589,6 +589,7 @@ export function EditModeScreen({
             />
           ) : (
           <FloorPlanCanvas
+            grid
             layer={layer}
             floorId={floorId}
             showAllRooms={false}

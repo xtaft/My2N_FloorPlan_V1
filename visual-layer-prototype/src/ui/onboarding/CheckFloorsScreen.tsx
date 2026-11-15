@@ -509,6 +509,7 @@ export function CheckFloorsScreen({
             />
           ) : (
             <FloorPlanCanvas
+              grid
               layer={layer}
               floorId={floorId}
               showAllRooms={false}

@@ -56,6 +56,7 @@ import {
 } from "../../model";
 import { ShaftMark } from "../FloorPlanCanvas";
 import { WheelZoom } from "../wheelZoom";
+import { PlanGrid } from "../planGrid";
 
 const UNDER = "#8A93A0";
 const TARGET = "#2196f3";
@@ -375,6 +376,9 @@ export function AlignFloorView({
             </svg>
           </TransformComponent>
           <WheelZoom utils={utils} minScale={MIN_SCALE} maxScale={MAX_SCALE} />
+          {/* Align mode only opens from the editor and the review, so
+              it is always a drawing board. */}
+          <PlanGrid utils={utils} />
           </>
           )}
         </TransformWrapper>

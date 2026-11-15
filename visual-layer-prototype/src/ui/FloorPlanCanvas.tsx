@@ -53,6 +53,7 @@ import {
 import { roomAccessState } from "../model";
 import { DEVICE_PX, DeviceMarker } from "./DeviceMarker";
 import { WheelZoom } from "./wheelZoom";
+import { PlanGrid } from "./planGrid";
 import { SPACE_MIME } from "./edit/spaceDrag";
 
 /** However far out the plan goes, a marker stays readable. */
@@ -189,6 +190,12 @@ export interface FloorPlanCanvasProps {
    * its render prop instead.
    */
   onControls?: (controls: CanvasControls) => void;
+  /**
+   * Draws the faint drawing grid behind the plan. On where the plan can
+   * be changed — the editor, the segmentation review — and off in the
+   * view, so the two are told apart at a glance.
+   */
+  grid?: boolean;
 }
 
 export interface CanvasControls {
@@ -256,6 +263,7 @@ export function FloorPlanCanvas({
   onHideRoom,
   placementError,
   onControls,
+  grid = false,
 }: FloorPlanCanvasProps) {
   const revealing = tool === "show";
   const hiding = tool === "hide";
@@ -1202,6 +1210,7 @@ export function FloorPlanCanvas({
         </svg>
       </TransformComponent>
       <WheelZoom utils={utils} minScale={MIN_SCALE} maxScale={MAX_SCALE} />
+      {grid && <PlanGrid utils={utils} />}
       </>
       )}
     </TransformWrapper>
