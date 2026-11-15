@@ -55,6 +55,44 @@ export function applyTransform(t: Transform, p: Point): Point {
   };
 }
 
+/**
+ * The same placement, turned by `radians` about `centre` — a point in
+ * the floor's own coordinates that stays where it was in the building's.
+ *
+ * Rotation in a transform is about the origin, so turning a floor on
+ * the spot is a rotation plus the slide that puts its middle back. The
+ * rotate buttons use this: a quarter turn should spin the drawing where
+ * it lies, not swing it round a corner of the page.
+ */
+export function rotateAbout(t: Transform, centre: Point, radians: number): Transform {
+  const before = applyTransform(t, centre);
+  const turned: Transform = { ...t, rotation: t.rotation + radians };
+  const after = applyTransform(turned, centre);
+  return {
+    ...turned,
+    dx: turned.dx + (before.x - after.x),
+    dy: turned.dy + (before.y - after.y),
+  };
+}
+
+/** The middle of a floor's drawing, in the floor's own coordinates. */
+export function floorCentre(layer: VisualLayer, floorId: string): Point {
+  const prefix = floorId.split(":")[0] + ":";
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const v of layer.file.vertices) {
+    if (!v.id.startsWith(prefix)) continue;
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+  }
+  if (!Number.isFinite(minX)) return { x: 0, y: 0 };
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+}
+
 /** The reverse, for turning a pointer position back into floor coordinates. */
 export function invertTransform(t: Transform, p: Point): Point {
   const cos = Math.cos(-t.rotation);

@@ -37,6 +37,7 @@ import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import type { RowTarget } from "./StructureRowMenu";
 import { InlineRename } from "./InlineRename";
 import { ResizeHandle } from "./ResizeHandle";
+import { PANEL_BACKGROUND } from "../theme";
 import {
   envelopeChain,
   floorEnvelopes,
@@ -420,7 +421,7 @@ export function StructureTree({
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
-        bgcolor: "background.paper",
+        bgcolor: PANEL_BACKGROUND,
       }}
     >
       <ResizeHandle

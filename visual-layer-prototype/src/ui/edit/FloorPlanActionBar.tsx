@@ -1,27 +1,25 @@
 /**
- * The floor-plan action bar. Figma: ActionBar Floor Plan (42:68934).
+ * The editor's action bar, over the plan. Figma 42:75117.
  *
- * Everything here is a tool: arm one, then click the map. Show room reveals
- * the rooms folded inside their envelopes so one can be clicked; Hide room
- * folds a shown room back. Wall, Stairs and Elevator are drawn but not built.
+ * Everything here is a tool: arm one, then click the map. They come in
+ * the groups the design joins them in — what is shown, what is built,
+ * then aligning and the image on their own. Undo and redo lead the bar,
+ * the way they lead the segmentation review's: the design's frame does
+ * not draw them here, but they left the app bar with nowhere else to
+ * go, and an editor without undo is not one.
+ *
+ * The mode switch is not here any more. It is at the top of the drawer.
  */
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Stack from "@mui/material/Stack";
-import Switch from "@mui/material/Switch";
-import TextField from "@mui/material/TextField";
-import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
 import DoorFrontOutlined from "@mui/icons-material/DoorFrontOutlined";
 import ImageOutlined from "@mui/icons-material/ImageOutlined";
-import LayersOutlined from "@mui/icons-material/LayersOutlined";
 import LayersClearOutlined from "@mui/icons-material/LayersClearOutlined";
+import OpenWith from "@mui/icons-material/OpenWith";
+import Redo from "@mui/icons-material/Redo";
+import Undo from "@mui/icons-material/Undo";
 import VerticalSplitOutlined from "@mui/icons-material/VerticalSplitOutlined";
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
+import { ActionBar, BarButton, BarGroup, type EditorMode } from "./EditorChrome";
 
 export type EditTool =
   | "select"
@@ -31,154 +29,126 @@ export type EditTool =
   | "remove_wall"
   | "door"
   | "align";
-export type EditModeName = "structure" | "devices" | "access";
+export type EditModeName = EditorMode;
 
 export interface FloorPlanActionBarProps {
   tool: EditTool;
   onToolChange: (tool: EditTool) => void;
   /** False on the lowest storey, which is what everything else fits onto. */
   canAlign: boolean;
+  /** Every tool edits the structure, so they grey out in the other modes. */
   mode: EditModeName;
-  onModeChange: (mode: EditModeName) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  undoLabel: string | null;
+  redoLabel: string | null;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-const toolSx = { height: 30 } as const;
+const icon = { fontSize: 16 } as const;
 
 export function FloorPlanActionBar({
   tool,
   onToolChange,
   canAlign,
   mode,
-  onModeChange,
+  canUndo,
+  canRedo,
+  undoLabel,
+  redoLabel,
+  onUndo,
+  onRedo,
 }: FloorPlanActionBarProps) {
-  const toolButton = (
-    id: EditTool,
-    label: string,
-    icon: React.ReactNode,
-    hint: string,
-    enabled = true,
-  ) => (
-    <Tooltip key={id} title={hint}>
-      <span>
-        <Button
-          variant={tool === id ? "contained" : "outlined"}
-          color={tool === id ? "primary" : "inherit"}
-          size="small"
-          startIcon={icon}
-          sx={toolSx}
-          // Every one of these edits the structure, so none of them is
-          // available in the mode that is about devices.
-          disabled={!enabled || mode !== "structure"}
-          // Pressing the armed tool again puts the pointer back to selecting.
-          onClick={() => onToolChange(tool === id ? "select" : id)}
-        >
-          {label}
-        </Button>
-      </span>
-    </Tooltip>
-  );
+  const structure = mode === "structure";
+  const arm = (id: EditTool) => ({
+    pressed: tool === id,
+    // Pressing the armed tool again puts the pointer back to selecting.
+    onClick: () => onToolChange(tool === id ? "select" : id),
+  });
 
   return (
-    <Box
-      sx={{
-        bgcolor: "background.paper",
-        borderBottom: 1,
-        borderColor: "divider",
-        display: "flex",
-        alignItems: "center",
-        minHeight: 65,
-        px: 4,
-        gap: 3,
-      }}
-    >
-      <Stack direction="row" spacing={2} alignItems="center">
-        {toolButton(
-          "show",
-          "Show room",
-          <VisibilityOutlined sx={{ fontSize: 16 }} />,
-          "Reveals the rooms folded inside their envelopes. Click one to draw it on the map in its own right.",
-        )}
-        {toolButton(
-          "hide",
-          "Hide room",
-          <VisibilityOffOutlined sx={{ fontSize: 16 }} />,
-          "Click a room to fold it back into its envelope. A room carrying a device cannot be hidden.",
-        )}
-      </Stack>
-
-      <Divider orientation="vertical" flexItem />
-
-      <Stack direction="row" spacing={2} alignItems="center">
-        {toolButton(
-          "wall",
-          "Wall",
-          <VerticalSplitOutlined sx={{ fontSize: 16 }} />,
-          "Click where a wall starts and where it stops — on a wall, at a corner, or on open floor. Close a shape and it becomes a room",
-        )}
-        {toolButton(
-          "remove_wall",
-          "Remove wall",
-          <LayersClearOutlined sx={{ fontSize: 16 }} />,
-          "Click a wall to take it out. The rooms on either side become one; any other wall they share stays standing.",
-        )}
-        {toolButton(
-          "door",
-          "Door",
-          <DoorFrontOutlined sx={{ fontSize: 16 }} />,
-          "Click a wall to put a door in it",
-        )}
-        {toolButton(
-          "align",
-          "Align floor",
-          <LayersOutlined sx={{ fontSize: 16 }} />,
-          canAlign
-            ? "Fit this floor onto the one below, and say which shaft is which"
-            : "The lowest storey is the reference every other floor is fitted to",
-          canAlign,
-        )}
-      </Stack>
-
-      <Divider orientation="vertical" flexItem />
-
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Tooltip title="Not built: the plan here is a fixture, not an uploaded PDF">
-          <span>
-            <Button
-              variant="outlined"
-              size="small"
-              color="inherit"
-              startIcon={<ImageOutlined sx={{ fontSize: 16 }} />}
-              sx={{ ...toolSx, color: "text.secondary" }}
-              disabled
-            >
-              Edit image
-            </Button>
-          </span>
-        </Tooltip>
-        <FormControlLabel
-          control={<Switch size="small" disabled />}
-          label={
-            <Typography variant="body2" color="text.disabled">
-              Background image
-            </Typography>
-          }
-          sx={{ ml: 0 }}
+    <ActionBar>
+      <BarGroup>
+        <BarButton
+          icon={<Undo sx={icon} />}
+          ariaLabel="Undo"
+          hint={undoLabel ? `Undo ${undoLabel.toLowerCase()}` : "Nothing to undo"}
+          disabled={!canUndo}
+          onClick={onUndo}
         />
-      </Stack>
+        <BarButton
+          icon={<Redo sx={icon} />}
+          ariaLabel="Redo"
+          hint={redoLabel ? `Redo ${redoLabel.toLowerCase()}` : "Nothing to redo"}
+          disabled={!canRedo}
+          onClick={onRedo}
+        />
+      </BarGroup>
 
-      <Box sx={{ flex: 1 }} />
+      <BarGroup>
+        <BarButton
+          label="Show room"
+          icon={<VisibilityOutlined sx={icon} />}
+          hint="Reveals the rooms folded inside their envelopes. Click one to draw it on the map in its own right."
+          disabled={!structure}
+          {...arm("show")}
+        />
+        <BarButton
+          label="Hide room"
+          icon={<VisibilityOffOutlined sx={icon} />}
+          hint="Click a room to fold it back into its envelope. A room carrying a device cannot be hidden."
+          disabled={!structure}
+          {...arm("hide")}
+        />
+      </BarGroup>
 
-      <TextField
-        select
-        size="small"
-        value={mode}
-        onChange={(e) => onModeChange(e.target.value as EditModeName)}
-        sx={{ width: 320 }}
-      >
-        <MenuItem value="structure">Structure</MenuItem>
-        <MenuItem value="devices">Devices</MenuItem>
-        <MenuItem value="access">Access</MenuItem>
-      </TextField>
-    </Box>
+      <BarGroup>
+        <BarButton
+          label="Wall"
+          icon={<VerticalSplitOutlined sx={icon} />}
+          hint="Click where a wall starts and where it stops — on a wall, at a corner, or on open floor. Close a shape and it becomes a room"
+          disabled={!structure}
+          {...arm("wall")}
+        />
+        <BarButton
+          label="Remove wall"
+          icon={<LayersClearOutlined sx={icon} />}
+          hint="Click a wall to take it out. The rooms on either side become one; any other wall they share stays standing."
+          disabled={!structure}
+          {...arm("remove_wall")}
+        />
+        <BarButton
+          label="Door"
+          icon={<DoorFrontOutlined sx={icon} />}
+          hint="Click a wall to put a door in it"
+          disabled={!structure}
+          {...arm("door")}
+        />
+      </BarGroup>
+
+      <BarGroup>
+        <BarButton
+          label="Align floor"
+          icon={<OpenWith sx={icon} />}
+          hint={
+            canAlign
+              ? "Fit this floor onto the one below, and say which shaft is which"
+              : "The lowest storey is the reference every other floor is fitted to"
+          }
+          disabled={!structure || !canAlign}
+          {...arm("align")}
+        />
+      </BarGroup>
+
+      <BarGroup>
+        <BarButton
+          label="Edit image"
+          icon={<ImageOutlined sx={icon} />}
+          hint="Not built: the plan here is a fixture, not an uploaded PDF"
+          disabled
+        />
+      </BarGroup>
+    </ActionBar>
   );
 }

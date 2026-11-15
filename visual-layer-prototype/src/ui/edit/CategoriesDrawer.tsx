@@ -32,6 +32,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import FileUploadOutlined from "@mui/icons-material/FileUploadOutlined";
 import InputBase from "@mui/material/InputBase";
 import { ResizeHandle } from "./ResizeHandle";
+import { PANEL_BACKGROUND } from "../theme";
 import { SPACE_MIME } from "./spaceDrag";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import Check from "@mui/icons-material/Check";
@@ -110,6 +111,8 @@ export interface CategoriesDrawerProps {
   /** The menu on a space that has no shape yet. */
   onUnplacedMenu: (el: HTMLElement, spaceId: string) => void;
   /** Figma has it at 320; the user can have it wider. */
+  /** Drawn at the very top: the editor puts its mode switch here. */
+  header?: React.ReactNode;
   width: number;
   onWidthChange: (width: number) => void;
   /**
@@ -131,6 +134,7 @@ export function CategoriesDrawer({
   onImportSpaces,
   onUnplacedMenu,
   onRowMenu,
+  header,
   width,
   onWidthChange,
 }: CategoriesDrawerProps) {
@@ -388,7 +392,7 @@ export function CategoriesDrawer({
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
-        bgcolor: "background.paper",
+        bgcolor: PANEL_BACKGROUND,
       }}
     >
       <ResizeHandle
@@ -398,6 +402,7 @@ export function CategoriesDrawer({
         max={DRAWER_MAX}
         onChange={onWidthChange}
       />
+      {header}
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 1, gap: 0.5 }}>
         <TextField
           size="small"

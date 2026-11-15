@@ -14,8 +14,7 @@
  * has; what this screen does is let the categories be corrected, which is
  * the same operation the editor's menus use.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import AppBar from "@mui/material/AppBar";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -27,25 +26,23 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import Toolbar from "@mui/material/Toolbar";
-import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import Add from "@mui/icons-material/Add";
-import CenterFocusStrongOutlined from "@mui/icons-material/CenterFocusStrongOutlined";
 import Check from "@mui/icons-material/Check";
 import ContentCopyOutlined from "@mui/icons-material/ContentCopyOutlined";
 import DragHandle from "@mui/icons-material/DragHandle";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import LayersOutlined from "@mui/icons-material/LayersOutlined";
-import LocationOn from "@mui/icons-material/LocationOn";
 import Redo from "@mui/icons-material/Redo";
-import Remove from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
-import StraightenOutlined from "@mui/icons-material/StraightenOutlined";
+import OpenWith from "@mui/icons-material/OpenWith";
+import RotateLeft from "@mui/icons-material/RotateLeft";
+import RotateRight from "@mui/icons-material/RotateRight";
 import Undo from "@mui/icons-material/Undo";
-import logoUrl from "../../assets/2n-logo.svg";
 import { AlignFloorView } from "../edit/AlignFloorView";
-import { FloorPlanCanvas } from "../FloorPlanCanvas";
+import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
+import { EditAppBar } from "../edit/EditAppBar";
+import { ActionBar, BarButton, BarGroup, ZoomControls } from "../edit/EditorChrome";
+import { PANEL_BACKGROUND } from "../theme";
 import {
   IDENTITY,
   applyTransform,
@@ -55,7 +52,10 @@ import {
   canRedo,
   canUndo,
   floorShaftRings,
+  floorCentre,
   floorTransform,
+  referenceFloor,
+  rotateAbout,
   invertTransform,
   landingsFor,
   markChecked,
@@ -73,7 +73,10 @@ import {
   type Transform,
 } from "../../model";
 
-const CANVAS_BACKGROUND = "#e8e8e8";
+const CANVAS_BACKGROUND = "#eeeeee";
+
+const NO_REFERENCE =
+  "The lowest storey is the reference every other floor is fitted to";
 
 /** The categories this step is about, in the order the panel lists them. */
 const MARKS: { id: string; label: string; color: string }[] = [
@@ -279,6 +282,22 @@ export function CheckFloorsScreen({
     setDraft(f ? floorTransform(f) : IDENTITY);
   };
 
+  /** The lowest storey is what the others are fitted to. */
+  const canAlignHere = Boolean(floor?.segmented) && referenceFloor(layer, floorId) !== null;
+
+  /** A quarter turn, into the align draft — on the spot, about the floor's middle. */
+  const turn = (radians: number) => {
+    const f = layer.floors.find((x) => x.id === floorId);
+    const from = draft ?? (f ? floorTransform(f) : IDENTITY);
+    setDraft(rotateAbout(from, floorCentre(layer, floorId), radians));
+  };
+
+  /** The canvas's own zoom, driven from the corner of the plan. */
+  const controls = useRef<CanvasControls | null>(null);
+  const handleControls = useCallback((c: CanvasControls) => {
+    controls.current = c;
+  }, []);
+
   const shown = query.trim()
     ? floors.filter((f) =>
         f.name.toLowerCase().includes(query.trim().toLowerCase()),
@@ -287,134 +306,23 @@ export function CheckFloorsScreen({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <AppBar position="static" sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Toolbar disableGutters sx={{ minHeight: 64, height: 64, pr: 2 }}>
-          {/* The same black 64×64 box the editor's bar has, so the logo
-              does not change size between the two screens. */}
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              bgcolor: "common.black",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <img src={logoUrl} alt="2N" width={64} height={64} />
-          </Box>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            My2N
-          </Typography>
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={0.5}
-            sx={{ ml: 2 }}
-          >
-            <LocationOn sx={{ fontSize: 20 }} />
-            <Typography variant="h6">{place}</Typography>
-          </Stack>
-
-          <Box sx={{ flex: 1 }} />
-
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title={state.undo[state.undo.length - 1]?.label ?? "Nothing to undo"}>
-              <span>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  disabled={!canUndo(state)}
-                  onClick={() => onChange(undo(state))}
-                  sx={barButton}
-                >
-                  <Undo sx={{ fontSize: 18 }} />
-                </Button>
-              </span>
-            </Tooltip>
-            <Button
-              variant="outlined"
-              color="inherit"
-              disabled={!canRedo(state)}
-              onClick={() => onChange(redo(state))}
-              sx={barButton}
-            >
-              <Redo sx={{ fontSize: 18 }} />
-            </Button>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* One tool, not two: moving the floor over the one below is
-                what aligning it is, and the align view is where the
-                moving happens. */}
-            <Button
-              variant={draft ? "contained" : "outlined"}
-              color="inherit"
-              size="small"
-              startIcon={<StraightenOutlined sx={{ fontSize: 18 }} />}
-              onClick={draft ? applyAlign : startAlign}
-            >
-              Align floor
-            </Button>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            <Button
-              variant="outlined"
-              color="inherit"
-              size="small"
-              startIcon={<ContentCopyOutlined sx={{ fontSize: 18 }} />}
-              disabled
-            >
-              Apply to similar floors
-            </Button>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            <Button variant="outlined" color="inherit" sx={barButton} disabled>
-              <Remove sx={{ fontSize: 18 }} />
-            </Button>
-            <Button variant="outlined" color="inherit" sx={barButton} disabled>
-              <Add sx={{ fontSize: 18 }} />
-            </Button>
-            <Button variant="outlined" color="inherit" sx={barButton} disabled>
-              <CenterFocusStrongOutlined sx={{ fontSize: 18 }} />
-            </Button>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            <Button variant="outlined" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Tooltip
-              title={
-                allChecked(floors) ? "" : "Look at every floor before saving"
-              }
-            >
-              <span>
-                <Button
-                  variant="contained"
-                  disabled={!allChecked(floors)}
-                  onClick={onSave}
-                >
-                  Save
-                </Button>
-              </span>
-            </Tooltip>
-          </Stack>
-        </Toolbar>
-      </AppBar>
+      <EditAppBar
+        place={place}
+        onClose={onCancel}
+        onSave={onSave}
+        saveDisabled={!allChecked(floors)}
+        saveHint={allChecked(floors) ? "" : "Look at every floor before saving"}
+      />
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* ------------------------------------------------- the floors */}
         <Box
           sx={{
-            width: 240,
+            width: 256,
             flexShrink: 0,
             borderRight: 1,
             borderColor: "divider",
-            bgcolor: "background.paper",
+            bgcolor: PANEL_BACKGROUND,
             display: "flex",
             flexDirection: "column",
           }}
@@ -493,7 +401,79 @@ export function CheckFloorsScreen({
         </Box>
 
         {/* --------------------------------------------------- the plan */}
-        <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
+        <Box
+          sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+        >
+        <ActionBar>
+          <BarGroup>
+            <BarButton
+              icon={<Undo sx={{ fontSize: 16 }} />}
+              ariaLabel="Undo"
+              hint={state.undo[state.undo.length - 1]?.label ?? "Nothing to undo"}
+              disabled={!canUndo(state)}
+              onClick={() => onChange(undo(state))}
+            />
+            <BarButton
+              icon={<Redo sx={{ fontSize: 16 }} />}
+              ariaLabel="Redo"
+              hint="Redo"
+              disabled={!canRedo(state)}
+              onClick={() => onChange(redo(state))}
+            />
+          </BarGroup>
+
+          {/* Turning is part of aligning: a quarter turn opens the align
+              view with the floor already turned, where it is seen
+              against the floor below and applied or let go like any
+              other move. Nothing is turned behind the user's back. */}
+          <BarGroup>
+            <BarButton
+              icon={<RotateLeft sx={{ fontSize: 16 }} />}
+              ariaLabel="Rotate left"
+              hint={canAlignHere ? "Turn this floor a quarter turn left" : NO_REFERENCE}
+              disabled={!canAlignHere}
+              onClick={() => turn(-Math.PI / 2)}
+            />
+            <BarButton
+              icon={<RotateRight sx={{ fontSize: 16 }} />}
+              ariaLabel="Rotate right"
+              hint={canAlignHere ? "Turn this floor a quarter turn right" : NO_REFERENCE}
+              disabled={!canAlignHere}
+              onClick={() => turn(Math.PI / 2)}
+            />
+          </BarGroup>
+
+          <BarGroup>
+            <BarButton
+              label="Apply to similar floors"
+              icon={<ContentCopyOutlined sx={{ fontSize: 16 }} />}
+              hint="Not built: nothing here says which floors are alike"
+              disabled
+            />
+          </BarGroup>
+
+          {/* One tool, not two: moving the floor over the one below is
+              what aligning it is, and the align view is where the
+              moving happens. */}
+          <BarGroup>
+            <BarButton
+              label="Align floor"
+              icon={<OpenWith sx={{ fontSize: 16 }} />}
+              hint={canAlignHere ? "Move this floor until it sits over the one below" : NO_REFERENCE}
+              disabled={!canAlignHere}
+              pressed={Boolean(draft)}
+              onClick={draft ? applyAlign : startAlign}
+            />
+          </BarGroup>
+        </ActionBar>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            position: "relative",
+            bgcolor: CANVAS_BACKGROUND,
+          }}
+        >
           {!floor ? null : !floor.segmented ? (
             <UndetectedFloor />
           ) : draft ? (
@@ -520,18 +500,27 @@ export function CheckFloorsScreen({
               showDevices={false}
               paint={paintForReview}
               overlay={shaftGuide}
+              onControls={handleControls}
             />
           )}
+          {floor?.segmented && !draft && (
+            <ZoomControls
+              onZoomOut={() => controls.current?.zoomOut()}
+              onZoomIn={() => controls.current?.zoomIn()}
+              onZoomFit={() => controls.current?.reset()}
+            />
+          )}
+        </Box>
         </Box>
 
         {/* -------------------------------------------- what to look at */}
         <Box
           sx={{
-            width: 300,
+            width: 320,
             flexShrink: 0,
             borderLeft: 1,
             borderColor: "divider",
-            bgcolor: "background.paper",
+            bgcolor: PANEL_BACKGROUND,
             display: "flex",
             flexDirection: "column",
           }}
@@ -668,8 +657,6 @@ export function CheckFloorsScreen({
     </Box>
   );
 }
-
-const barButton = { minWidth: 36, width: 36, height: 30, px: 0 } as const;
 
 function Step({
   n,

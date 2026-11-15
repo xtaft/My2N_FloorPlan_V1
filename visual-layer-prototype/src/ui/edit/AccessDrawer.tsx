@@ -34,6 +34,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { DeviceGlyph } from "../DeviceMarker";
 import { DRAWER_MAX, DRAWER_MIN } from "./CategoriesDrawer";
 import { ResizeHandle } from "./ResizeHandle";
+import { PANEL_BACKGROUND } from "../theme";
 import {
   type AccessGroup,
   deviceRows,
@@ -62,6 +63,8 @@ export interface AccessDrawerProps {
    */
   onDeviceMenu?: (el: HTMLElement, deviceId: string) => void;
   onPersonMenu?: (el: HTMLElement, personId: string) => void;
+  /** Drawn at the very top: the editor puts its mode switch here. */
+  header?: React.ReactNode;
   width: number;
   onWidthChange: (w: number) => void;
 }
@@ -75,6 +78,7 @@ export function AccessDrawer({
   onPerson,
   onDeviceMenu,
   onPersonMenu,
+  header,
   width,
   onWidthChange,
 }: AccessDrawerProps) {
@@ -222,7 +226,7 @@ export function AccessDrawer({
         flexShrink: 0,
         borderLeft: 1,
         borderColor: "divider",
-        bgcolor: "background.paper",
+        bgcolor: PANEL_BACKGROUND,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -235,6 +239,7 @@ export function AccessDrawer({
         max={DRAWER_MAX}
         onChange={onWidthChange}
       />
+      {header}
 
       <Box sx={{ height: 56, display: "flex", alignItems: "center", px: 1 }}>
         <TextField

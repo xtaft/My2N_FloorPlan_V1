@@ -31,6 +31,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldLess from "@mui/icons-material/UnfoldLess";
 import { DeviceGlyph } from "../DeviceMarker";
 import { ResizeHandle } from "./ResizeHandle";
+import { PANEL_BACKGROUND } from "../theme";
 import { DEVICE_MIME } from "./spaceDrag";
 import { InlineRename } from "./InlineRename";
 import { DRAWER_MAX, DRAWER_MIN } from "./CategoriesDrawer";
@@ -53,6 +54,8 @@ export interface DevicesDrawerProps {
   renamingId: string | null;
   onRenameCommit: (deviceId: string, name: string) => void;
   onRenameCancel: () => void;
+  /** Drawn at the very top: the editor puts its mode switch here. */
+  header?: React.ReactNode;
   width: number;
   onWidthChange: (w: number) => void;
 }
@@ -67,6 +70,7 @@ export function DevicesDrawer({
   renamingId,
   onRenameCommit,
   onRenameCancel,
+  header,
   width,
   onWidthChange,
 }: DevicesDrawerProps) {
@@ -120,7 +124,7 @@ export function DevicesDrawer({
         flexShrink: 0,
         borderLeft: 1,
         borderColor: "divider",
-        bgcolor: "background.paper",
+        bgcolor: PANEL_BACKGROUND,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -133,6 +137,7 @@ export function DevicesDrawer({
         max={DRAWER_MAX}
         onChange={onWidthChange}
       />
+      {header}
 
       <Box
         sx={{

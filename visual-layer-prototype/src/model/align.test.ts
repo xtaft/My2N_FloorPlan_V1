@@ -9,6 +9,8 @@
 import { describe, expect, it } from "vitest";
 import { fixture } from "./load";
 import {
+  rotateAbout,
+  floorCentre,
   IDENTITY,
   OperationRejected,
   alignFloor,
@@ -429,5 +431,41 @@ describe("alignWarnings", () => {
     });
     expect(preview.ok).toBe(true);
     if (preview.ok) expect(preview.warnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe("rotateAbout", () => {
+  it("turns a placement and leaves the centre where it was", () => {
+    const t = { dx: 62, dy: -41, rotation: 0.2, scale: 1.1 };
+    const centre = { x: 300, y: 180 };
+    const before = applyTransform(t, centre);
+    const turned = rotateAbout(t, centre, Math.PI / 2);
+    const after = applyTransform(turned, centre);
+    expect(after.x).toBeCloseTo(before.x, 9);
+    expect(after.y).toBeCloseTo(before.y, 9);
+    expect(turned.rotation).toBeCloseTo(0.2 + Math.PI / 2, 12);
+    expect(turned.scale).toBe(1.1);
+    // Any other point has moved.
+    const other = { x: 0, y: 0 };
+    expect(applyTransform(turned, other).x).not.toBeCloseTo(applyTransform(t, other).x, 3);
+  });
+
+  it("comes back to where it started after four quarter turns", () => {
+    const t = { dx: 10, dy: 20, rotation: 0, scale: 1 };
+    const centre = { x: 50, y: 70 };
+    let cur = t;
+    for (let i = 0; i < 4; i += 1) cur = rotateAbout(cur, centre, Math.PI / 2);
+    expect(cur.dx).toBeCloseTo(t.dx, 9);
+    expect(cur.dy).toBeCloseTo(t.dy, 9);
+    expect(Math.cos(cur.rotation)).toBeCloseTo(1, 9);
+  });
+
+  it("finds the middle of a floor's own drawing", () => {
+    const layer = state().layer;
+    const c = floorCentre(layer, "1:floor");
+    const xs = layer.file.vertices
+      .filter((v) => v.id.startsWith("1:"))
+      .map((v) => v.x);
+    expect(c.x).toBeCloseTo((Math.min(...xs) + Math.max(...xs)) / 2, 9);
   });
 });

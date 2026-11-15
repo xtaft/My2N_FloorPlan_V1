@@ -27,9 +27,9 @@ import { TREE_DEFAULT } from "./StructureTree";
 import { DRAWER_DEFAULT } from "./CategoriesDrawer";
 import { DoorMenu } from "./DoorMenu";
 import { DiscardChangesDialog } from "./DiscardChangesDialog";
+import { ModeSwitch, ZoomControls } from "./EditorChrome";
 import { NewSpaceDialog, type NewFloorPage } from "./NewSpaceDialog";
 import { ImportSpaceList } from "./ImportSpaceList";
-import { CANVAS_BACKGROUND } from "../theme";
 import { CategoriesDrawer } from "./CategoriesDrawer";
 import { DeviceMenu } from "./DeviceMenu";
 import { AccessDeviceMenu } from "./AccessDeviceMenu";
@@ -499,35 +499,18 @@ export function EditModeScreen({
     }
   }, [layer, onChange, state]);
 
+  const modeSwitch = <ModeSwitch mode={mode} onChange={setMode} />;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <EditAppBar
         place={place}
-        canUndo={canUndo(state)}
-        canRedo={canRedo(state)}
-        undoLabel={undoLabel}
-        redoLabel={redoLabel}
-        dirty={dirty}
-        onUndo={() => onChange(undo(state))}
-        onRedo={() => onChange(redo(state))}
-        onZoomIn={() => controls.current?.zoomIn()}
-        onZoomOut={() => controls.current?.zoomOut()}
-        onZoomFit={() => controls.current?.reset()}
         // With nothing changed there is nothing to ask about.
         onClose={() => (dirty ? setLeaving(true) : onClose())}
         onSave={onSave}
-      />
-
-      <FloorPlanActionBar
-        tool={tool}
-        canAlign={referenceFloor(layer, floorId) !== null}
-        onToolChange={(next) => {
-          setTool(next);
-          if (next === "align") startAlign();
-          else setDraftTransform(null);
-        }}
-        mode={mode}
-        onModeChange={setMode}
+        saveHint={
+          dirty ? "Keep the changes and leave edit mode" : "Nothing has changed yet"
+        }
       />
 
       <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
@@ -557,7 +540,41 @@ export function EditModeScreen({
           onNewSpace={mode === "structure" ? () => setNewSpace(true) : undefined}
         />
 
-        <Box sx={{ flex: 1, minWidth: 0, bgcolor: CANVAS_BACKGROUND }}>
+        {/* The plan and the bar that acts on it are one column: tree on
+            the left, drawer on the right, and between them everything
+            that is about the drawing. */}
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+        <FloorPlanActionBar
+          tool={tool}
+          canAlign={referenceFloor(layer, floorId) !== null}
+          onToolChange={(next) => {
+            setTool(next);
+            if (next === "align") startAlign();
+            else setDraftTransform(null);
+          }}
+          mode={mode}
+          canUndo={canUndo(state)}
+          canRedo={canRedo(state)}
+          undoLabel={undoLabel}
+          redoLabel={redoLabel}
+          onUndo={() => onChange(undo(state))}
+          onRedo={() => onChange(redo(state))}
+        />
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            position: "relative",
+            bgcolor: "background.paper",
+          }}
+        >
           {aligning ? (
             <AlignFloorView
               layer={layer}
@@ -687,10 +704,19 @@ export function EditModeScreen({
             onControls={handleControls}
           />
           )}
+          {!aligning && (
+            <ZoomControls
+              onZoomOut={() => controls.current?.zoomOut()}
+              onZoomIn={() => controls.current?.zoomIn()}
+              onZoomFit={() => controls.current?.reset()}
+            />
+          )}
+        </Box>
         </Box>
 
         {mode === "access" ? (
           <AccessDrawer
+            header={modeSwitch}
             layer={layer}
             groups={groups}
             picked={picked}
@@ -718,6 +744,7 @@ export function EditModeScreen({
           />
         ) : mode === "devices" ? (
           <DevicesDrawer
+            header={modeSwitch}
             layer={layer}
             selectedId={selectedDeviceId}
             onSelect={(id) => {
@@ -757,6 +784,7 @@ export function EditModeScreen({
           />
         ) : (
         <CategoriesDrawer
+          header={modeSwitch}
           layer={layer}
           selectedRoomId={selectedRoomId}
           onSelectRoom={(id) => {
