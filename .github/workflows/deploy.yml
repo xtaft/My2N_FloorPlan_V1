@@ -26,21 +26,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The site is the visual-layer prototype, which is a project of its own
+      # in a folder of its own: its own package.json, lockfile and build. The
+      # September prototype at the repo root is no longer what is published;
+      # it is kept on the `prototype-v1` branch.
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: visual-layer-prototype/package-lock.json
 
       # `npm ci` (not `npm install`) — installs exactly what
       # package-lock.json pins, so the deployed build matches what you tested
       # locally instead of silently picking up newer minor versions.
       - run: npm ci
+        working-directory: visual-layer-prototype
 
+      # Type-checks first (`tsc --noEmit && vite build`), so a build that
+      # does not compile is not published.
       - run: npm run build
+        working-directory: visual-layer-prototype
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: visual-layer-prototype/dist
 
   deploy:
     needs: build
