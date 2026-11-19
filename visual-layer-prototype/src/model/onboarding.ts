@@ -33,8 +33,11 @@ export interface PendingFloor {
    */
   segmented: boolean;
   /**
-   * Which floor is at ground level. Exactly one carries it, because the
-   * storey numbers are counted from it.
+   * Which floor is at ground level. At most one carries it, because the
+   * storey numbers are counted from it — and none does until the user
+   * says which. The list cannot know: a folder of plans is as likely to
+   * start at the basement as at the street, and a wrong guess shown as
+   * an answer is one nobody checks.
    */
   ground: boolean;
   /** The user has looked at this one on the check screen. */
@@ -211,7 +214,7 @@ export function addFloors(
       },
     ];
   }
-  return withOneGround(out);
+  return out;
 }
 
 /** A floor to draw on with nothing behind it. */
@@ -221,8 +224,12 @@ export function addBlankFloor(floors: FloorList): FloorList {
   ]);
 }
 
+/**
+ * Take a floor off the list. If it was the ground floor, no floor is
+ * until the user picks again: the job is not handed to a neighbour.
+ */
 export function removeFloor(floors: FloorList, id: string): FloorList {
-  return withOneGround(floors.filter((f) => f.id !== id));
+  return floors.filter((f) => f.id !== id);
 }
 
 /**
@@ -269,18 +276,9 @@ export function markChecked(floors: FloorList, id: string): FloorList {
   return floors.map((f) => (f.id === id ? { ...f, checked: true } : f));
 }
 
-/**
- * The bottom floor is ground until somebody says otherwise.
- *
- * Reasserted after every add and remove, because "exactly one" is an
- * invariant of the list rather than something each caller remembers.
- */
-function withOneGround(floors: FloorList): FloorList {
-  if (floors.length === 0) return floors;
-  if (floors.filter((f) => f.ground).length === 1) return floors;
-
-  const chosen = floors.find((f) => f.ground) ?? floors[floors.length - 1];
-  return floors.map((f) => ({ ...f, ground: f.id === chosen.id }));
+/** Whether the user has said which floor is at ground level. */
+export function hasGroundFloor(floors: FloorList): boolean {
+  return floors.some((f) => f.ground);
 }
 
 /**

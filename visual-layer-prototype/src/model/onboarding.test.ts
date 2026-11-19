@@ -15,6 +15,7 @@ import {
   removeFloor,
   reverseFloors,
   setGroundFloor,
+  hasGroundFloor,
   storeyLevels,
   storeyName,
   type FloorList,
@@ -57,27 +58,35 @@ describe("adding floors", () => {
 });
 
 describe("the ground floor", () => {
-  it("is the bottom one until somebody says otherwise", () => {
+  it("is nobody until the user says which", () => {
     const floors = three();
-    expect(floors.filter((f) => f.ground).map((f) => f.name)).toEqual([
-      "c.pdf",
-    ]);
+    expect(floors.some((f) => f.ground)).toBe(false);
+    expect(hasGroundFloor(floors)).toBe(false);
+    // Adding more does not pick one either.
+    expect(hasGroundFloor(addFloors(floors, pdfs("d.pdf")))).toBe(false);
   });
 
-  it("is exactly one, however the list changes", () => {
-    const one = (floors: FloorList) => floors.filter((f) => f.ground).length;
-    let floors = three();
-    expect(one(floors)).toBe(1);
+  it("is exactly the one the user picked, and only ever one", () => {
+    const count = (floors: FloorList) => floors.filter((f) => f.ground).length;
+    let floors = setGroundFloor(three(), "pending:3");
+    expect(hasGroundFloor(floors)).toBe(true);
+    expect(floors.find((f) => f.ground)!.name).toBe("c.pdf");
 
     floors = addFloors(floors, pdfs("d.pdf"));
-    expect(one(floors)).toBe(1);
+    expect(count(floors)).toBe(1);
 
+    // Picking another moves it; it does not add a second.
     floors = setGroundFloor(floors, floors[0].id);
-    expect(one(floors)).toBe(1);
+    expect(count(floors)).toBe(1);
+    expect(floors[0].ground).toBe(true);
+  });
 
-    // Removing the ground floor hands the job to another.
-    floors = removeFloor(floors, floors[0].id);
-    expect(one(floors)).toBe(1);
+  it("is nobody again when the floor that was picked is removed", () => {
+    let floors = setGroundFloor(three(), "pending:1");
+    floors = removeFloor(floors, "pending:1");
+    // Not handed to a neighbour: which floor is at street level is the
+    // user's to say, a second time as much as the first.
+    expect(hasGroundFloor(floors)).toBe(false);
   });
 
   it("stays where it was put when an unrelated floor goes", () => {
@@ -133,7 +142,7 @@ describe("ordering floors", () => {
 
   it("leaves the ground floor on the same page it was", () => {
     // Reversing says which end is up, not which floor is the ground one.
-    const floors = three();
+    const floors = setGroundFloor(three(), "pending:3");
     const ground = floors.find((f) => f.ground)!.name;
     expect(reverseFloors(floors).find((f) => f.ground)!.name).toBe(ground);
   });
@@ -141,7 +150,7 @@ describe("ordering floors", () => {
 
 describe("storeys", () => {
   it("counts up from the ground floor", () => {
-    const floors = three(); // c is ground
+    const floors = setGroundFloor(three(), "pending:3"); // c is ground
     const levels = storeyLevels(floors);
     expect(levels.get(floors[2].id)).toBe(0);
     expect(levels.get(floors[1].id)).toBe(1);

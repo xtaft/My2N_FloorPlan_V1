@@ -20,6 +20,7 @@ import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
+import Alert from "@mui/material/Alert";
 import Radio from "@mui/material/Radio";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -39,6 +40,7 @@ import {
   removeFloor,
   reverseFloors,
   setGroundFloor,
+  hasGroundFloor,
   type CreateMethod,
   type FloorList,
 } from "../../model";
@@ -177,6 +179,25 @@ export function AddFloorsDialog({
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
+  /**
+   * Next was pressed with no ground floor chosen. Nothing is preselected:
+   * which floor is at street level is the one thing here only the user
+   * knows, and a default would be a guess they have no reason to check.
+   * So it is asked for, and the asking is only pressed once they try to
+   * go on without it — an error before anyone has done anything is noise.
+   */
+  const [missing, setMissing] = useState(false);
+  const groundChosen = hasGroundFloor(floors);
+  const showMissing = missing && !groundChosen && floors.length > 0;
+
+  const next = () => {
+    if (floors.length > 0 && !groundChosen) {
+      setMissing(true);
+      return;
+    }
+    setMissing(false);
+    onNext();
+  };
 
   /**
    * What a dropped or chosen file is.
@@ -303,8 +324,12 @@ export function AddFloorsDialog({
             <Typography variant="body2" sx={{ flex: 1, pl: 3 }}>
               Floor
             </Typography>
-            <Typography variant="body2" sx={{ width: 96, textAlign: "center" }}>
-              Ground
+            <Typography
+              variant="body2"
+              color={showMissing ? "error" : undefined}
+              sx={{ width: 96, textAlign: "center" }}
+            >
+              Ground *
             </Typography>
             <Box sx={{ width: 32 }} />
           </Stack>
@@ -352,7 +377,13 @@ export function AddFloorsDialog({
                   <Radio
                     size="small"
                     checked={floor.ground}
-                    onChange={() => onFloors(setGroundFloor(floors, floor.id))}
+                    color={showMissing ? "error" : "primary"}
+                    inputProps={{ "aria-label": `${floor.name} is the ground floor` }}
+                    sx={showMissing ? { color: "error.main" } : undefined}
+                    onChange={() => {
+                      setMissing(false);
+                      onFloors(setGroundFloor(floors, floor.id));
+                    }}
                   />
                 </Box>
                 <Box
@@ -364,6 +395,11 @@ export function AddFloorsDialog({
             ))
           )}
         </Paper>
+        {showMissing && (
+          <Alert severity="error" sx={{ mt: 1.5 }}>
+            Select which floor is the ground floor. It is required to continue.
+          </Alert>
+        )}
       </DialogContent>
       <Divider />
       <DialogActions sx={{ px: 3, py: 2 }}>
@@ -379,7 +415,9 @@ export function AddFloorsDialog({
         <Button
           variant="contained"
           disabled={floors.length === 0}
-          onClick={onNext}
+          // Not disabled for a missing ground floor: a greyed button does
+          // not say what it is waiting for, and pressing it does.
+          onClick={next}
         >
           Next
         </Button>
