@@ -148,16 +148,18 @@ export function accessShading(
  * to look at, with just enough blue in it to survive losing the
  * red-green axis. How far to lean is a trade: a turquoise measured
  * further from the red under deuteranopia (about 10 against 7 here) and
- * read less clearly as "go". The red is a shade darker than a pastel,
- * so the two differ in lightness as well as hue, which is most of what
- * a colour-blind reader has left. And "no question asked" is a paler
- * grey, clear of both.
+ * read less clearly as "go". The red is darker than a pastel, so the
+ * two differ in lightness as well as hue, which is most of what a
+ * colour-blind reader has left. It is as dark as it can go while a
+ * room's name, in dark ink, still reads on it at 4.5:1 — a darker red
+ * separates further and costs the labels. And "no question asked" is a
+ * paler grey, clear of both.
  */
 export const ACCESS_COLORS: Record<AccessShade, string | null> = {
   // No question asked, so no answer drawn.
   none: "#DDDDDD",
   open: "#69C6A7",
-  closed: "#E57373",
+  closed: "#EC5D5B",
 };
 
 /**
