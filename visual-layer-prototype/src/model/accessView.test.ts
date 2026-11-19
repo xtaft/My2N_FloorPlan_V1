@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCESS_COLORS,
+  devicePass,
   accessBadges,
   accessGroups,
   addPersonToGroup,
@@ -414,5 +415,34 @@ describe("group membership", () => {
     const outsider = residents(layer).find((r) => !gym.people.includes(r.id))!.id;
     expect(() => removePersonFromGroup(groups, gym.id, outsider)).toThrow(/not in/);
     expect(() => addPersonToGroup(groups, "AG99", member)).toThrow(/no group/);
+  });
+});
+
+describe("what a device answers in access mode", () => {
+  const device = (over: Record<string, unknown>) =>
+    ({ id: "D1", device_type: "access_unit", host_kind: "door", host_id: "door:1", ...over }) as never;
+
+  it("ticks a door device the selection holds, and crosses one it does not", () => {
+    expect(devicePass(device({}), new Set(["D1"]))).toBe("can");
+    expect(devicePass(device({}), new Set(["D2"]))).toBe("cannot");
+  });
+
+  it("gives an answering unit no mark: it opens nothing", () => {
+    const unit = device({ device_type: "answering_unit", host_kind: "room" });
+    expect(devicePass(unit, new Set(["D1"]))).toBe("none");
+  });
+
+  it("answers nothing while nothing is selected", () => {
+    expect(devicePass(device({}), new Set())).toBe("none");
+  });
+
+  it("answers for every door device of the building, and no other", () => {
+
+    const held = new Set(layer.devices.filter((d) => d.host_kind === "door").slice(0, 3).map((d) => d.id));
+    for (const d of layer.devices) {
+      const answer = devicePass(d, held);
+      if (d.host_kind !== "door" || d.device_type === "answering_unit") expect(answer).toBe("none");
+      else expect(answer).toBe(held.has(d.id) ? "can" : "cannot");
+    }
   });
 });

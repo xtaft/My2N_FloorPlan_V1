@@ -80,6 +80,8 @@ import {
   redo,
   accessBadges,
   accessPaint,
+  devicePass,
+  type Device,
   accessShading,
   devicesHeldBy,
   addPersonToGroup,
@@ -233,6 +235,12 @@ export function EditModeScreen({
           accessShading(layer, allowed, personId ? "outside" : "devices")
         : null,
     [mode, layer, allowed, personId],
+  );
+
+  /** And for each device on the plan: does its door let the selection through. */
+  const deviceAccess = useMemo(
+    () => (mode === "access" ? (d: Device) => devicePass(d, allowed) : undefined),
+    [mode, allowed],
   );
 
   /** The same answer, for the tree: the map only shows one storey. */
@@ -632,6 +640,7 @@ export function EditModeScreen({
             // is doing matters whether you are placing it or asking what
             // it opens. Structure mode is about walls and names.
             showDeviceStatus={mode !== "structure"}
+            deviceAccess={deviceAccess}
             onPlaceDoor={handlePlaceDoor}
             onAddWall={handleAddWall}
             addWallError={addWallError}

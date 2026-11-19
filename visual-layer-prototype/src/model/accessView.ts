@@ -17,7 +17,7 @@ import { accessType, buildAdjacency, reachable } from "./access";
 import type { VisualLayer } from "./load";
 import { allPeople } from "./building";
 import { OperationRejected } from "./edit";
-import { EXTERIOR, type Room } from "./types";
+import { EXTERIOR, type Device, type Room } from "./types";
 
 /** A permission set, as the building's data defines it. */
 export interface AccessGroup {
@@ -166,6 +166,29 @@ export const ACCESS_COLORS: Record<AccessShade, string | null> = {
  * is the same hue with more ink in it.
  */
 export const ACCESS_OPEN_MARK = "#339377";
+
+/**
+ * What a device on the plan says to the access question (Figma
+ * 258:15083, 258:15010).
+ *
+ * A device on a door is the thing the question is about: held, the door
+ * lets you through, and it wears the tick; not held, it wears the cross.
+ * An answering unit is not on a door and opens nothing — it is drawn so
+ * that it is seen to be there, with no mark. And while nothing is
+ * selected no question has been asked, so no device answers one.
+ */
+export type DevicePass = "can" | "cannot" | "none";
+
+export function devicePass(
+  device: Device,
+  allowed: ReadonlySet<string>,
+): DevicePass {
+  if (allowed.size === 0) return "none";
+  if (device.host_kind !== "door" || device.device_type === "answering_unit") {
+    return "none";
+  }
+  return allowed.has(device.id) ? "can" : "cannot";
+}
 
 /** What to fill a room with, for the canvas's `paint`. */
 export function accessPaint(

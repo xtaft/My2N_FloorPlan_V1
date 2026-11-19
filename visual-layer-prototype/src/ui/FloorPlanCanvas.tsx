@@ -206,6 +206,11 @@ export interface FloorPlanCanvasProps {
    * tint, and the plan stops looking like the thing being edited.
    */
   mutedRooms?: boolean;
+  /**
+   * Access mode: what each device answers for the current selection.
+   * When given, the markers wear that instead of their health.
+   */
+  deviceAccess?: (device: Device) => "can" | "cannot" | "none";
 }
 
 export interface CanvasControls {
@@ -275,6 +280,7 @@ export function FloorPlanCanvas({
   onControls,
   grid = false,
   mutedRooms = false,
+  deviceAccess,
 }: FloorPlanCanvasProps) {
   const revealing = tool === "show";
   const hiding = tool === "hide";
@@ -1137,6 +1143,7 @@ export function FloorPlanCanvas({
                 y={glyph.y}
                 unitScale={unitScale}
                 showStatus={showDeviceStatus}
+                access={deviceAccess?.(glyph.device)}
                 hovered={glyph.device.id === hoverDevice}
                 selected={glyph.device.id === selectedDeviceId}
               />

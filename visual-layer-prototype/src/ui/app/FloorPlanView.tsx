@@ -49,6 +49,7 @@ import { CANVAS_BACKGROUND, PANEL_BACKGROUND } from "../theme";
 import { DeviceDetailCard } from "./DeviceDetailCard";
 import {
   accessPaint,
+  devicePass,
   accessShading,
   type AccessGroup,
   deviceRows,
@@ -185,6 +186,12 @@ export function FloorPlanView({
         ? accessShading(layer, allowed, personId ? "outside" : "devices")
         : null,
     [mode, layer, allowed, personId],
+  );
+
+  /** For each device on the plan: does its door let the selection through. */
+  const deviceAccess = useMemo(
+    () => (mode === "access" ? (d: Device) => devicePass(d, allowed) : undefined),
+    [mode, allowed],
   );
 
   /** Ring a device and turn the plan to the storey it is on. */
@@ -403,6 +410,7 @@ export function FloorPlanView({
             // In both modes: how a device is doing is worth seeing
             // whatever question the plan is being asked.
             showDeviceStatus
+            deviceAccess={deviceAccess}
             selectedDeviceId={found}
             // The devices are on the plan whichever question is being
             // asked of it. This screen is for looking, and a reader

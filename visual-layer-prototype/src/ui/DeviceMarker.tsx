@@ -7,6 +7,13 @@
  * 5px ring of the primary blue round the disc; and under the pointer,
  * with the disc tinted. The icon inside is what varies by device type.
  *
+ * In access mode the badge answers a different question (Figma 258:15083,
+ * 258:15010): not whether the device is healthy but whether the door it
+ * is on lets the selection through — a tick on green, a cross on red.
+ * The two differ by their mark as well as their colour, so the answer
+ * does not rest on telling red from green. An answering unit, which
+ * opens nothing, is drawn with no badge at all.
+ *
  * Everything here is authored in **screen pixels**, not plan units. The caller
  * passes `unitScale` — how many plan units one screen pixel currently covers —
  * and the group counter-scales by it, so a marker is 40px across whether the
@@ -56,6 +63,12 @@ const STATUS: Record<string, StatusLook> = {
 };
 
 const UNKNOWN: StatusLook = { color: "#d32f2f", mark: "!", label: "Unknown" };
+
+/** The access badge: success/error `main`, and what the tooltip says. */
+const ACCESS = {
+  can: { color: "#2e7d32", label: "Can pass" },
+  cannot: { color: "#d32f2f", label: "Cannot pass" },
+} as const;
 
 /**
  * The device icons, each drawn on a 16×32 grid — the 2N panel proportion. They
@@ -160,6 +173,11 @@ export interface DeviceMarkerProps {
   unitScale: number;
   /** Off while editing the plan, where a device's health is not the subject. */
   showStatus?: boolean;
+  /**
+   * Access mode's answer for this device, which takes the badge over
+   * from its health: the tick, the cross, or — "none" — no badge.
+   */
+  access?: "can" | "cannot" | "none";
   /** Under the pointer: the disc tints and the name comes out. */
   hovered: boolean;
   /**
@@ -178,11 +196,19 @@ export const DeviceMarker = memo(function DeviceMarker({
   y,
   unitScale,
   showStatus = true,
+  access,
   hovered,
   selected = false,
 }: DeviceMarkerProps) {
   const look = STATUS[status] ?? UNKNOWN;
-  const text = showStatus ? `${name} — ${look.label}` : name;
+  const pass = access === "can" || access === "cannot" ? ACCESS[access] : null;
+  // While access is the question, health is not shown at all.
+  const health = showStatus && access === undefined;
+  const text = pass
+    ? `${name} — ${pass.label}`
+    : health
+      ? `${name} — ${look.label}`
+      : name;
   // No text metrics inside an SVG without measuring, and measuring every
   // marker to draw a tooltip is not worth a layout pass: Roboto 11px runs
   // about 5.9px to the character, which is close enough for a chip.
@@ -209,7 +235,26 @@ export const DeviceMarker = memo(function DeviceMarker({
           <DeviceIcon deviceType={deviceType} />
         </g>
 
-        {showStatus && (
+        {pass && (
+          <g transform={`translate(${BADGE_AT} ${-BADGE_AT})`}>
+            <circle r={BADGE_R + BADGE_RING} fill="#ffffff" />
+            <circle r={BADGE_R} fill={pass.color} />
+            <path
+              d={
+                access === "can"
+                  ? "M-4.6 0.4 L-1.6 3.4 L4.6 -3.2"
+                  : "M-3.6 -3.6 L3.6 3.6 M3.6 -3.6 L-3.6 3.6"
+              }
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        )}
+
+        {health && (
           <>
             <circle
               cx={BADGE_AT}
@@ -220,7 +265,7 @@ export const DeviceMarker = memo(function DeviceMarker({
             <circle cx={BADGE_AT} cy={-BADGE_AT} r={BADGE_R} fill={look.color} />
           </>
         )}
-        {showStatus && look.mark && (
+        {health && look.mark && (
           <text
             x={BADGE_AT}
             y={-BADGE_AT}
