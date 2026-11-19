@@ -38,6 +38,7 @@ import { PANEL_BACKGROUND } from "../theme";
 import {
   type AccessGroup,
   deviceRows,
+  groupsOf,
   operatorRoleName,
   operators,
   residents,
@@ -195,6 +196,12 @@ export function AccessDrawer({
       "apartment_name" in who
         ? who.apartment_name
         : (who.jobTitle ?? operatorRoleName(who.role));
+    // Then the access groups they are in, so the line says the whole of
+    // what they hold: their own door, and whatever each group adds. Put
+    // somebody in the gym and "A36" becomes "A36, Gym".
+    const line = [where, ...groupsOf(groups, id).map((g) => g.name)]
+      .filter(Boolean)
+      .join(", ");
     return (
       <ListItemButton
         key={`p:${id}`}
@@ -210,9 +217,11 @@ export function AccessDrawer({
         />
         <ListItemText
           primary={who.name}
-          secondary={where}
+          secondary={line}
           primaryTypographyProps={{ variant: "body2", noWrap: true }}
-          secondaryTypographyProps={{ variant: "caption", noWrap: true }}
+          // The whole line on hover: a few groups is more than the
+          // drawer is wide.
+          secondaryTypographyProps={{ variant: "caption", noWrap: true, title: line }}
         />
         {onPersonMenu && (
           <IconButton
