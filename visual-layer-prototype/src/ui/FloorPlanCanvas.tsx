@@ -391,6 +391,12 @@ export function FloorPlanCanvas({
         maxY = Math.max(maxY, v.y);
       }
     }
+    // Where a background image goes: over the walls' own extent, before
+    // the readers outside stretch the frame. An image is of the plan.
+    const drawn = Number.isFinite(minX)
+      ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+      : null;
+
     // The readers on the outside doors are drawn beyond the building's
     // own outline — that is what reading from the street means — so a
     // box taken from the walls alone cuts the ground floor's entrances
@@ -423,11 +429,16 @@ export function FloorPlanCanvas({
       walls,
       doors,
       glyphs,
+      // An empty floor has no extent of its own, so its image fills the page.
+      imageBox: drawn && !onPage ? drawn : { x: 0, y: 0, w: PAGE_W, h: PAGE_H },
       viewBox: `${minX - PAD} ${minY - PAD} ${maxX - minX + PAD * 2} ${
         maxY - minY + PAD * 2
       }`,
     };
   }, [layer, floorId]);
+
+  /** An image to draw over, if this storey has been given one. */
+  const background = layer.floors.find((f) => f.id === floorId)?.background ?? null;
 
   /** The devices drawn: the floor's, less what the filter hides. */
   const shownGlyphs = useMemo(
@@ -737,6 +748,19 @@ export function FloorPlanCanvas({
           onMouseMove={handleMove}
           onMouseLeave={() => setHover(null)}
         >
+          {/* Behind everything, and taking no clicks: it is something to
+              draw over, fitted to the plan rather than stretched to it. */}
+          {background && (
+            <image
+              href={background}
+              x={scene.imageBox.x}
+              y={scene.imageBox.y}
+              width={scene.imageBox.w}
+              height={scene.imageBox.h}
+              preserveAspectRatio="xMidYMid meet"
+              pointerEvents="none"
+            />
+          )}
           {/* Room fills. Adjacent rooms in one envelope share a colour, so an
               apartment reads as one shape without its interior being drawn. */}
           {scene.rooms.map((room) => {
@@ -754,7 +778,10 @@ export function FloorPlanCanvas({
             // take a click, and fill="none" has no interior to hit.
             const painted = paint ? paint(room) : roomColor(layer, room);
             let fill = painted ?? "transparent";
-            let fillOpacity = painted === null ? 1 : mutedRooms ? MUTED_FILL : ROOM_FILL;
+            // Over a background image the rooms are thinned as well: the
+            // image is there to be drawn over, and has to be seen to be.
+            let fillOpacity =
+              painted === null ? 1 : mutedRooms || background ? MUTED_FILL : ROOM_FILL;
             if (state === "blocked") {
               fillOpacity = 0.3;
             } else if (state === "unexamined") {

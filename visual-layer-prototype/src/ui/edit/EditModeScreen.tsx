@@ -64,6 +64,10 @@ import {
   unassignGroup,
   unassignRoom,
   moveInTree,
+  renameFloor,
+  duplicateFloor,
+  deleteFloor,
+  setFloorBackground,
   renameUnplacedSpace,
   type Group,
   type Room,
@@ -394,7 +398,12 @@ export function EditModeScreen({
     el: HTMLElement | null;
     at?: { top: number; left: number };
     target: RowTarget;
+    /** Which list or surface it was opened from: the items differ. */
+    place: "navigation" | "map" | "drawer";
   } | null>(null);
+  /** The hidden file input behind "Add background image", and the floor it is for. */
+  const backgroundPicker = useRef<HTMLInputElement | null>(null);
+  const backgroundFor = useRef<string | null>(null);
   /** The door whose menu is open, and where on screen it was clicked. */
   const [doorMenu, setDoorMenu] = useState<{
     doorId: string;
@@ -403,7 +412,7 @@ export function EditModeScreen({
   /** The row being renamed in place, and the text so far. */
   const [renaming, setRenaming] = useState<{
     id: string;
-    kind: "room" | "group" | "space";
+    kind: "room" | "group" | "space" | "floor";
     draft: string;
   } | null>(null);
 
@@ -415,7 +424,9 @@ export function EditModeScreen({
         ? renameRoom(state, id, draft)
         : kind === "group"
           ? renameGroup(state, id, draft)
-          : renameUnplacedSpace(state, id, draft),
+          : kind === "floor"
+            ? renameFloor(state, id, draft)
+            : renameUnplacedSpace(state, id, draft),
     );
     setRenaming(null);
   }, [renaming, run, state]);
@@ -534,7 +545,7 @@ export function EditModeScreen({
           selectedGroupId={selectedGroupId}
           onRowMenu={
             mode === "structure"
-              ? (el, target) => setRowMenu({ el, target })
+              ? (el, target) => setRowMenu({ el, target, place: "navigation" })
               : undefined
           }
           badges={badges}
@@ -669,6 +680,7 @@ export function EditModeScreen({
               setRowMenu({
                 el: null,
                 at,
+                place: "map",
                 target:
                   target.kind === "room"
                     ? { kind: "room", room: found as Room }
@@ -839,7 +851,7 @@ export function EditModeScreen({
           onDeleteCategory={(typeId) =>
             run(() => deleteSpaceType(state, typeId))
           }
-          onRowMenu={(el, target) => setRowMenu({ el, target })}
+          onRowMenu={(el, target) => setRowMenu({ el, target, place: "drawer" })}
           width={drawerWidth}
           onWidthChange={setDrawerWidth}
           onImportSpaces={() => setImporting(true)}
@@ -847,7 +859,7 @@ export function EditModeScreen({
             const space = (layer.file.unplaced_spaces ?? []).find(
               (x) => x.id === spaceId,
             );
-            if (space) setRowMenu({ el, target: { kind: "space", space } });
+            if (space) setRowMenu({ el, target: { kind: "space", space }, place: "drawer" });
           }}
           onNewCategory={newCategory}
         />
@@ -973,7 +985,33 @@ export function EditModeScreen({
         anchorEl={rowMenu?.el ?? null}
         at={rowMenu?.at ?? null}
         target={rowMenu?.target ?? null}
+        place={rowMenu?.place}
         onClose={() => setRowMenu(null)}
+        onDuplicate={() => {
+          const target = rowMenu?.target;
+          if (target?.kind !== "floor") return;
+          try {
+            const made = duplicateFloor(state, target.floor.id);
+            onChange(made.state);
+            // Shown straight away: a copy nobody is looking at might as
+            // well not have been made.
+            onFloorChange(made.floorId);
+            setToast({ text: `Duplicate ${target.floor.name} — done`, kind: "ok" });
+          } catch (e) {
+            if (!(e instanceof OperationRejected)) throw e;
+            setToast({ text: e.message, kind: "bad" });
+          }
+        }}
+        onBackground={(add) => {
+          const target = rowMenu?.target;
+          if (target?.kind !== "floor") return;
+          if (!add) {
+            run(() => setFloorBackground(state, target.floor.id, null));
+            return;
+          }
+          backgroundFor.current = target.floor.id;
+          backgroundPicker.current?.click();
+        }}
         onRename={() => {
           if (!rowMenu) return;
           const { target } = rowMenu;
@@ -983,6 +1021,8 @@ export function EditModeScreen({
             setRenaming({ id: target.group.id, kind: "group", draft: target.group.name });
           } else if (target.kind === "space") {
             setRenaming({ id: target.space.id, kind: "space", draft: target.space.name });
+          } else {
+            setRenaming({ id: target.floor.id, kind: "floor", draft: target.floor.name });
           }
         }}
         onReorder={() => {
@@ -1029,7 +1069,43 @@ export function EditModeScreen({
             run(() => deleteRoom(state, target.room.id));
           } else if (target.kind === "space") {
             run(() => removeUnplacedSpace(state, target.space.id));
+          } else {
+            // The plan cannot go on showing a floor that is gone.
+            const gone = target.floor.id;
+            const other = layer.floors.find((f) => f.id !== gone);
+            try {
+              const next = deleteFloor(state, gone);
+              if (gone === floorId && other) onFloorChange(other.id);
+              onChange(next);
+              setToast({ text: `Delete ${target.floor.name} — done`, kind: "ok" });
+            } catch (e) {
+              if (!(e instanceof OperationRejected)) throw e;
+              setToast({ text: e.message, kind: "bad" });
+            }
           }
+        }}
+      />
+
+      {/* "Add background image" opens this. An image is read into the
+          floor as a data URL: there is no server to put it on. */}
+      <input
+        ref={backgroundPicker}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const id = backgroundFor.current;
+          // Cleared so choosing the same file twice still fires.
+          e.target.value = "";
+          if (!file || !id) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result !== "string") return;
+            const image = reader.result;
+            run(() => setFloorBackground(state, id, image));
+          };
+          reader.readAsDataURL(file);
         }}
       />
 

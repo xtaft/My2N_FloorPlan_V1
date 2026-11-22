@@ -1,17 +1,26 @@
 /**
  * The row menu in the structure tree.
  *
- * Figma: `<Menu> floorPlanSpacesPlan` (93:158689 / 93:158690), and the
- * full set for a room in 153:304964 — 256 wide, 36px items, a 20px icon
- * in action/active, body1 label, one divider, and Delete under it in
- * error/main.
+ * 256 wide, 36px items, a 20px icon in action/active, body1 label, one
+ * divider, and Delete under it in error/main. What is on it depends on
+ * what the row is, as the navigation tree's designs have it:
  *
- * A room gets everything: Rename, Reorder, Hide, Change space category,
- * Detach from group, Unassign from map, Delete. The other rows get the
- * part of that which means something for them — an envelope has no
- * group to detach from, and a floor can only be reordered within.
- * Reorder is on every row of the tree: it turns the tree into something
- * that can be dragged, and any row is a fair place to ask for that.
+ *   floor (153:303569)       Rename, Reorder, Duplicate, Add background
+ *                            image — or Remove background, once it has one
+ *   group (153:303753)       Rename, Reorder, Show all rooms / Hide all
+ *                            rooms, Change space category
+ *   room (153:304023)        Rename, Reorder, Hide, Change space category
+ *   room in a group          … and Detach from group (153:304964)
+ *   room in an apartment     … and Detach from unit (153:305137)
+ *
+ * each ending in Delete. Reorder is on every row of the tree: it turns
+ * the tree into something that can be dragged, and any row is a fair
+ * place to ask for that.
+ *
+ * Those are the tree's menus. The same menu also opens from a space on
+ * the plan and from a row of the categories drawer, and there it keeps
+ * one more item, Unassign from map — taking a space off the plan is
+ * something asked of the plan, and the tree's designs leave it out.
  *
  * A space with no shape can be put on the plan, or dropped. One that a
  * rooms list put in the tree has a row there as well, so it can also be
@@ -36,6 +45,9 @@ import Class from "@mui/icons-material/Class";
 import Delete from "@mui/icons-material/Delete";
 import Edit from "@mui/icons-material/Edit";
 import LocationOff from "@mui/icons-material/LocationOff";
+import Close from "@mui/icons-material/Close";
+import ContentCopy from "@mui/icons-material/ContentCopy";
+import Image from "@mui/icons-material/Image";
 import PlaceOutlined from "@mui/icons-material/PlaceOutlined";
 import PlaylistRemove from "@mui/icons-material/PlaylistRemove";
 import SwapVert from "@mui/icons-material/SwapVert";
@@ -44,6 +56,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   groupAccessType,
   isSpaceListed,
+  treePlaceOf,
   roomsInGroup,
   type Floor,
   type Group,
@@ -65,6 +78,11 @@ export interface StructureRowMenuProps {
   anchorEl: HTMLElement | null;
   /** Where on the plan it was opened, for a click on a space. */
   at?: { top: number; left: number } | null;
+  /**
+   * Where it was opened from. The tree's menus are the designs' and
+   * nothing more; the plan and the drawer also offer Unassign from map.
+   */
+  place?: "navigation" | "map" | "drawer";
   target: RowTarget | null;
   onClose: () => void;
   onRename: () => void;
@@ -72,6 +90,10 @@ export interface StructureRowMenuProps {
   onReorder: () => void;
   /** Arms a space with no shape, to be put on a space on the plan. */
   onPlace: () => void;
+  /** A floor: a copy of it, on top. */
+  onDuplicate: () => void;
+  /** A floor: choose an image to put behind it, or take the one it has away. */
+  onBackground: (add: boolean) => void;
   /** Fold the room away, or the envelope's rooms; or bring them back. */
   onToggleHidden: (hide: boolean) => void;
   onAssignCategory: (typeId: string | null) => void;
@@ -93,6 +115,9 @@ export function StructureRowMenu({
   onRename,
   onReorder,
   onPlace,
+  onDuplicate,
+  onBackground,
+  place = "navigation",
   onToggleHidden,
   onAssignCategory,
   onDetach,
@@ -108,7 +133,6 @@ export function StructureRowMenu({
   }, [anchorEl, at]);
 
   const open = Boolean(anchorEl || at) && target !== null;
-  const isRoom = target?.kind === "room";
   // An envelope counts as folded when nothing inside it is on the map, so
   // the item offers the move that is actually available.
   const hidden =
@@ -188,7 +212,27 @@ export function StructureRowMenu({
   /** The items for whatever the menu is on, in the design's order. */
   const mainPage = (): React.ReactNode[] => {
     if (!target) return [];
-    if (target.kind === "floor") return [reorder()];
+    // Off the plan is asked of the plan: not on the tree's menus.
+    const offMap = place !== "navigation";
+
+    if (target.kind === "floor") {
+      const has = Boolean(target.floor.background);
+      return [
+        rename(),
+        reorder(),
+        item("duplicate", <ContentCopy sx={ICON} />, "Duplicate", onDuplicate),
+        has
+          ? item("background", <Close sx={ICON} />, "Remove background", () =>
+              onBackground(false),
+            )
+          : item("background", <Image sx={ICON} />, "Add background image", () =>
+              onBackground(true),
+            ),
+        divider(),
+        remove(),
+      ];
+    }
+
     if (target.kind === "space") {
       return [
         ...(isSpaceListed(layer, target.space) ? [rename(), reorder()] : []),
@@ -197,37 +241,54 @@ export function StructureRowMenu({
         remove(),
       ];
     }
-    const hide = item(
-      "hide",
-      hidden ? <Visibility sx={ICON} /> : <VisibilityOff sx={ICON} />,
-      isRoom ? (hidden ? "Show" : "Hide") : hidden ? "Show rooms" : "Hide rooms",
-      () => onToggleHidden(!hidden),
-    );
+
     if (target.kind === "room") {
+      // "In a group" as the tree shows it: a room that only stands in for
+      // its own one-room envelope is listed under the floor, and has
+      // nothing to be detached from.
+      const within = treePlaceOf(layer, { kind: "room", id: target.room.id })?.groupId ?? null;
+      const group = within ? layer.groups.get(within) : undefined;
+      const inApartment = group ? groupAccessType(layer, group) === "apartment" : false;
       return [
         rename(),
         reorder(),
-        hide,
+        item(
+          "hide",
+          hidden ? <Visibility sx={ICON} /> : <VisibilityOff sx={ICON} />,
+          hidden ? "Show" : "Hide",
+          () => onToggleHidden(!hidden),
+        ),
         category(),
-        // Detach and Unassign appear only where they mean something:
-        // there is no group to leave if it is in none, and nothing to
-        // unassign from the map if it is not drawn on it in its own right.
-        ...(target.room.group_id !== null
-          ? [item("detach", <PlaylistRemove sx={ICON} />, "Detach from group", onDetach)]
+        ...(group
+          ? [
+              item(
+                "detach",
+                <PlaylistRemove sx={ICON} />,
+                // An apartment is a unit; anything else is a group.
+                inApartment ? "Detach from unit" : "Detach from group",
+                onDetach,
+              ),
+            ]
           : []),
-        ...(target.room.surfaced ? [unassign()] : []),
+        ...(offMap && target.room.surfaced ? [unassign()] : []),
         divider(),
         remove(),
       ];
     }
+
     return [
       rename(),
       reorder(),
-      hide,
+      item(
+        "hide",
+        hidden ? <Visibility sx={ICON} /> : <VisibilityOff sx={ICON} />,
+        hidden ? "Show all rooms" : "Hide all rooms",
+        () => onToggleHidden(!hidden),
+      ),
       category(),
       // Only an apartment comes off the map whole: it is the one kind of
       // envelope the building knows by name apart from its walls.
-      ...(groupAccessType(layer, target.group) === "apartment" ? [unassign()] : []),
+      ...(offMap && groupAccessType(layer, target.group) === "apartment" ? [unassign()] : []),
       divider(),
       remove(),
     ];

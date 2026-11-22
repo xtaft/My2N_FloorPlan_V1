@@ -65,7 +65,10 @@ export type OperationKind =
   | "add_floor"
   | "add_wall"
   | "flip_device"
-  | "move_in_tree";
+  | "move_in_tree"
+  | "duplicate_floor"
+  | "delete_floor"
+  | "floor_background";
 
 export interface EditOperation {
   kind: OperationKind;

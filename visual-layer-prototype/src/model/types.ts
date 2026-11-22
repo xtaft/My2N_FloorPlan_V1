@@ -183,6 +183,11 @@ export interface Floor {
    * none until it is bound.
    */
   domain_ref?: string | null;
+  /**
+   * An image drawn behind the plan to draw over — a scan, a photo. Not
+   * part of anything derived: it is only ever shown.
+   */
+  background?: string | null;
 }
 
 /** Colour belongs to the type, never to a room or an envelope. */
