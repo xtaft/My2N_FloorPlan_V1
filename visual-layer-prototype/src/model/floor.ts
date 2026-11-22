@@ -12,7 +12,7 @@
 import { commit, OperationRejected, type EditState } from "./edit";
 import { liveGroups } from "./groups";
 import { rebuildVerticalDoors } from "./shaft";
-import type { Floor, VisualLayerFile } from "./types";
+import type { Floor, FloorBackground, PlanRect, VisualLayerFile } from "./types";
 
 const prefixOf = (floorId: string) => `${floorId.split(":")[0]}:`;
 
@@ -230,34 +230,129 @@ export function deleteFloor(state: EditState, floorId: string): EditState {
   return commit(state, "delete_floor", `Delete ${floor.name}`, rebuildVerticalDoors(next));
 }
 
+/** What an empty floor is drawn on: the canvas's page. */
+const PAGE: PlanRect = { x: 0, y: 0, width: 1200, height: 800 };
+
+/**
+ * The box round what is drawn on a storey, in its own coordinates — or
+ * the page, for a storey with nothing on it yet.
+ */
+export function floorExtent(file: VisualLayerFile, floorId: string): PlanRect {
+  const prefix = prefixOf(floorId);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const v of file.vertices) {
+    if (!v.id.startsWith(prefix)) continue;
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+  }
+  if (!Number.isFinite(minX) || maxX <= minX || maxY <= minY) return PAGE;
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+/**
+ * Where an image first lands: as large as fits inside the box, in its
+ * own proportions, centred. A starting point, not a claim — the image
+ * is then the user's to move and size.
+ */
+export function fitBackground(
+  into: PlanRect,
+  natural: { width: number; height: number },
+): PlanRect {
+  if (!(natural.width > 0) || !(natural.height > 0)) return into;
+  const scale = Math.min(into.width / natural.width, into.height / natural.height);
+  const width = natural.width * scale;
+  const height = natural.height * scale;
+  return {
+    x: into.x + (into.width - width) / 2,
+    y: into.y + (into.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+/** The same rectangle, made `factor` times the size about its middle. */
+export function scaleRect(rect: PlanRect, factor: number): PlanRect {
+  const width = rect.width * factor;
+  const height = rect.height * factor;
+  return {
+    x: rect.x + (rect.width - width) / 2,
+    y: rect.y + (rect.height - height) / 2,
+    width,
+    height,
+  };
+}
+
 /**
  * Put an image behind a storey's plan, or take it away.
  *
  * Something to draw over: a scan, a photo of the fire-escape plan on
- * the wall. It is stored as given — a data URL here — and is no part of
- * the model anything derives from; it is only ever drawn.
+ * the wall. It is stored as given — a data URL here — with the place
+ * it lies, and is no part of the model anything derives from; it is
+ * only ever drawn.
  */
 export function setFloorBackground(
   state: EditState,
   floorId: string,
-  image: string | null,
+  background: FloorBackground | null,
 ): EditState {
   const { file } = state;
   const floor = floorOf(file, floorId);
-  if ((floor.background ?? null) === image) return state;
+  if (background === null && !floor.background) return state;
   return commit(
     state,
     "floor_background",
-    image === null ? "Remove background" : "Add background image",
+    background === null ? "Remove background" : "Add background image",
     {
       ...file,
       floors: file.floors.map((f) => {
         if (f.id !== floorId) return f;
         const out = { ...f };
-        if (image === null) delete out.background;
-        else out.background = image;
+        if (background === null) delete out.background;
+        else out.background = background;
         return out;
       }),
     },
   );
+}
+
+/**
+ * Move and size a storey's background image: the action bar's Edit
+ * image, applied.
+ */
+export function placeFloorBackground(
+  state: EditState,
+  floorId: string,
+  rect: PlanRect,
+): EditState {
+  const { file } = state;
+  const floor = floorOf(file, floorId);
+  const was = floor.background;
+  if (!was) {
+    throw new OperationRejected(`${floor.name} has no background image to edit.`);
+  }
+  const ok = [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite);
+  if (!ok || !(rect.width > 0) || !(rect.height > 0)) {
+    throw new OperationRejected("An image has to have a size.");
+  }
+  if (
+    was.x === rect.x &&
+    was.y === rect.y &&
+    was.width === rect.width &&
+    was.height === rect.height
+  ) {
+    return state;
+  }
+  return commit(state, "floor_background", "Edit image", {
+    ...file,
+    floors: file.floors.map((f) =>
+      f.id === floorId
+        ? { ...f, background: { src: was.src, x: rect.x, y: rect.y, width: rect.width, height: rect.height } }
+        : f,
+    ),
+  });
 }

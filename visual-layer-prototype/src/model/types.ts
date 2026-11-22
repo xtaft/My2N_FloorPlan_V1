@@ -187,7 +187,34 @@ export interface Floor {
    * An image drawn behind the plan to draw over — a scan, a photo. Not
    * part of anything derived: it is only ever shown.
    */
-  background?: string | null;
+  background?: FloorBackground | null;
+}
+
+/**
+ * A floor's background image, and where it lies.
+ *
+ * The rectangle is in the floor's own coordinates, the ones its
+ * vertices are in, and is the image's alone: it is not tied to the
+ * walls' extent and may reach past them. A scan of a plan has margins,
+ * a title block, a north arrow — the drawing on it is rarely the whole
+ * sheet — so the image has to be free to be moved and sized until the
+ * walls on it lie under the walls drawn.
+ */
+export interface FloorBackground {
+  /** The image itself. A data URL here: there is no server to hold it. */
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** A rectangle in a floor's coordinates. */
+export interface PlanRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /** Colour belongs to the type, never to a room or an envelope. */

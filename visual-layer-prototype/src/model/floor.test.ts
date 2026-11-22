@@ -7,6 +7,10 @@ import {
   OperationRejected,
   deleteFloor,
   duplicateFloor,
+  fitBackground,
+  floorExtent,
+  placeFloorBackground,
+  scaleRect,
   initEditState,
   interiorRings,
   renameFloor,
@@ -201,12 +205,12 @@ describe("deleting a floor", () => {
 });
 
 describe("a floor's background image", () => {
+  const image = { src: "data:image/png;base64,AAAA", x: 10, y: 20, width: 300, height: 200 };
+
   it("is set, and taken away again", () => {
     const st = state();
-    const withImage = setFloorBackground(st, "1:floor", "data:image/png;base64,AAAA");
-    expect(withImage.layer.floors.find((f) => f.id === "1:floor")!.background).toBe(
-      "data:image/png;base64,AAAA",
-    );
+    const withImage = setFloorBackground(st, "1:floor", image);
+    expect(withImage.layer.floors.find((f) => f.id === "1:floor")!.background).toEqual(image);
     expect(withImage.undo.at(-1)!.label).toBe("Add background image");
 
     const without = setFloorBackground(withImage, "1:floor", null);
@@ -214,5 +218,61 @@ describe("a floor's background image", () => {
     expect(without.undo.at(-1)!.label).toBe("Remove background");
     // Removing what is not there changes nothing.
     expect(setFloorBackground(st, "1:floor", null)).toBe(st);
+  });
+
+  it("first lands inside the plan's extent, whole and in proportion", () => {
+    const st = state();
+    const extent = floorExtent(st.file, "1:floor");
+    // A wide sheet: as wide as the plan, centred top to bottom.
+    const wide = fitBackground(extent, { width: 4000, height: 1000 });
+    expect(wide.width).toBeCloseTo(extent.width, 6);
+    expect(wide.width / wide.height).toBeCloseTo(4, 6);
+    expect(wide.y + wide.height / 2).toBeCloseTo(extent.y + extent.height / 2, 6);
+    // A tall one: as tall as the plan, centred side to side.
+    const tall = fitBackground(extent, { width: 500, height: 2000 });
+    expect(tall.height).toBeCloseTo(extent.height, 6);
+    expect(tall.x + tall.width / 2).toBeCloseTo(extent.x + extent.width / 2, 6);
+  });
+
+  it("lands on the page when the floor has nothing drawn", () => {
+    const empty = { ...state().file, vertices: [] } as VisualLayerFile;
+    expect(floorExtent(empty, "1:floor")).toEqual({ x: 0, y: 0, width: 1200, height: 800 });
+  });
+
+  it("is moved and sized freely — past the walls if that is where it goes", () => {
+    const st = setFloorBackground(state(), "1:floor", image);
+    const extent = floorExtent(st.file, "1:floor");
+    const far = { x: extent.x - 5000, y: extent.y - 5000, width: 20000, height: 12000 };
+    const placed = placeFloorBackground(st, "1:floor", far);
+    expect(placed.layer.floors.find((f) => f.id === "1:floor")!.background).toEqual({
+      src: image.src,
+      ...far,
+    });
+    expect(placed.undo.at(-1)!.label).toBe("Edit image");
+    // The same place again is not an edit.
+    expect(placeFloorBackground(placed, "1:floor", far)).toBe(placed);
+    expect(undo(placed).file).toBe(st.file);
+  });
+
+  it("scales about its own middle", () => {
+    const twice = scaleRect({ x: 100, y: 100, width: 200, height: 100 }, 2);
+    expect(twice).toEqual({ x: 0, y: 50, width: 400, height: 200 });
+  });
+
+  it("refuses to place an image that is not there, or one with no size", () => {
+    const st = state();
+    expect(() => placeFloorBackground(st, "1:floor", { x: 0, y: 0, width: 10, height: 10 })).toThrow(
+      OperationRejected,
+    );
+    const withImage = setFloorBackground(st, "1:floor", image);
+    expect(() =>
+      placeFloorBackground(withImage, "1:floor", { x: 0, y: 0, width: 0, height: 10 }),
+    ).toThrow(OperationRejected);
+  });
+
+  it("goes with a copy of the floor", () => {
+    const st = setFloorBackground(state(), "1:floor", image);
+    const { state: after, floorId } = duplicateFloor(st, "1:floor");
+    expect(after.layer.floors.find((f) => f.id === floorId)!.background).toEqual(image);
   });
 });

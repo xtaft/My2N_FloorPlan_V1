@@ -28,7 +28,8 @@ export type EditTool =
   | "wall"
   | "remove_wall"
   | "door"
-  | "align";
+  | "align"
+  | "image";
 export type EditModeName = EditorMode;
 
 export interface FloorPlanActionBarProps {
@@ -36,6 +37,8 @@ export interface FloorPlanActionBarProps {
   onToolChange: (tool: EditTool) => void;
   /** False on the lowest storey, which is what everything else fits onto. */
   canAlign: boolean;
+  /** Whether the floor on screen has a background image to edit. */
+  hasImage: boolean;
   /** Every tool edits the structure, so they grey out in the other modes. */
   mode: EditModeName;
   canUndo: boolean;
@@ -52,6 +55,7 @@ export function FloorPlanActionBar({
   tool,
   onToolChange,
   canAlign,
+  hasImage,
   mode,
   canUndo,
   canRedo,
@@ -149,8 +153,13 @@ export function FloorPlanActionBar({
         <BarButton
           label="Edit image"
           icon={<ImageOutlined sx={icon} />}
-          hint="Not built: the plan here is a fixture, not an uploaded PDF"
-          disabled
+          hint={say(
+            hasImage
+              ? "Move and resize this floor's background image, then apply"
+              : "This floor has no background image. Add one from the floor's menu in the tree",
+          )}
+          disabled={!structure || !hasImage}
+          {...arm("image")}
         />
       </BarGroup>
     </ActionBar>

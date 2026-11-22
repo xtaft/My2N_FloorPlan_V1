@@ -391,12 +391,6 @@ export function FloorPlanCanvas({
         maxY = Math.max(maxY, v.y);
       }
     }
-    // Where a background image goes: over the walls' own extent, before
-    // the readers outside stretch the frame. An image is of the plan.
-    const drawn = Number.isFinite(minX)
-      ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
-      : null;
-
     // The readers on the outside doors are drawn beyond the building's
     // own outline — that is what reading from the street means — so a
     // box taken from the walls alone cuts the ground floor's entrances
@@ -423,14 +417,22 @@ export function FloorPlanCanvas({
       maxX = PAGE_W;
       maxY = PAGE_H;
     }
+    // A background image is not held inside the walls: it lies where it
+    // was put, which may be well past them. The frame takes it in, so
+    // the whole sheet can be seen and drawn over.
+    const image = layer.floors.find((f) => f.id === floorId)?.background;
+    if (image) {
+      minX = Math.min(minX, image.x);
+      minY = Math.min(minY, image.y);
+      maxX = Math.max(maxX, image.x + image.width);
+      maxY = Math.max(maxY, image.y + image.height);
+    }
 
     return {
       rooms,
       walls,
       doors,
       glyphs,
-      // An empty floor has no extent of its own, so its image fills the page.
-      imageBox: drawn && !onPage ? drawn : { x: 0, y: 0, w: PAGE_W, h: PAGE_H },
       viewBox: `${minX - PAD} ${minY - PAD} ${maxX - minX + PAD * 2} ${
         maxY - minY + PAD * 2
       }`,
@@ -748,16 +750,18 @@ export function FloorPlanCanvas({
           onMouseMove={handleMove}
           onMouseLeave={() => setHover(null)}
         >
-          {/* Behind everything, and taking no clicks: it is something to
-              draw over, fitted to the plan rather than stretched to it. */}
+          {/* Behind everything — rooms, walls, doors — and taking no
+              clicks: it is something to draw over. It is drawn where it
+              was placed and at the size it was given, not cut to the
+              plan's outline. */}
           {background && (
             <image
-              href={background}
-              x={scene.imageBox.x}
-              y={scene.imageBox.y}
-              width={scene.imageBox.w}
-              height={scene.imageBox.h}
-              preserveAspectRatio="xMidYMid meet"
+              href={background.src}
+              x={background.x}
+              y={background.y}
+              width={background.width}
+              height={background.height}
+              preserveAspectRatio="none"
               pointerEvents="none"
             />
           )}

@@ -15,6 +15,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { FloorPlanCanvas, type CanvasControls } from "../FloorPlanCanvas";
 import { AlignFloorView } from "./AlignFloorView";
+import { EditImageView } from "./EditImageView";
 import { StructureRowMenu, type RowTarget } from "./StructureRowMenu";
 import { TREE_DEFAULT } from "./StructureTree";
 import { DRAWER_DEFAULT } from "./CategoriesDrawer";
@@ -68,6 +69,10 @@ import {
   duplicateFloor,
   deleteFloor,
   setFloorBackground,
+  placeFloorBackground,
+  fitBackground,
+  floorExtent,
+  type PlanRect,
   renameUnplacedSpace,
   type Group,
   type Room,
@@ -393,6 +398,41 @@ export function EditModeScreen({
     setTool("select");
   }, [draftTransform, floorId, layer, run, state]);
 
+  /**
+   * Edit image: where the background is being tried. Like the align
+   * draft, it is kept here and only stored on Apply.
+   */
+  const [draftImage, setDraftImage] = useState<PlanRect | null>(null);
+  const background = layer.floors.find((f) => f.id === floorId)?.background ?? null;
+  const editingImage = tool === "image" && draftImage !== null && background !== null;
+
+  const startImage = useCallback(() => {
+    const image = layer.floors.find((f) => f.id === floorId)?.background;
+    setDraftImage(
+      image ? { x: image.x, y: image.y, width: image.width, height: image.height } : null,
+    );
+  }, [layer, floorId]);
+
+  const applyImage = useCallback(() => {
+    if (!draftImage) return;
+    run(() => placeFloorBackground(state, floorId, draftImage));
+    setDraftImage(null);
+    setTool("select");
+  }, [draftImage, floorId, run, state]);
+
+  // The image being edited belongs to one floor. Turning to another,
+  // or the image going away under an undo, ends the edit.
+  useEffect(() => {
+    if (tool === "image" && !background) {
+      setDraftImage(null);
+      setTool("select");
+    }
+  }, [tool, background]);
+  useEffect(() => {
+    setDraftImage(null);
+    setTool((was) => (was === "image" ? "select" : was));
+  }, [floorId]);
+
   /** Which row's menu is open, and on what. */
   const [rowMenu, setRowMenu] = useState<{
     el: HTMLElement | null;
@@ -586,10 +626,13 @@ export function EditModeScreen({
         <FloorPlanActionBar
           tool={tool}
           canAlign={referenceFloor(layer, floorId) !== null}
+          hasImage={background !== null}
           onToolChange={(next) => {
             setTool(next);
             if (next === "align") startAlign();
             else setDraftTransform(null);
+            if (next === "image") startImage();
+            else setDraftImage(null);
           }}
           mode={mode}
           canUndo={canUndo(state)}
@@ -616,6 +659,19 @@ export function EditModeScreen({
               onApply={applyAlign}
               onCancel={() => {
                 setDraftTransform(null);
+                setTool("select");
+              }}
+            />
+          ) : editingImage ? (
+            <EditImageView
+              layer={layer}
+              floorId={floorId}
+              src={background.src}
+              rect={draftImage}
+              onRectChange={setDraftImage}
+              onApply={applyImage}
+              onCancel={() => {
+                setDraftImage(null);
                 setTool("select");
               }}
             />
@@ -742,7 +798,7 @@ export function EditModeScreen({
             onControls={handleControls}
           />
           )}
-          {!aligning && (
+          {!aligning && !editingImage && (
             <ZoomControls
               onZoomOut={() => controls.current?.zoomOut()}
               onZoomIn={() => controls.current?.zoomIn()}
@@ -1102,8 +1158,20 @@ export function EditModeScreen({
           const reader = new FileReader();
           reader.onload = () => {
             if (typeof reader.result !== "string") return;
-            const image = reader.result;
-            run(() => setFloorBackground(state, id, image));
+            const src = reader.result;
+            // Its own proportions are needed to place it, and only the
+            // decoded image knows them.
+            const probe = new Image();
+            probe.onload = () => {
+              const rect = fitBackground(floorExtent(state.file, id), {
+                width: probe.naturalWidth,
+                height: probe.naturalHeight,
+              });
+              run(() => setFloorBackground(state, id, { src, ...rect }));
+            };
+            probe.onerror = () =>
+              setToast({ text: "That file could not be read as an image.", kind: "bad" });
+            probe.src = src;
           };
           reader.readAsDataURL(file);
         }}
